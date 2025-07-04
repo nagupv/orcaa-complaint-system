@@ -106,6 +106,12 @@ This is a full-stack web application for managing air quality complaints for ORC
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- **Multiple Roles System** (July 04, 2025): Migrated from single role to multiple roles architecture with JSONB array storage, enabling users to have multiple role assignments simultaneously
+- **Header and Footer Integration** (July 04, 2025): Added ORCAA.org-styled header and footer components with navigation, contact information, and branding consistent with the official ORCAA website
+- **Enhanced Service Selection** (July 04, 2025): Added functional help buttons for contacting ORCAA and viewing regulations
+
 ## Changelog
 
 Changelog:

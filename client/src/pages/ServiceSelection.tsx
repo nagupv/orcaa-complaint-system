@@ -11,16 +11,16 @@ const iconMap = {
 
 export default function ServiceSelection() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
+    <div className="bg-gradient-to-br from-blue-50 to-green-50">
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            ORCAA Services
+            Choose Your Service
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Olympic Region Clean Air Agency provides various environmental services to protect air quality 
-            in Clallam, Grays Harbor, Jefferson, Mason, Pacific, and Thurston counties.
+            Select the appropriate service for your needs. We provide various environmental services 
+            to protect air quality in our six-county region.
           </p>
         </div>
 

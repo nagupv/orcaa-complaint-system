@@ -5,29 +5,17 @@ import { Link } from "wouter";
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100">
-      {/* Header */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <div className="h-8 w-8 bg-orcaa-blue rounded-full flex items-center justify-center mr-3">
-                <span className="text-white font-bold text-sm">O</span>
-              </div>
-              <span className="text-xl font-semibold text-gray-900">ORCAA Complaint Management</span>
-            </div>
-            <Button 
-              onClick={() => window.location.href = '/api/login'}
-              className="bg-orcaa-blue hover:bg-orcaa-blue-light text-white"
-            >
-              Sign In
-            </Button>
-          </div>
-        </div>
-      </nav>
-
+    <div className="bg-gradient-to-br from-blue-50 to-gray-100">
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-8">
+          <Button 
+            onClick={() => window.location.href = '/api/login'}
+            className="bg-orcaa-blue hover:bg-orcaa-blue-light text-white mb-8"
+          >
+            Sign In to Continue
+          </Button>
+        </div>
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl">
             Air Quality Complaint
