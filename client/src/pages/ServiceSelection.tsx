@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Wind, Construction, ArrowRight } from "lucide-react";
+import { Wind, Construction, ArrowRight, Phone, BookOpen } from "lucide-react";
 import { SERVICE_TYPES } from "@/lib/constants";
 
 const iconMap = {
@@ -62,10 +62,20 @@ export default function ServiceSelection() {
               our team is here to help.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="outline" className="border-orcaa-blue text-orcaa-blue hover:bg-orcaa-blue hover:text-white">
+              <Button 
+                variant="outline" 
+                className="border-orcaa-blue text-orcaa-blue hover:bg-orcaa-blue hover:text-white"
+                onClick={() => window.open('tel:+1-360-539-7610', '_self')}
+              >
+                <Phone className="mr-2 h-4 w-4" />
                 Contact ORCAA
               </Button>
-              <Button variant="outline" className="border-orcaa-blue text-orcaa-blue hover:bg-orcaa-blue hover:text-white">
+              <Button 
+                variant="outline" 
+                className="border-orcaa-blue text-orcaa-blue hover:bg-orcaa-blue hover:text-white"
+                onClick={() => window.open('https://www.orcaa.org/regulations', '_blank')}
+              >
+                <BookOpen className="mr-2 h-4 w-4" />
                 View Regulations
               </Button>
             </div>
