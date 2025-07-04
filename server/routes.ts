@@ -708,11 +708,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/list-values', isAuthenticated, async (req, res) => {
     try {
       console.log('Creating list value with data:', req.body);
-      const listValue = await storage.createListValue(req.body);
+      console.log('Data types:', {
+        listValueType: typeof req.body.listValueType,
+        listValueCode: typeof req.body.listValueCode,
+        listValueDescr: typeof req.body.listValueDescr,
+        order: typeof req.body.order,
+        listValue: typeof req.body.listValue,
+        isActive: typeof req.body.isActive
+      });
+      
+      // Clean the data to ensure proper types
+      const cleanData = {
+        listValueType: req.body.listValueType,
+        listValueCode: req.body.listValueCode,
+        listValueDescr: req.body.listValueDescr,
+        order: parseInt(req.body.order) || 0,
+        listValue: req.body.listValue,
+        isActive: req.body.isActive !== undefined ? req.body.isActive : true
+      };
+      
+      console.log('Cleaned data:', cleanData);
+      
+      const listValue = await storage.createListValue(cleanData);
+      console.log('Created list value:', listValue);
       res.json(listValue);
     } catch (error) {
-      console.error('Error creating list value:', error);
-      res.status(500).json({ error: 'Failed to create list value' });
+      console.error('Detailed error creating list value:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      res.status(500).json({ 
+        error: 'Failed to create list value',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
     }
   });
 
