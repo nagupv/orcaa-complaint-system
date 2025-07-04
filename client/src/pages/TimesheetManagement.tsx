@@ -36,6 +36,15 @@ export default function TimesheetManagement() {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTimesheet, setEditingTimesheet] = useState<Timesheet | null>(null);
+  const [selectedWeek, setSelectedWeek] = useState(() => {
+    // Get current week start (Monday)
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Sunday is 0, so we need -6 to get previous Monday
+    const monday = new Date(today);
+    monday.setDate(today.getDate() + mondayOffset);
+    return monday.toISOString().split('T')[0];
+  });
 
   // Get today's date for default value
   const today = new Date().toISOString().split('T')[0];
@@ -341,6 +350,44 @@ export default function TimesheetManagement() {
     heatmapData.filter(day => day.weekIndex === i)
   ).filter(week => week.length > 0);
 
+  // Filter timesheets by selected week
+  const getWeekRange = (weekStart: string) => {
+    const start = new Date(weekStart);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+  };
+
+  const weekRange = getWeekRange(selectedWeek);
+  const filteredTimesheets = timesheets.filter((ts: Timesheet) => 
+    ts.date >= weekRange.start && ts.date <= weekRange.end
+  );
+
+  // Generate week options for dropdown (last 12 weeks + next 4 weeks)
+  const generateWeekOptions = () => {
+    const options = [];
+    const today = new Date();
+    
+    for (let i = -12; i <= 4; i++) {
+      const weekStart = new Date(today);
+      const dayOfWeek = weekStart.getDay();
+      const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      weekStart.setDate(today.getDate() + mondayOffset + (i * 7));
+      
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      
+      const startStr = weekStart.toISOString().split('T')[0];
+      const label = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+      
+      options.push({ value: startStr, label });
+    }
+    
+    return options;
+  };
+
+  const weekOptions = generateWeekOptions();
+
   if (timesheetsLoading || activitiesLoading || complaintIdsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -574,25 +621,53 @@ export default function TimesheetManagement() {
       {/* Timesheet Entries */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Time Entries
-          </CardTitle>
-          <CardDescription>
-            Your recorded work hours and activities
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Time Entries
+              </CardTitle>
+              <CardDescription>
+                Your recorded work hours and activities
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Week:</label>
+                <Select value={selectedWeek} onValueChange={setSelectedWeek}>
+                  <SelectTrigger className="w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {weekOptions.map((week) => (
+                      <SelectItem key={week.value} value={week.value}>
+                        {week.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Entry
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {timesheets.length === 0 ? (
+          {filteredTimesheets.length === 0 ? (
             <div className="text-center py-8">
               <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No time entries yet</h3>
+              <h3 className="text-lg font-semibold mb-2">No time entries for this week</h3>
               <p className="text-muted-foreground mb-4">
-                Start tracking your work hours by creating your first time entry.
+                {timesheets.length === 0 
+                  ? "Start tracking your work hours by creating your first time entry."
+                  : "No entries found for the selected week. Try a different week or add new entries."
+                }
               </p>
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Your First Entry
+                Add Entry
               </Button>
             </div>
           ) : (
@@ -609,7 +684,7 @@ export default function TimesheetManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {timesheets
+                  {filteredTimesheets
                     .sort((a: Timesheet, b: Timesheet) => new Date(b.date).getTime() - new Date(a.date).getTime())
                     .map((timesheet: Timesheet) => (
                       <TableRow key={timesheet.id}>
