@@ -21,6 +21,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 type ListValueFormData = z.infer<typeof insertListValueSchema>;
 
 const listValueFormSchema = insertListValueSchema.extend({
+  listValueType: z.string().min(1, "Type is required"),
   listValueCode: z.string().min(1, "Code is required"),
   listValueDescr: z.string().min(1, "Description is required"),
   order: z.number().min(0, "Order must be non-negative"),
@@ -36,6 +37,7 @@ export default function ListValueManagement() {
   const form = useForm<ListValueFormData>({
     resolver: zodResolver(listValueFormSchema),
     defaultValues: {
+      listValueType: "",
       listValueCode: "",
       listValueDescr: "",
       order: 0,
@@ -44,17 +46,14 @@ export default function ListValueManagement() {
     },
   });
 
-  const { data: listValues = [], isLoading } = useQuery({
+  const { data: listValues = [], isLoading } = useQuery<ListValue[]>({
     queryKey: ["/api/list-values"],
     retry: false,
   });
 
   const createMutation = useMutation({
     mutationFn: async (data: ListValueFormData) => {
-      await apiRequest("/api/list-values", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("/api/list-values", "POST", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/list-values"] });
@@ -87,10 +86,7 @@ export default function ListValueManagement() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: ListValueFormData }) => {
-      await apiRequest(`/api/list-values/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest(`/api/list-values/${id}`, "PUT", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/list-values"] });
@@ -123,9 +119,7 @@ export default function ListValueManagement() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest(`/api/list-values/${id}`, {
-        method: "DELETE",
-      });
+      return await apiRequest(`/api/list-values/${id}`, "DELETE");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/list-values"] });
@@ -165,6 +159,7 @@ export default function ListValueManagement() {
   const handleEdit = (listValue: ListValue) => {
     setEditingListValue(listValue);
     form.reset({
+      listValueType: listValue.listValueType,
       listValueCode: listValue.listValueCode,
       listValueDescr: listValue.listValueDescr,
       order: listValue.order,
@@ -223,6 +218,20 @@ export default function ListValueManagement() {
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="listValueType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>List Value Type</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., PRIORITY, STATUS, CATEGORY" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -353,6 +362,7 @@ export default function ListValueManagement() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Type</TableHead>
                   <TableHead>Code</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Value</TableHead>
@@ -372,6 +382,9 @@ export default function ListValueManagement() {
                   .map((listValue: ListValue) => (
                     <TableRow key={listValue.id}>
                       <TableCell className="font-medium">
+                        {listValue.listValueType}
+                      </TableCell>
+                      <TableCell>
                         {listValue.listValueCode}
                       </TableCell>
                       <TableCell>

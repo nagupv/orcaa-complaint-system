@@ -160,6 +160,7 @@ export const roles = pgTable("roles", {
 // List values table for managing configuration values
 export const listValues = pgTable("list_values", {
   id: serial("id").primaryKey(),
+  listValueType: varchar("list_value_type", { length: 100 }).notNull(),
   listValueCode: varchar("list_value_code", { length: 100 }).notNull(),
   listValueDescr: text("list_value_descr").notNull(),
   order: integer("order").notNull(),
