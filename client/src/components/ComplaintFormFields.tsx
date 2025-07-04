@@ -1,5 +1,4 @@
 import { UseFormReturn } from "react-hook-form";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,6 +14,8 @@ interface ComplaintFormFieldsProps {
 }
 
 export default function ComplaintFormFields({ form }: ComplaintFormFieldsProps) {
+  const { register, setValue, watch, formState: { errors } } = form;
+  
   return (
     <div className="space-y-6">
       {/* Complainant Information */}
@@ -23,122 +24,116 @@ export default function ComplaintFormFields({ form }: ComplaintFormFieldsProps) 
           <CardTitle className="text-lg">Complainant Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <FormField
-            control={form.control}
-            name="isAnonymous"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-medium">
-                  Do you want to remain anonymous as protected by law? <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={(value) => field.onChange(value === "true")}
-                    value={field.value ? "true" : "false"}
-                    className="flex space-x-6"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="true" id="anonymous-yes" />
-                      <Label htmlFor="anonymous-yes">Yes</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="false" id="anonymous-no" />
-                      <Label htmlFor="anonymous-no">No</Label>
-                    </div>
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              Do you want to remain anonymous as protected by law? <span className="text-red-500">*</span>
+            </Label>
+            <RadioGroup
+              onValueChange={(value) => setValue("isAnonymous", value === "true")}
+              value={watch("isAnonymous") ? "true" : "false"}
+              className="flex space-x-6"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="true" id="anonymous-yes" />
+                <Label htmlFor="anonymous-yes">Yes</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="false" id="anonymous-no" />
+                <Label htmlFor="anonymous-no">No</Label>
+              </div>
+            </RadioGroup>
+            {errors.isAnonymous && (
+              <p className="text-sm text-red-500">{String(errors.isAnonymous.message)}</p>
             )}
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="complainantFirstName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>First Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="First Name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="complainantLastName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Last Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Last Name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
 
-          <FormField
-            control={form.control}
-            name="complainantEmail"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Email <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <Input type="email" placeholder="Email" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Conditional fields based on anonymous selection */}
+          {!watch("isAnonymous") && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    {...register("complainantFirstName")}
+                    placeholder="Enter your first name"
+                  />
+                  {errors.complainantFirstName && (
+                    <p className="text-sm text-red-500">{String(errors.complainantFirstName.message)}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    {...register("complainantLastName")}
+                    placeholder="Enter your last name"
+                  />
+                  {errors.complainantLastName && (
+                    <p className="text-sm text-red-500">{String(errors.complainantLastName.message)}</p>
+                  )}
+                </div>
+              </div>
 
-          <FormField
-            control={form.control}
-            name="complainantAddress"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Street Address</FormLabel>
-                <FormControl>
-                  <Input placeholder="Street Address" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  {...register("complainantEmail")}
+                  placeholder="Enter your email address"
+                />
+                {errors.complainantEmail && (
+                  <p className="text-sm text-red-500">{String(errors.complainantEmail.message)}</p>
+                )}
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FormField
-              control={form.control}
-              name="complainantCity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City</FormLabel>
-                  <FormControl>
-                    <Input placeholder="City" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  {...register("complainantPhone")}
+                  placeholder="Enter your phone number"
+                />
+                {errors.complainantPhone && (
+                  <p className="text-sm text-red-500">{String(errors.complainantPhone.message)}</p>
+                )}
+              </div>
 
-            <FormField
-              control={form.control}
-              name="complainantState"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>State</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select state" />
-                      </SelectTrigger>
-                    </FormControl>
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  {...register("complainantAddress")}
+                  placeholder="Enter your street address"
+                />
+                {errors.complainantAddress && (
+                  <p className="text-sm text-red-500">{String(errors.complainantAddress.message)}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="city">City</Label>
+                  <Input
+                    id="city"
+                    {...register("complainantCity")}
+                    placeholder="Enter your city"
+                  />
+                  {errors.complainantCity && (
+                    <p className="text-sm text-red-500">{String(errors.complainantCity.message)}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">State</Label>
+                  <Select
+                    onValueChange={(value) => setValue("complainantState", value)}
+                    value={watch("complainantState")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
                     <SelectContent>
                       {US_STATES.map((state) => (
                         <SelectItem key={state} value={state}>
@@ -147,213 +142,178 @@ export default function ComplaintFormFields({ form }: ComplaintFormFieldsProps) 
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="complainantZipCode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>ZIP Code</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ZIP Code" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <FormField
-            control={form.control}
-            name="complainantPhone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Phone Number</FormLabel>
-                <FormControl>
-                  <Input type="tel" placeholder="Phone Number" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  {errors.complainantState && (
+                    <p className="text-sm text-red-500">{String(errors.complainantState.message)}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="zipCode">ZIP Code</Label>
+                  <Input
+                    id="zipCode"
+                    {...register("complainantZipCode")}
+                    placeholder="Enter ZIP code"
+                  />
+                  {errors.complainantZipCode && (
+                    <p className="text-sm text-red-500">{String(errors.complainantZipCode.message)}</p>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {/* Source Information */}
-      <Card className="bg-gray-50">
+      {/* Emission Source Information */}
+      <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Source Information</CardTitle>
+          <CardTitle className="text-lg">Emission Source Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <FormField
-            control={form.control}
-            name="sourceName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name of source problem?</FormLabel>
-                <FormControl>
-                  <Input placeholder="Name of source problem" {...field} maxLength={50} />
-                </FormControl>
-                <p className="text-xs text-gray-500">{field.value?.length || 0} of 50 max characters</p>
-                <FormMessage />
-              </FormItem>
+          <div className="space-y-2">
+            <Label htmlFor="sourceName">Source Name (if known)</Label>
+            <Input
+              id="sourceName"
+              {...register("sourceName")}
+              placeholder="Name of business, facility, or individual"
+            />
+            {errors.sourceName && (
+              <p className="text-sm text-red-500">{String(errors.sourceName.message)}</p>
             )}
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="sourceAddress"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Street Address</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Street Address" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="sourceCity"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>City</FormLabel>
-                  <FormControl>
-                    <Input placeholder="City" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
 
-          <FormField
-            control={form.control}
-            name="problemTypes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nature of the problem (check all that apply)</FormLabel>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-2">
-                  {PROBLEM_TYPES.map((type) => (
-                    <div key={type.value} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={type.value}
-                        checked={field.value?.includes(type.value)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            field.onChange([...(field.value || []), type.value]);
-                          } else {
-                            field.onChange(field.value?.filter((v: string) => v !== type.value));
-                          }
-                        }}
-                      />
-                      <Label htmlFor={type.value} className="text-sm">
-                        {type.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-                <FormMessage />
-              </FormItem>
+          <div className="space-y-2">
+            <Label htmlFor="sourceAddress">Source Address</Label>
+            <Input
+              id="sourceAddress"
+              {...register("sourceAddress")}
+              placeholder="Address where the emission is occurring"
+            />
+            {errors.sourceAddress && (
+              <p className="text-sm text-red-500">{String(errors.sourceAddress.message)}</p>
             )}
-          />
+          </div>
 
-          <FormField
-            control={form.control}
-            name="otherDescription"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Other description</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Please provide additional details..."
-                    rows={3}
-                    {...field}
+          <div className="space-y-2">
+            <Label htmlFor="sourceCity">Source City</Label>
+            <Input
+              id="sourceCity"
+              {...register("sourceCity")}
+              placeholder="City where the emission is occurring"
+            />
+            {errors.sourceCity && (
+              <p className="text-sm text-red-500">{String(errors.sourceCity.message)}</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Problem Type */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Problem Type</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              What type of problem are you reporting? (Check all that apply) <span className="text-red-500">*</span>
+            </Label>
+            <div className="grid grid-cols-2 gap-4">
+              {PROBLEM_TYPES.map((type) => (
+                <div key={type.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={type.value}
+                    checked={watch("problemTypes")?.includes(type.value)}
+                    onCheckedChange={(checked) => {
+                      const currentTypes = watch("problemTypes") || [];
+                      if (checked) {
+                        setValue("problemTypes", [...currentTypes, type.value]);
+                      } else {
+                        setValue("problemTypes", currentTypes.filter((t: string) => t !== type.value));
+                      }
+                    }}
                   />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+                  <Label htmlFor={type.value} className="text-sm">
+                    {type.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            {errors.problemTypes && (
+              <p className="text-sm text-red-500">{String(errors.problemTypes.message)}</p>
             )}
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="lastOccurred"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>When did the problem last occur?</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="date"
-                      {...field}
-                      value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
-                      onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="lastOccurredTime"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>What time?</FormLabel>
-                  <FormControl>
-                    <Input type="time" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
 
-          <FormField
-            control={form.control}
-            name="previousContact"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Have you previously contacted us about this matter?</FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={(value) => field.onChange(value === "true")}
-                    value={field.value ? "true" : "false"}
-                    className="flex space-x-6"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="true" id="previous-yes" />
-                      <Label htmlFor="previous-yes">Yes</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="false" id="previous-no" />
-                      <Label htmlFor="previous-no">No</Label>
-                    </div>
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
+          <div className="space-y-2">
+            <Label htmlFor="otherDescription">Problem Description</Label>
+            <Textarea
+              id="otherDescription"
+              {...register("otherDescription")}
+              placeholder="Please describe the air quality issue in detail..."
+              rows={4}
+            />
+            {errors.otherDescription && (
+              <p className="text-sm text-red-500">{String(errors.otherDescription.message)}</p>
             )}
-          />
+          </div>
+        </CardContent>
+      </Card>
 
-          <div>
-            <FormLabel>Upload a picture or video of the suspected complaint?</FormLabel>
-            <FileUpload />
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mt-2">
-              <p className="text-xs text-yellow-800">
-                <strong>WARNING:</strong> Photographs submitted will be subject to disclosure under the Public Records Act and legal discovery rules. 
-                Such disclosure may affect the anonymity of persons submitting the photograph or depicted therein.
-              </p>
-            </div>
+      {/* Additional Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Additional Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="previousContact"
+              checked={watch("previousContact")}
+              onCheckedChange={(checked) => setValue("previousContact", checked)}
+            />
+            <Label htmlFor="previousContact" className="text-sm">
+              I have previously contacted ORCAA about this issue
+            </Label>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Priority Level</Label>
+            <RadioGroup
+              onValueChange={(value) => setValue("priority", value)}
+              value={watch("priority")}
+              className="flex space-x-6"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="low" id="priority-low" />
+                <Label htmlFor="priority-low">Low</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="normal" id="priority-normal" />
+                <Label htmlFor="priority-normal">Normal</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="high" id="priority-high" />
+                <Label htmlFor="priority-high">High</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="urgent" id="priority-urgent" />
+                <Label htmlFor="priority-urgent">Urgent</Label>
+              </div>
+            </RadioGroup>
+            {errors.priority && (
+              <p className="text-sm text-red-500">{String(errors.priority.message)}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">File Attachments (Optional)</Label>
+            <FileUpload
+              onFileSelect={(files) => setValue("attachments", files)}
+              maxSize={14}
+              acceptedTypes={[".jpg", ".jpeg", ".png", ".gif", ".mp4", ".mov", ".avi", ".pdf", ".doc", ".docx"]}
+            />
+            <p className="text-xs text-gray-500">
+              Upload photos, videos, or documents related to your complaint. Maximum 14MB per file.
+            </p>
           </div>
         </CardContent>
       </Card>
