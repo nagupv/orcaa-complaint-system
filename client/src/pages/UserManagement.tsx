@@ -28,13 +28,26 @@ const createUserSchema = z.object({
   enableWhatsappNotifications: z.boolean().default(true),
 });
 
+const updateUserSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  roles: z.array(z.string()).min(1, "At least one role is required"),
+  phone: z.string().nullable().optional(),
+  mobileNumber: z.string().nullable().optional(),
+  whatsappNumber: z.string().nullable().optional(),
+  enableSmsNotifications: z.boolean().default(true),
+  enableWhatsappNotifications: z.boolean().default(true),
+});
+
 type CreateUserData = z.infer<typeof createUserSchema>;
+type UpdateUserData = z.infer<typeof updateUserSchema>;
 
 export default function UserManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [editingUser, setEditingUser] = useState<string | null>(null);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editRoles, setEditRoles] = useState<string[]>([]);
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
 
   const form = useForm<CreateUserData>({
     resolver: zodResolver(createUserSchema),
