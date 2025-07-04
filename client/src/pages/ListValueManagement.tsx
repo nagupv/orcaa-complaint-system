@@ -59,7 +59,7 @@ export default function ListValueManagement() {
     mutationFn: async (data: ListValueFormData) => {
       console.log('Mutation: Making API request with data:', data);
       try {
-        const result = await apiRequest("/api/list-values", "POST", data);
+        const result = await apiRequest("POST", "/api/list-values", data);
         console.log('Mutation: API request successful, result:', result);
         return result;
       } catch (error) {
@@ -100,7 +100,7 @@ export default function ListValueManagement() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: ListValueFormData }) => {
-      return await apiRequest(`/api/list-values/${id}`, "PUT", data);
+      return await apiRequest("PUT", `/api/list-values/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/list-values"] });
@@ -133,7 +133,7 @@ export default function ListValueManagement() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest(`/api/list-values/${id}`, "DELETE");
+      return await apiRequest("DELETE", `/api/list-values/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/list-values"] });
