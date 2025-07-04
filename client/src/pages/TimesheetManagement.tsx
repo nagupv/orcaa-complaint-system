@@ -812,24 +812,7 @@ export default function TimesheetManagement() {
         </Card>
       </div>
 
-      {/* User Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Current User
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <div>
-              <p className="font-medium">{user?.firstName} {user?.lastName}</p>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-            </div>
-            <Badge variant="outline">Active</Badge>
-          </div>
-        </CardContent>
-      </Card>
+
 
       {/* Timesheet Entries */}
       <Card>
