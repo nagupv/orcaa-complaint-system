@@ -569,114 +569,97 @@ export default function UserManagement() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p>Loading users...</p>
-          ) : (
             <div className="space-y-4">
-              {users?.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <h3 className="font-semibold">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-16 bg-gray-100 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b bg-gray-50">
+                    <th className="text-left p-3 font-semibold">Name</th>
+                    <th className="text-left p-3 font-semibold">Email</th>
+                    <th className="text-left p-3 font-semibold">Contact Details</th>
+                    <th className="text-left p-3 font-semibold">Roles</th>
+                    <th className="text-left p-3 font-semibold">Notifications</th>
+                    <th className="text-left p-3 font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users?.map((user) => (
+                    <tr key={user.id} className="border-b hover:bg-gray-50">
+                      <td className="p-3">
+                        <div className="font-medium">
                           {user.firstName} {user.lastName}
-                        </h3>
-                        <p className="text-sm text-gray-600">{user.email}</p>
-                        {user.phone && (
-                          <p className="text-sm text-gray-600">Phone: {user.phone}</p>
-                        )}
-                        {user.mobileNumber && (
-                          <p className="text-sm text-gray-600">Mobile: {user.mobileNumber}</p>
-                        )}
-                        {user.whatsappNumber && (
-                          <p className="text-sm text-gray-600">WhatsApp: {user.whatsappNumber}</p>
-                        )}
-                        <div className="flex gap-2 mt-1">
-                          {user.enableSmsNotifications && (
-                            <Badge variant="secondary" className="text-xs">SMS</Badge>
-                          )}
-                          {user.enableWhatsappNotifications && (
-                            <Badge variant="secondary" className="text-xs">WhatsApp</Badge>
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="text-sm">{user.email}</div>
+                      </td>
+                      <td className="p-3">
+                        <div className="text-sm space-y-1">
+                          {user.phone && <div>Phone: {user.phone}</div>}
+                          {user.mobileNumber && <div>Mobile: {user.mobileNumber}</div>}
+                          {user.whatsappNumber && <div>WhatsApp: {user.whatsappNumber}</div>}
+                          {!user.phone && !user.mobileNumber && !user.whatsappNumber && (
+                            <div className="text-gray-400">No contact info</div>
                           )}
                         </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {editingUser === user.id ? (
-                          <div className="flex flex-col gap-2">
-                            <div className="flex flex-wrap gap-2">
-                              {USER_ROLES.map((role) => (
-                                <div key={role.value} className="flex items-center space-x-1">
-                                  <Checkbox
-                                    id={`edit-${role.value}`}
-                                    checked={editRoles.includes(role.value)}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        setEditRoles([...editRoles, role.value]);
-                                      } else {
-                                        setEditRoles(editRoles.filter((r) => r !== role.value));
-                                      }
-                                    }}
-                                  />
-                                  <Label htmlFor={`edit-${role.value}`} className="text-xs">
-                                    {role.label}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
-                            <Button
-                              size="sm"
-                              onClick={() => handleSaveRole(user.id)}
-                              disabled={updateRolesMutation.isPending}
-                            >
-                              <Save className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={handleCancelEdit}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {(typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles).map((role: string) => (
-                              <Badge key={role} className={getRoleBadgeColor(role)}>
-                                {USER_ROLES.find(r => r.value === role)?.label || role}
-                              </Badge>
-                            ))}
-                            <div className="flex gap-1">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEditUser(user)}
-                                title="Edit User Details"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDeleteUser(user.id)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                title="Delete User"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                      </td>
+                      <td className="p-3">
+                        <div className="flex flex-wrap gap-1">
+                          {(typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles).map((role: string) => (
+                            <Badge key={role} className={getRoleBadgeColor(role)} variant="secondary">
+                              {USER_ROLES.find(r => r.value === role)?.label || role}
+                            </Badge>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex flex-wrap gap-1">
+                          {user.enableSmsNotifications && (
+                            <Badge variant="outline" className="text-xs">SMS</Badge>
+                          )}
+                          {user.enableWhatsappNotifications && (
+                            <Badge variant="outline" className="text-xs">WhatsApp</Badge>
+                          )}
+                          {!user.enableSmsNotifications && !user.enableWhatsappNotifications && (
+                            <span className="text-gray-400 text-xs">None</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditUser(user)}
+                            title="Edit User Details"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Delete User"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
               
               {users?.length === 0 && (
-                <p className="text-gray-600 text-center py-8">No users found.</p>
+                <div className="text-center py-8">
+                  <p className="text-gray-600">No users found.</p>
+                </div>
               )}
             </div>
           )}
