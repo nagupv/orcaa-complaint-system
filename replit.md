@@ -108,6 +108,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Removed Public Complaint Form for Signed-in Users** (July 04, 2025): Eliminated public complaint form access from authenticated dashboard, ensuring staff only see internal management tools
 - **ORCAA Logo Integration** (July 04, 2025): Downloaded and integrated official ORCAA logo from orcaa.org website into application header and landing page for authentic branding
 - **User Management Table Layout** (July 04, 2025): Converted user display from card-based layout to clean tabular format with organized columns for Name, Email, Contact Details, Roles, Notifications, and Actions
 - **Complete User CRUD Operations** (July 04, 2025): Implemented full user management with update and delete functionality, including main screen editing form for all fields except email, role-based permissions, and comprehensive audit trail logging
