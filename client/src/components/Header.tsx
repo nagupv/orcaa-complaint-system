@@ -107,27 +107,7 @@ export default function Header() {
         )}
       </div>
 
-      {/* Hero Banner */}
-      <div className="relative bg-gradient-to-r from-blue-600 to-green-600 text-white">
-        <div className="absolute inset-0 bg-black opacity-30"></div>
-        <div 
-          className="relative bg-cover bg-center h-48 flex items-center"
-          style={{
-            backgroundImage: "url('data:image/svg+xml,%3Csvg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 1200 400\"%3E%3Cpath d=\"M0,200 Q300,100 600,200 T1200,200 L1200,400 L0,400 Z\" fill=\"%23ffffff\" opacity=\"0.1\"/%3E%3C/svg%3E')"
-          }}
-        >
-          <div className="container mx-auto px-4">
-            <div className="max-w-2xl">
-              <h2 className="text-3xl md:text-4xl font-bold mb-2">
-                Protecting Air Quality
-              </h2>
-              <p className="text-xl opacity-90">
-                Serving Clallam, Grays Harbor, Jefferson, Mason, Pacific, and Thurston Counties
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+
     </header>
   );
 }
