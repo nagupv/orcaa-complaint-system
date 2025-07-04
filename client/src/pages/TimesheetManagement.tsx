@@ -45,7 +45,7 @@ export default function TimesheetManagement() {
       date: today,
       activity: "",
       comments: "",
-      businessWorkId: "",
+      businessWorkId: "none",
       timeInHours: 8,
     },
   });
@@ -87,7 +87,7 @@ export default function TimesheetManagement() {
         date: today,
         activity: "",
         comments: "",
-        businessWorkId: "",
+        businessWorkId: "none",
         timeInHours: 8,
       });
     },
@@ -131,7 +131,7 @@ export default function TimesheetManagement() {
         date: today,
         activity: "",
         comments: "",
-        businessWorkId: "",
+        businessWorkId: "none",
         timeInHours: 8,
       });
     },
@@ -188,10 +188,16 @@ export default function TimesheetManagement() {
   });
 
   const onSubmit = (data: TimesheetFormData) => {
+    // Convert "none" back to empty string for database storage
+    const processedData = {
+      ...data,
+      businessWorkId: data.businessWorkId === "none" ? "" : data.businessWorkId,
+    };
+    
     if (editingTimesheet) {
-      updateMutation.mutate({ id: editingTimesheet.id, data });
+      updateMutation.mutate({ id: editingTimesheet.id, data: processedData });
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(processedData);
     }
   };
 
@@ -201,7 +207,7 @@ export default function TimesheetManagement() {
       date: timesheet.date,
       activity: timesheet.activity,
       comments: timesheet.comments || "",
-      businessWorkId: timesheet.businessWorkId || "",
+      businessWorkId: timesheet.businessWorkId || "none",
       timeInHours: parseFloat(timesheet.timeInHours),
     });
     setIsCreateDialogOpen(true);
@@ -257,7 +263,7 @@ export default function TimesheetManagement() {
                 date: today,
                 activity: "",
                 comments: "",
-                businessWorkId: "",
+                businessWorkId: "none",
                 timeInHours: 8,
               });
             }}>
@@ -351,7 +357,7 @@ export default function TimesheetManagement() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">None (optional)</SelectItem>
+                          <SelectItem value="none">None (optional)</SelectItem>
                           {validComplaintIds.map((complaintId: string) => (
                             <SelectItem key={complaintId} value={complaintId}>
                               {complaintId}
