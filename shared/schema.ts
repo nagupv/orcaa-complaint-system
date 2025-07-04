@@ -9,6 +9,7 @@ import {
   boolean,
   integer,
   decimal,
+  date,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
@@ -170,6 +171,19 @@ export const listValues = pgTable("list_values", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Timesheets table for tracking user work hours
+export const timesheets = pgTable("timesheets", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(),
+  date: date("date").notNull(),
+  activity: varchar("activity", { length: 100 }).notNull(),
+  comments: text("comments"),
+  businessWorkId: varchar("business_work_id", { length: 50 }),
+  timeInHours: decimal("time_in_hours", { precision: 4, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const complaintsRelations = relations(complaints, ({ one, many }) => ({
   assignedUser: one(users, {
@@ -185,6 +199,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   assignedComplaints: many(complaints),
   workDescriptions: many(workDescriptions),
   auditEntries: many(auditTrail),
+  timesheets: many(timesheets),
 }));
 
 export const attachmentsRelations = relations(attachments, ({ one }) => ({
@@ -224,6 +239,13 @@ export const listValuesRelations = relations(listValues, ({ }) => ({
   // No direct relations for now
 }));
 
+export const timesheetsRelations = relations(timesheets, ({ one }) => ({
+  user: one(users, {
+    fields: [timesheets.userId],
+    references: [users.id],
+  }),
+}));
+
 // Zod schemas
 export const insertComplaintSchema = createInsertSchema(complaints).omit({
   id: true,
@@ -259,6 +281,12 @@ export const insertListValueSchema = createInsertSchema(listValues).omit({
   updatedAt: true,
 });
 
+export const insertTimesheetSchema = createInsertSchema(timesheets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -275,3 +303,5 @@ export type Role = typeof roles.$inferSelect;
 export type InsertRole = z.infer<typeof insertRoleSchema>;
 export type ListValue = typeof listValues.$inferSelect;
 export type InsertListValue = z.infer<typeof insertListValueSchema>;
+export type Timesheet = typeof timesheets.$inferSelect;
+export type InsertTimesheet = z.infer<typeof insertTimesheetSchema>;

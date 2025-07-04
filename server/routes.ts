@@ -765,6 +765,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Timesheet routes
+  app.get('/api/timesheets', isAuthenticated, async (req, res) => {
+    try {
+      const { userId, dateFrom, dateTo } = req.query;
+      const timesheets = await storage.getTimesheets(
+        userId as string,
+        dateFrom ? new Date(dateFrom as string) : undefined,
+        dateTo ? new Date(dateTo as string) : undefined
+      );
+      res.json(timesheets);
+    } catch (error) {
+      console.error('Error fetching timesheets:', error);
+      res.status(500).json({ error: 'Failed to fetch timesheets' });
+    }
+  });
+
+  app.post('/api/timesheets', isAuthenticated, async (req, res) => {
+    try {
+      const timesheet = await storage.createTimesheet(req.body);
+      res.json(timesheet);
+    } catch (error) {
+      console.error('Error creating timesheet:', error);
+      res.status(500).json({ error: 'Failed to create timesheet' });
+    }
+  });
+
+  app.put('/api/timesheets/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const timesheet = await storage.updateTimesheet(id, req.body);
+      res.json(timesheet);
+    } catch (error) {
+      console.error('Error updating timesheet:', error);
+      res.status(500).json({ error: 'Failed to update timesheet' });
+    }
+  });
+
+  app.delete('/api/timesheets/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteTimesheet(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting timesheet:', error);
+      res.status(500).json({ error: 'Failed to delete timesheet' });
+    }
+  });
+
+  app.get('/api/timesheet-activities', isAuthenticated, async (req, res) => {
+    try {
+      const activities = await storage.getTimesheetActivities();
+      res.json(activities);
+    } catch (error) {
+      console.error('Error fetching timesheet activities:', error);
+      res.status(500).json({ error: 'Failed to fetch timesheet activities' });
+    }
+  });
+
   // Serve uploaded files
   app.use('/uploads', express.static('./uploads'));
 

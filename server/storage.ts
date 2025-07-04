@@ -7,6 +7,7 @@ import {
   auditTrail,
   roles,
   listValues,
+  timesheets,
   type User,
   type UpsertUser,
   type Complaint,
@@ -22,6 +23,8 @@ import {
   type InsertRole,
   type ListValue,
   type InsertListValue,
+  type Timesheet,
+  type InsertTimesheet,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, gte, lte, isNull, sql } from "drizzle-orm";
@@ -99,6 +102,14 @@ export interface IStorage {
     inProgress: number;
     resolved: number;
   }>>;
+  
+  // Timesheet operations
+  getTimesheets(userId?: string, dateFrom?: Date, dateTo?: Date): Promise<Timesheet[]>;
+  createTimesheet(timesheet: InsertTimesheet): Promise<Timesheet>;
+  updateTimesheet(id: number, updates: Partial<Timesheet>): Promise<Timesheet>;
+  deleteTimesheet(id: number): Promise<void>;
+  getTimesheetById(id: number): Promise<Timesheet | undefined>;
+  getTimesheetActivities(): Promise<string[]>;
   
   // Helper methods
   generateComplaintId(serviceType?: string): Promise<string>;
@@ -499,6 +510,67 @@ export class DatabaseStorage implements IStorage {
     }
     
     return yearlyStats;
+  }
+
+  // Timesheet operations
+  async getTimesheets(userId?: string, dateFrom?: Date, dateTo?: Date): Promise<Timesheet[]> {
+    let query = db.select().from(timesheets);
+    
+    const conditions = [];
+    if (userId) {
+      conditions.push(eq(timesheets.userId, userId));
+    }
+    if (dateFrom) {
+      conditions.push(gte(timesheets.date, dateFrom.toISOString().split('T')[0]));
+    }
+    if (dateTo) {
+      conditions.push(lte(timesheets.date, dateTo.toISOString().split('T')[0]));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    return await query.orderBy(desc(timesheets.date), desc(timesheets.createdAt));
+  }
+
+  async createTimesheet(timesheet: InsertTimesheet): Promise<Timesheet> {
+    const [newTimesheet] = await db
+      .insert(timesheets)
+      .values(timesheet)
+      .returning();
+    return newTimesheet;
+  }
+
+  async updateTimesheet(id: number, updates: Partial<Timesheet>): Promise<Timesheet> {
+    const [updatedTimesheet] = await db
+      .update(timesheets)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(timesheets.id, id))
+      .returning();
+    return updatedTimesheet;
+  }
+
+  async deleteTimesheet(id: number): Promise<void> {
+    await db.delete(timesheets).where(eq(timesheets.id, id));
+  }
+
+  async getTimesheetById(id: number): Promise<Timesheet | undefined> {
+    const [timesheet] = await db.select().from(timesheets).where(eq(timesheets.id, id));
+    return timesheet;
+  }
+
+  async getTimesheetActivities(): Promise<string[]> {
+    const activities = await db
+      .select({ activity: listValues.listValue })
+      .from(listValues)
+      .where(and(
+        eq(listValues.listValueType, 'TIMESHEET_ACTIVITY'),
+        eq(listValues.isActive, true)
+      ))
+      .orderBy(listValues.order);
+    
+    return activities.map(a => a.activity);
   }
 
   // Helper methods
