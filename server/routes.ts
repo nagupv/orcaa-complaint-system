@@ -384,6 +384,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         enableSmsNotifications, 
         enableWhatsappNotifications 
       } = req.body;
+
+      // Validate required fields
+      if (!email || !firstName || !lastName || !roles || !Array.isArray(roles) || roles.length === 0) {
+        return res.status(400).json({ 
+          message: "Missing required fields: email, firstName, lastName, and roles are required" 
+        });
+      }
+
+      console.log("Creating user with data:", {
+        email, firstName, lastName, roles, phone, mobileNumber, whatsappNumber, 
+        enableSmsNotifications, enableWhatsappNotifications
+      });
       
       // Generate a temporary user ID (this would normally be handled by the auth provider)
       const userId = `temp_${Date.now()}`;

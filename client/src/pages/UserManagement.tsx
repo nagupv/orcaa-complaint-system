@@ -85,9 +85,12 @@ export default function UserManagement() {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
     },
     onError: (error: Error) => {
+      console.error("Full error object:", error);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
       toast({
         title: "Failed to Create User",
-        description: error.message,
+        description: `Error: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -118,6 +121,20 @@ export default function UserManagement() {
 
   const onSubmit = (data: CreateUserData) => {
     console.log("Form data being submitted:", data);
+    console.log("Form errors:", form.formState.errors);
+    console.log("Form is valid:", form.formState.isValid);
+    
+    // Check if form is valid before submitting
+    if (!form.formState.isValid) {
+      console.error("Form validation failed:", form.formState.errors);
+      toast({
+        title: "Form Validation Error",
+        description: "Please check all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     createUserMutation.mutate(data);
   };
 
@@ -245,10 +262,15 @@ export default function UserManagement() {
                         checked={form.watch("roles")?.includes(role.value)}
                         onCheckedChange={(checked) => {
                           const currentRoles = form.watch("roles") || [];
+                          console.log(`Role ${role.value} ${checked ? 'checked' : 'unchecked'}, current roles:`, currentRoles);
                           if (checked) {
-                            form.setValue("roles", [...currentRoles, role.value]);
+                            const newRoles = [...currentRoles, role.value];
+                            form.setValue("roles", newRoles);
+                            console.log("New roles after adding:", newRoles);
                           } else {
-                            form.setValue("roles", currentRoles.filter((r) => r !== role.value));
+                            const newRoles = currentRoles.filter((r) => r !== role.value);
+                            form.setValue("roles", newRoles);
+                            console.log("New roles after removing:", newRoles);
                           }
                         }}
                       />
