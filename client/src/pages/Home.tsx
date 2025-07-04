@@ -20,21 +20,21 @@ export default function Home() {
     <div className="bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className={`grid w-full grid-cols-${tabCount}`}>
-            <TabsTrigger value="public-form" className="data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
+          <TabsList className="flex w-full flex-wrap gap-1">
+            <TabsTrigger value="public-form" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
               Public Complaint Form
             </TabsTrigger>
-            <TabsTrigger value="dashboard" className="data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
+            <TabsTrigger value="dashboard" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="workflow" className="data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
+            <TabsTrigger value="workflow" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
               Workflow Management
             </TabsTrigger>
-            <TabsTrigger value="audit" className="data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
+            <TabsTrigger value="audit" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
               Audit Trail
             </TabsTrigger>
             {hasUserManagementAccess && (
-              <TabsTrigger value="users" className="data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
+              <TabsTrigger value="users" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
                 User Management
               </TabsTrigger>
             )}
