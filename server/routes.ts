@@ -357,11 +357,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/users/:id/role', isAuthenticated, async (req, res) => {
+  app.post('/api/users', isAuthenticated, async (req: any, res) => {
     try {
+      // Check if user has admin role
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (!currentUser || currentUser.role !== 'admin') {
+        return res.status(403).json({ message: "Only admins can create users" });
+      }
+
+      const { email, firstName, lastName, role, phone } = req.body;
+      
+      // Generate a temporary user ID (this would normally be handled by the auth provider)
+      const userId = `temp_${Date.now()}`;
+      
+      const newUser = await storage.upsertUser({
+        id: userId,
+        email,
+        firstName,
+        lastName,
+        role,
+        phone,
+        isActive: true,
+      });
+
+      // Create audit entry for user creation
+      await storage.createAuditEntry({
+        action: 'user_created',
+        newValue: `${firstName} ${lastName} (${email}) - ${role}`,
+        userId: req.user.claims.sub,
+        reason: `New user account created: ${email} with role ${role}`
+      });
+
+      res.json(newUser);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
+    }
+  });
+
+  app.put('/api/users/:id/role', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user has admin role
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (!currentUser || currentUser.role !== 'admin') {
+        return res.status(403).json({ message: "Only admins can update user roles" });
+      }
+
       const userId = req.params.id;
       const { role } = req.body;
+      
+      // Get the user being updated for audit trail
+      const userToUpdate = await storage.getUser(userId);
+      if (!userToUpdate) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
       const updatedUser = await storage.updateUserRole(userId, role);
+      
+      // Create audit entry for role change
+      await storage.createAuditEntry({
+        action: 'role_changed',
+        previousValue: userToUpdate.role,
+        newValue: role,
+        userId: req.user.claims.sub,
+        reason: `User ${userToUpdate.email} role changed from ${userToUpdate.role} to ${role}`
+      });
+
       res.json(updatedUser);
     } catch (error) {
       console.error("Error updating user role:", error);
