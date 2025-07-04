@@ -533,8 +533,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const createdRoles = [];
       for (const role of defaultRoles) {
-        const createdRole = await storage.createRole(role);
-        createdRoles.push(createdRole);
+        console.log('Creating role:', role);
+        try {
+          const createdRole = await storage.createRole(role);
+          console.log('Created role successfully:', createdRole);
+          createdRoles.push(createdRole);
+        } catch (error) {
+          console.error('Error creating individual role:', error);
+          throw error;
+        }
       }
 
       res.json({ message: 'Default roles created successfully', roles: createdRoles });
