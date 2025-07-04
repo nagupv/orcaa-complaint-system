@@ -1,0 +1,205 @@
+import {
+  pgTable,
+  text,
+  varchar,
+  timestamp,
+  jsonb,
+  index,
+  serial,
+  boolean,
+  integer,
+  decimal,
+} from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+// Session storage table - mandatory for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table - mandatory for Replit Auth
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  role: varchar("role").notNull().default("field_staff"), // field_staff, contract_staff, supervisor, approver, admin
+  phone: varchar("phone"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Complaints table
+export const complaints = pgTable("complaints", {
+  id: serial("id").primaryKey(),
+  complaintId: varchar("complaint_id").notNull().unique(), // Auto-generated like AQ-2024-001
+  complaintType: varchar("complaint_type").notNull().default("AIR_QUALITY"),
+  
+  // Complainant Information
+  isAnonymous: boolean("is_anonymous").default(false),
+  complainantFirstName: varchar("complainant_first_name"),
+  complainantLastName: varchar("complainant_last_name"),
+  complainantEmail: varchar("complainant_email").notNull(),
+  complainantAddress: text("complainant_address"),
+  complainantCity: varchar("complainant_city"),
+  complainantState: varchar("complainant_state"),
+  complainantZipCode: varchar("complainant_zip_code"),
+  complainantPhone: varchar("complainant_phone"),
+  
+  // Source Information
+  sourceName: varchar("source_name", { length: 50 }),
+  sourceAddress: text("source_address"),
+  sourceCity: varchar("source_city"),
+  problemTypes: jsonb("problem_types"), // Array of strings: smoke, industrial, odor, etc.
+  otherDescription: text("other_description"),
+  lastOccurred: timestamp("last_occurred"),
+  previousContact: boolean("previous_contact").default(false),
+  
+  // Workflow and Status
+  status: varchar("status").notNull().default("initiated"), // initiated, inspection, work_in_progress, work_completed, reviewed, approved, closed
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  priority: varchar("priority").default("normal"), // low, normal, high, urgent
+  
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// File attachments table
+export const attachments = pgTable("attachments", {
+  id: serial("id").primaryKey(),
+  complaintId: integer("complaint_id").references(() => complaints.id, { onDelete: "cascade" }),
+  filename: varchar("filename").notNull(),
+  originalName: varchar("original_name").notNull(),
+  mimeType: varchar("mime_type").notNull(),
+  size: integer("size").notNull(),
+  url: text("url").notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+});
+
+// Workflow stages configuration
+export const workflowStages = pgTable("workflow_stages", {
+  id: serial("id").primaryKey(),
+  name: varchar("name").notNull(), // initiated, inspection, etc.
+  displayName: varchar("display_name").notNull(),
+  assignedRole: varchar("assigned_role").notNull(),
+  nextStage: varchar("next_stage"),
+  order: integer("order").notNull(),
+  smsNotification: boolean("sms_notification").default(true),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Work descriptions and updates
+export const workDescriptions = pgTable("work_descriptions", {
+  id: serial("id").primaryKey(),
+  complaintId: integer("complaint_id").references(() => complaints.id, { onDelete: "cascade" }),
+  description: text("description").notNull(),
+  userId: varchar("user_id").references(() => users.id),
+  status: varchar("status").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Audit trail table
+export const auditTrail = pgTable("audit_trail", {
+  id: serial("id").primaryKey(),
+  complaintId: integer("complaint_id").references(() => complaints.id, { onDelete: "cascade" }),
+  action: varchar("action").notNull(), // created, status_changed, assigned, updated, closed
+  previousValue: text("previous_value"),
+  newValue: text("new_value"),
+  userId: varchar("user_id").references(() => users.id),
+  reason: text("reason"),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
+// Relations
+export const complaintsRelations = relations(complaints, ({ one, many }) => ({
+  assignedUser: one(users, {
+    fields: [complaints.assignedTo],
+    references: [users.id],
+  }),
+  attachments: many(attachments),
+  workDescriptions: many(workDescriptions),
+  auditEntries: many(auditTrail),
+}));
+
+export const usersRelations = relations(users, ({ many }) => ({
+  assignedComplaints: many(complaints),
+  workDescriptions: many(workDescriptions),
+  auditEntries: many(auditTrail),
+}));
+
+export const attachmentsRelations = relations(attachments, ({ one }) => ({
+  complaint: one(complaints, {
+    fields: [attachments.complaintId],
+    references: [complaints.id],
+  }),
+}));
+
+export const workDescriptionsRelations = relations(workDescriptions, ({ one }) => ({
+  complaint: one(complaints, {
+    fields: [workDescriptions.complaintId],
+    references: [complaints.id],
+  }),
+  user: one(users, {
+    fields: [workDescriptions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const auditTrailRelations = relations(auditTrail, ({ one }) => ({
+  complaint: one(complaints, {
+    fields: [auditTrail.complaintId],
+    references: [complaints.id],
+  }),
+  user: one(users, {
+    fields: [auditTrail.userId],
+    references: [users.id],
+  }),
+}));
+
+// Zod schemas
+export const insertComplaintSchema = createInsertSchema(complaints).omit({
+  id: true,
+  complaintId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWorkDescriptionSchema = createInsertSchema(workDescriptions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAuditSchema = createInsertSchema(auditTrail).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertWorkflowStageSchema = createInsertSchema(workflowStages).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types
+export type UpsertUser = typeof users.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type Complaint = typeof complaints.$inferSelect;
+export type InsertComplaint = z.infer<typeof insertComplaintSchema>;
+export type Attachment = typeof attachments.$inferSelect;
+export type WorkflowStage = typeof workflowStages.$inferSelect;
+export type InsertWorkflowStage = z.infer<typeof insertWorkflowStageSchema>;
+export type WorkDescription = typeof workDescriptions.$inferSelect;
+export type InsertWorkDescription = z.infer<typeof insertWorkDescriptionSchema>;
+export type AuditEntry = typeof auditTrail.$inferSelect;
+export type InsertAuditEntry = z.infer<typeof insertAuditSchema>;
