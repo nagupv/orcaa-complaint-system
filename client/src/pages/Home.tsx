@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Navigation from "@/components/Navigation";
 import ComplaintForm from "@/pages/ComplaintForm";
 import Dashboard from "@/pages/Dashboard";
 import WorkflowManagement from "@/pages/WorkflowManagement";
@@ -12,13 +11,11 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("public-form");
   const { user } = useAuth();
   
-  const isAdmin = (user as any)?.role === 'admin';
+  const isAdmin = user?.roles && (typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles).includes('admin');
   const tabCount = isAdmin ? 5 : 4;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      
+    <div className="bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className={`grid w-full grid-cols-${tabCount}`}>
