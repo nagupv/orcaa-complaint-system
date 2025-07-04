@@ -66,7 +66,15 @@ export default function UserManagement() {
   // Create user mutation
   const createUserMutation = useMutation({
     mutationFn: async (data: CreateUserData) => {
-      return await apiRequest("/api/users", "POST", data);
+      console.log("Attempting to create user with data:", data);
+      try {
+        const result = await apiRequest("/api/users", "POST", data);
+        console.log("User creation successful:", result);
+        return result;
+      } catch (error) {
+        console.error("User creation failed:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       toast({
@@ -109,6 +117,7 @@ export default function UserManagement() {
   });
 
   const onSubmit = (data: CreateUserData) => {
+    console.log("Form data being submitted:", data);
     createUserMutation.mutate(data);
   };
 

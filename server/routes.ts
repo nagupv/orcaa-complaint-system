@@ -362,14 +362,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/users', isAuthenticated, async (req: any, res) => {
     try {
-      // Check if user has admin role
+      // Check if user has admin, supervisor, or approver role
       const currentUser = await storage.getUser(req.user.claims.sub);
       if (!currentUser) {
         return res.status(401).json({ message: "User not found" });
       }
       const userRoles = typeof currentUser.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser.roles;
-      if (!userRoles.includes('admin')) {
-        return res.status(403).json({ message: "Only admins can create users" });
+      const hasPermission = userRoles.some((role: string) => ['admin', 'supervisor', 'approver'].includes(role));
+      if (!hasPermission) {
+        return res.status(403).json({ message: "Only admins, supervisors, or approvers can create users" });
       }
 
       const { 
@@ -412,7 +413,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(newUser);
     } catch (error) {
       console.error("Error creating user:", error);
-      res.status(500).json({ message: "Failed to create user" });
+      console.error("Request body:", req.body);
+      res.status(500).json({ 
+        message: "Failed to create user", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
 
