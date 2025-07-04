@@ -21,9 +21,9 @@ const createUserSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   roles: z.array(z.string()).min(1, "At least one role is required"),
-  phone: z.string().transform(val => val === "" ? undefined : val).optional(),
-  mobileNumber: z.string().transform(val => val === "" ? undefined : val).optional(),
-  whatsappNumber: z.string().transform(val => val === "" ? undefined : val).optional(),
+  phone: z.string().nullable().optional(),
+  mobileNumber: z.string().nullable().optional(),
+  whatsappNumber: z.string().nullable().optional(),
   enableSmsNotifications: z.boolean().default(true),
   enableWhatsappNotifications: z.boolean().default(true),
 });
@@ -123,17 +123,6 @@ export default function UserManagement() {
     console.log("Form data being submitted:", data);
     console.log("Form errors:", form.formState.errors);
     console.log("Form is valid:", form.formState.isValid);
-    
-    // Check if form is valid before submitting
-    if (!form.formState.isValid) {
-      console.error("Form validation failed:", form.formState.errors);
-      toast({
-        title: "Form Validation Error",
-        description: "Please check all required fields",
-        variant: "destructive",
-      });
-      return;
-    }
     
     createUserMutation.mutate(data);
   };
