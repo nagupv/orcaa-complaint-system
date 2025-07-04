@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertComplaintSchema, insertWorkDescriptionSchema, insertAuditSchema } from "@shared/schema";
+import { insertComplaintSchema, insertWorkDescriptionSchema, insertAuditSchema, insertListValueSchema } from "@shared/schema";
 import { handleFileUpload } from "./services/fileUpload";
 import { sendSMSNotification } from "./services/twilioService";
 import multer from "multer";
@@ -707,6 +707,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/list-values', isAuthenticated, async (req, res) => {
     try {
+      console.log('Creating list value with data:', req.body);
       const listValue = await storage.createListValue(req.body);
       res.json(listValue);
     } catch (error) {
