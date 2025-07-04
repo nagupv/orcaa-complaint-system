@@ -184,6 +184,41 @@ export const timesheets = pgTable("timesheets", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Leave requests table
+export const leaveRequests = pgTable("leave_requests", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  leaveType: varchar("leave_type").notNull(), // vacation, sick, personal, etc.
+  startDate: date("start_date").notNull(),
+  endDate: date("end_date").notNull(),
+  totalDays: decimal("total_days", { precision: 4, scale: 2 }).notNull(),
+  reason: text("reason"),
+  status: varchar("status").notNull().default("pending"), // pending, approved, rejected
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  comments: text("comments"), // Admin comments
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Overtime requests table
+export const overtimeRequests = pgTable("overtime_requests", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  date: date("date").notNull(),
+  startTime: varchar("start_time").notNull(), // HH:MM format
+  endTime: varchar("end_time").notNull(), // HH:MM format
+  totalHours: decimal("total_hours", { precision: 4, scale: 2 }).notNull(),
+  reason: text("reason").notNull(),
+  businessWorkId: varchar("business_work_id"), // Optional complaint ID reference
+  status: varchar("status").notNull().default("pending"), // pending, approved, rejected
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  comments: text("comments"), // Admin comments
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const complaintsRelations = relations(complaints, ({ one, many }) => ({
   assignedUser: one(users, {
@@ -200,6 +235,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   workDescriptions: many(workDescriptions),
   auditEntries: many(auditTrail),
   timesheets: many(timesheets),
+  leaveRequests: many(leaveRequests),
+  overtimeRequests: many(overtimeRequests),
 }));
 
 export const attachmentsRelations = relations(attachments, ({ one }) => ({
@@ -246,6 +283,28 @@ export const timesheetsRelations = relations(timesheets, ({ one }) => ({
   }),
 }));
 
+export const leaveRequestsRelations = relations(leaveRequests, ({ one }) => ({
+  user: one(users, {
+    fields: [leaveRequests.userId],
+    references: [users.id],
+  }),
+  approver: one(users, {
+    fields: [leaveRequests.approvedBy],
+    references: [users.id],
+  }),
+}));
+
+export const overtimeRequestsRelations = relations(overtimeRequests, ({ one }) => ({
+  user: one(users, {
+    fields: [overtimeRequests.userId],
+    references: [users.id],
+  }),
+  approver: one(users, {
+    fields: [overtimeRequests.approvedBy],
+    references: [users.id],
+  }),
+}));
+
 // Zod schemas
 export const insertComplaintSchema = createInsertSchema(complaints).omit({
   id: true,
@@ -287,6 +346,22 @@ export const insertTimesheetSchema = createInsertSchema(timesheets).omit({
   updatedAt: true,
 });
 
+export const insertLeaveRequestSchema = createInsertSchema(leaveRequests).omit({
+  id: true,
+  approvedBy: true,
+  approvedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertOvertimeRequestSchema = createInsertSchema(overtimeRequests).omit({
+  id: true,
+  approvedBy: true,
+  approvedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -305,3 +380,7 @@ export type ListValue = typeof listValues.$inferSelect;
 export type InsertListValue = z.infer<typeof insertListValueSchema>;
 export type Timesheet = typeof timesheets.$inferSelect;
 export type InsertTimesheet = z.infer<typeof insertTimesheetSchema>;
+export type LeaveRequest = typeof leaveRequests.$inferSelect;
+export type InsertLeaveRequest = z.infer<typeof insertLeaveRequestSchema>;
+export type OvertimeRequest = typeof overtimeRequests.$inferSelect;
+export type InsertOvertimeRequest = z.infer<typeof insertOvertimeRequestSchema>;

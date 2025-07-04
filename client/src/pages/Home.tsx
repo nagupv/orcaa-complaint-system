@@ -28,7 +28,7 @@ export default function Home() {
               Workflow Management
             </TabsTrigger>
             <TabsTrigger value="timesheet" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-              TimeSheet
+              Time Management
             </TabsTrigger>
             <TabsTrigger value="audit" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
               Audit Trail

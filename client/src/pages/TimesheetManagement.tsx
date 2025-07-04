@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Calendar, Clock, Plus, Edit, Trash2, User, FileText } from "lucide-react";
+import { Calendar, Clock, Plus, Edit, Trash2, User, FileText, Plane, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,11 +14,12 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import type { Timesheet, InsertTimesheet } from "@shared/schema";
+import type { Timesheet, InsertTimesheet, LeaveRequest, InsertLeaveRequest, OvertimeRequest, InsertOvertimeRequest } from "@shared/schema";
 
 const timesheetFormSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -400,14 +401,54 @@ export default function TimesheetManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Timesheet Management</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Time Management</h1>
           <p className="text-muted-foreground">
-            Track your work hours and activities
+            Track your work hours, manage time entries, submit leave requests, and request overtime
           </p>
         </div>
+      </div>
 
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
+      <Tabs defaultValue="timesheets" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="timesheets" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Time Entries
+          </TabsTrigger>
+          <TabsTrigger value="leave" className="flex items-center gap-2">
+            <Plane className="h-4 w-4" />
+            Leave Requests
+          </TabsTrigger>
+          <TabsTrigger value="overtime" className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            Overtime Requests
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="timesheets" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-semibold">{user?.firstName} {user?.lastName}</h2>
+              <p className="text-sm text-muted-foreground">{user?.email}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={selectedWeek} onValueChange={setSelectedWeek}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select week" />
+                </SelectTrigger>
+                <SelectContent>
+                  {weekOptions.map(week => (
+                    <SelectItem key={week.value} value={week.value}>
+                      {week.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
             <Button onClick={() => {
               setEditingTimesheet(null);
               form.reset({
@@ -565,7 +606,7 @@ export default function TimesheetManagement() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
+          </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1133,6 +1174,66 @@ export default function TimesheetManagement() {
           </Card>
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="leave" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Plane className="h-5 w-5" />
+                  Leave Requests
+                </div>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Request Leave
+                </Button>
+              </CardTitle>
+              <CardDescription>
+                Submit and manage your leave requests
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <Plane className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Leave request functionality coming soon</h3>
+                <p className="text-muted-foreground">
+                  Submit vacation, sick leave, and personal time off requests.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="overtime" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  Overtime Requests
+                </div>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Request Overtime
+                </Button>
+              </CardTitle>
+              <CardDescription>
+                Submit and manage your overtime requests
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Overtime request functionality coming soon</h3>
+                <p className="text-muted-foreground">
+                  Request approval for additional work hours and overtime compensation.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
