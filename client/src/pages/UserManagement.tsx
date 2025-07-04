@@ -68,7 +68,7 @@ export default function UserManagement() {
     mutationFn: async (data: CreateUserData) => {
       console.log("Attempting to create user with data:", data);
       try {
-        const result = await apiRequest("/api/users", "POST", data);
+        const result = await apiRequest("POST", "/api/users", data);
         console.log("User creation successful:", result);
         return result;
       } catch (error) {
@@ -99,7 +99,7 @@ export default function UserManagement() {
   // Update user roles mutation
   const updateRolesMutation = useMutation({
     mutationFn: async ({ userId, roles }: { userId: string; roles: string[] }) => {
-      return await apiRequest(`/api/users/${userId}/roles`, "PUT", { roles });
+      return await apiRequest("PUT", `/api/users/${userId}/roles`, { roles });
     },
     onSuccess: () => {
       toast({
