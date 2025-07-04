@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { USER_ROLES } from "@/lib/constants";
 import { User } from "@shared/schema";
-import { UserPlus, Edit, Save, X } from "lucide-react";
+import { UserPlus, Edit, Save, X, Trash2 } from "lucide-react";
 
 const createUserSchema = z.object({
   email: z.string().email("Valid email is required"),
@@ -53,6 +53,20 @@ export default function UserManagement() {
     resolver: zodResolver(createUserSchema),
     defaultValues: {
       email: "",
+      firstName: "",
+      lastName: "",
+      roles: [],
+      phone: "",
+      mobileNumber: "",
+      whatsappNumber: "",
+      enableSmsNotifications: true,
+      enableWhatsappNotifications: true,
+    },
+  });
+
+  const updateForm = useForm<UpdateUserData>({
+    resolver: zodResolver(updateUserSchema),
+    defaultValues: {
       firstName: "",
       lastName: "",
       roles: [],
@@ -109,6 +123,51 @@ export default function UserManagement() {
     },
   });
 
+  // Update user mutation
+  const updateUserMutation = useMutation({
+    mutationFn: async (data: { id: string; userData: UpdateUserData }) => {
+      return await apiRequest("PUT", `/api/users/${data.id}`, data.userData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "User Updated",
+        description: "User account has been updated successfully.",
+      });
+      updateForm.reset();
+      setEditingUser(null);
+      setShowUpdateForm(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update user. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      return await apiRequest("DELETE", `/api/users/${userId}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "User Deleted",
+        description: "User account has been deleted successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete user. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Update user roles mutation
   const updateRolesMutation = useMutation({
     mutationFn: async ({ userId, roles }: { userId: string; roles: string[] }) => {
@@ -138,6 +197,42 @@ export default function UserManagement() {
     console.log("Form is valid:", form.formState.isValid);
     
     createUserMutation.mutate(data);
+  };
+
+  const onUpdateSubmit = (data: UpdateUserData) => {
+    if (editingUser) {
+      updateUserMutation.mutate({ id: editingUser.id, userData: data });
+    }
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setShowUpdateForm(true);
+    
+    // Populate the update form with current user data
+    const userRoles = typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles || [];
+    updateForm.reset({
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      roles: userRoles,
+      phone: user.phone || "",
+      mobileNumber: user.mobileNumber || "",
+      whatsappNumber: user.whatsappNumber || "",
+      enableSmsNotifications: user.enableSmsNotifications || true,
+      enableWhatsappNotifications: user.enableWhatsappNotifications || true,
+    });
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    if (confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+      deleteUserMutation.mutate(userId);
+    }
+  };
+
+  const handleCancelUpdate = () => {
+    setEditingUser(null);
+    setShowUpdateForm(false);
+    updateForm.reset();
   };
 
   const handleEditRole = (userId: string, currentRoles: string[]) => {
@@ -332,6 +427,141 @@ export default function UserManagement() {
         </CardContent>
       </Card>
 
+      {/* Update User Form */}
+      {showUpdateForm && editingUser && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5" />
+              Update User: {editingUser.email}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={updateForm.handleSubmit(onUpdateSubmit)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="update-firstName">First Name</Label>
+                  <Input
+                    id="update-firstName"
+                    {...updateForm.register("firstName")}
+                    placeholder="Enter first name"
+                  />
+                  {updateForm.formState.errors.firstName && (
+                    <p className="text-sm text-red-600">{updateForm.formState.errors.firstName.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="update-lastName">Last Name</Label>
+                  <Input
+                    id="update-lastName"
+                    {...updateForm.register("lastName")}
+                    placeholder="Enter last name"
+                  />
+                  {updateForm.formState.errors.lastName && (
+                    <p className="text-sm text-red-600">{updateForm.formState.errors.lastName.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="update-phone">Phone Number</Label>
+                  <Input
+                    id="update-phone"
+                    {...updateForm.register("phone")}
+                    placeholder="Enter phone number"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="update-mobileNumber">Mobile Number</Label>
+                  <Input
+                    id="update-mobileNumber"
+                    {...updateForm.register("mobileNumber")}
+                    placeholder="Enter mobile number"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="update-whatsappNumber">WhatsApp Number</Label>
+                  <Input
+                    id="update-whatsappNumber"
+                    {...updateForm.register("whatsappNumber")}
+                    placeholder="Enter WhatsApp number"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label>User Roles</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                  {USER_ROLES.map((role) => (
+                    <div key={role.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`update-role-${role.value}`}
+                        checked={updateForm.watch("roles")?.includes(role.value) || false}
+                        onCheckedChange={(checked) => {
+                          const currentRoles = updateForm.getValues("roles") || [];
+                          if (checked) {
+                            updateForm.setValue("roles", [...currentRoles, role.value]);
+                          } else {
+                            updateForm.setValue("roles", currentRoles.filter(r => r !== role.value));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`update-role-${role.value}`} className="text-sm">
+                        {role.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                {updateForm.formState.errors.roles && (
+                  <p className="text-sm text-red-600">{updateForm.formState.errors.roles.message}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="update-enableSmsNotifications"
+                    checked={updateForm.watch("enableSmsNotifications") || false}
+                    onCheckedChange={(checked) => updateForm.setValue("enableSmsNotifications", checked as boolean)}
+                  />
+                  <Label htmlFor="update-enableSmsNotifications">Enable SMS Notifications</Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="update-enableWhatsappNotifications"
+                    checked={updateForm.watch("enableWhatsappNotifications") || false}
+                    onCheckedChange={(checked) => updateForm.setValue("enableWhatsappNotifications", checked as boolean)}
+                  />
+                  <Label htmlFor="update-enableWhatsappNotifications">Enable WhatsApp Notifications</Label>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  type="submit" 
+                  disabled={updateUserMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {updateUserMutation.isPending ? "Updating..." : "Update User"}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleCancelUpdate}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Existing Users */}
       <Card>
         <CardHeader>
@@ -418,13 +648,25 @@ export default function UserManagement() {
                                 {USER_ROLES.find(r => r.value === role)?.label || role}
                               </Badge>
                             ))}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEditRole(user.id, typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEditUser(user)}
+                                title="Edit User Details"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                title="Delete User"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         )}
                       </div>

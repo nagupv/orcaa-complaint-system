@@ -454,6 +454,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user
+  app.put('/api/users/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user has admin, supervisor, or approver role
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (!currentUser) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      const userRoles = typeof currentUser.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser.roles;
+      const hasPermission = userRoles.some((role: string) => ['admin', 'supervisor', 'approver'].includes(role));
+      if (!hasPermission) {
+        return res.status(403).json({ message: "Only admins, supervisors, or approvers can update users" });
+      }
+
+      const userId = req.params.id;
+      const updateData = req.body;
+      
+      // Get the user being updated for audit trail
+      const userToUpdate = await storage.getUser(userId);
+      if (!userToUpdate) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const updatedUser = await storage.updateUser(userId, updateData);
+      
+      // Create audit entry for user update
+      await storage.createAuditEntry({
+        action: 'user_updated',
+        previousValue: JSON.stringify(userToUpdate),
+        newValue: JSON.stringify(updatedUser),
+        userId: req.user.claims.sub,
+        reason: `User ${userToUpdate.email} details updated`
+      });
+
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Delete user
+  app.delete('/api/users/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user has admin role
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (!currentUser) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      const userRoles = typeof currentUser.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser.roles;
+      if (!userRoles.includes('admin')) {
+        return res.status(403).json({ message: "Only admins can delete users" });
+      }
+
+      const userId = req.params.id;
+      
+      // Get the user being deleted for audit trail
+      const userToDelete = await storage.getUser(userId);
+      if (!userToDelete) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      await storage.deleteUser(userId);
+      
+      // Create audit entry for user deletion
+      await storage.createAuditEntry({
+        action: 'user_deleted',
+        previousValue: `${userToDelete.firstName} ${userToDelete.lastName} (${userToDelete.email})`,
+        userId: req.user.claims.sub,
+        reason: `User ${userToDelete.email} deleted from system`
+      });
+
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
   app.put('/api/users/:id/roles', isAuthenticated, async (req: any, res) => {
     try {
       // Check if user has admin role
