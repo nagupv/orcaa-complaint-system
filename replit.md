@@ -108,6 +108,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **List Values Critical Bug Fix** (July 04, 2025): Resolved critical API parameter order bug that was preventing List Values creation. Fixed all CRUD operations to use correct apiRequest format (method, url, data). Added mandatory field asterisk (*) indicators to all required fields in Create New List Value form. System now fully operational with successful creation, updating, and deletion of list values.
 - **List Values Functionality** (July 04, 2025): Added comprehensive List Values management with CRUD operations for configuration values, including fields for list_value_code, list_value_descr, order, and list_value. Integrated as new tab in Application Management with full database schema and API endpoints
 - **Removed Public Complaint Form for Signed-in Users** (July 04, 2025): Eliminated public complaint form access from authenticated dashboard, ensuring staff only see internal management tools
 - **ORCAA Logo Integration** (July 04, 2025): Downloaded and integrated official ORCAA logo from orcaa.org website into application header and landing page for authentic branding

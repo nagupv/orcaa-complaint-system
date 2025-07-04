@@ -243,7 +243,7 @@ export default function ListValueManagement() {
                   name="listValueType"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>List Value Type</FormLabel>
+                      <FormLabel>List Value Type *</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., PRIORITY, STATUS, CATEGORY" {...field} />
                       </FormControl>
@@ -258,7 +258,7 @@ export default function ListValueManagement() {
                     name="listValueCode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>List Value Code</FormLabel>
+                        <FormLabel>List Value Code *</FormLabel>
                         <FormControl>
                           <Input placeholder="e.g., PRIORITY_LEVEL" {...field} />
                         </FormControl>
@@ -291,7 +291,7 @@ export default function ListValueManagement() {
                   name="listValueDescr"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description</FormLabel>
+                      <FormLabel>Description *</FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Description of this list value..." 
@@ -309,7 +309,7 @@ export default function ListValueManagement() {
                   name="listValue"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Value</FormLabel>
+                      <FormLabel>Value *</FormLabel>
                       <FormControl>
                         <Input placeholder="e.g., High Priority" {...field} />
                       </FormControl>
