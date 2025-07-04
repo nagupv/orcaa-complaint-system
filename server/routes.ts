@@ -372,7 +372,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Only admins can create users" });
       }
 
-      const { email, firstName, lastName, roles, phone } = req.body;
+      const { 
+        email, 
+        firstName, 
+        lastName, 
+        roles, 
+        phone, 
+        mobileNumber, 
+        whatsappNumber, 
+        enableSmsNotifications, 
+        enableWhatsappNotifications 
+      } = req.body;
       
       // Generate a temporary user ID (this would normally be handled by the auth provider)
       const userId = `temp_${Date.now()}`;
@@ -384,6 +394,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName,
         roles: JSON.stringify(roles),
         phone,
+        mobileNumber,
+        whatsappNumber,
+        enableSmsNotifications: enableSmsNotifications !== undefined ? enableSmsNotifications : true,
+        enableWhatsappNotifications: enableWhatsappNotifications !== undefined ? enableWhatsappNotifications : true,
         isActive: true,
       });
 

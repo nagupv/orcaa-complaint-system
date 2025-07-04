@@ -34,6 +34,10 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   roles: jsonb("roles").notNull().default('["field_staff"]'), // Array of roles: field_staff, contract_staff, supervisor, approver, admin
   phone: varchar("phone"),
+  mobileNumber: varchar("mobile_number"),
+  whatsappNumber: varchar("whatsapp_number"),
+  enableSmsNotifications: boolean("enable_sms_notifications").default(true),
+  enableWhatsappNotifications: boolean("enable_whatsapp_notifications").default(true),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

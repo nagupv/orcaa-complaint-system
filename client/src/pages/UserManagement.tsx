@@ -22,6 +22,10 @@ const createUserSchema = z.object({
   lastName: z.string().min(1, "Last name is required"),
   roles: z.array(z.string()).min(1, "At least one role is required"),
   phone: z.string().optional(),
+  mobileNumber: z.string().optional(),
+  whatsappNumber: z.string().optional(),
+  enableSmsNotifications: z.boolean().default(true),
+  enableWhatsappNotifications: z.boolean().default(true),
 });
 
 type CreateUserData = z.infer<typeof createUserSchema>;
@@ -40,6 +44,10 @@ export default function UserManagement() {
       lastName: "",
       roles: [],
       phone: "",
+      mobileNumber: "",
+      whatsappNumber: "",
+      enableSmsNotifications: true,
+      enableWhatsappNotifications: true,
     },
   });
 
@@ -175,6 +183,26 @@ export default function UserManagement() {
               </div>
 
               <div>
+                <Label htmlFor="mobileNumber">Mobile Number (SMS)</Label>
+                <Input
+                  id="mobileNumber"
+                  type="tel"
+                  {...form.register("mobileNumber")}
+                  placeholder="For SMS notifications"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="whatsappNumber">WhatsApp Number</Label>
+                <Input
+                  id="whatsappNumber"
+                  type="tel"
+                  {...form.register("whatsappNumber")}
+                  placeholder="For WhatsApp notifications"
+                />
+              </div>
+
+              <div>
                 <Label htmlFor="firstName">First Name *</Label>
                 <Input
                   id="firstName"
@@ -225,6 +253,37 @@ export default function UserManagement() {
                   <p className="text-red-500 text-sm mt-1">{form.formState.errors.roles.message}</p>
                 )}
               </div>
+
+              {/* Notification Preferences */}
+              <div className="space-y-4">
+                <Label className="text-lg font-semibold">Notification Preferences</Label>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="enableSmsNotifications"
+                    checked={form.watch("enableSmsNotifications")}
+                    onCheckedChange={(checked) => {
+                      form.setValue("enableSmsNotifications", checked as boolean);
+                    }}
+                  />
+                  <Label htmlFor="enableSmsNotifications" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Enable SMS Notifications
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="enableWhatsappNotifications"
+                    checked={form.watch("enableWhatsappNotifications")}
+                    onCheckedChange={(checked) => {
+                      form.setValue("enableWhatsappNotifications", checked as boolean);
+                    }}
+                  />
+                  <Label htmlFor="enableWhatsappNotifications" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                    Enable WhatsApp Notifications
+                  </Label>
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end">
@@ -263,8 +322,22 @@ export default function UserManagement() {
                         </h3>
                         <p className="text-sm text-gray-600">{user.email}</p>
                         {user.phone && (
-                          <p className="text-sm text-gray-600">{user.phone}</p>
+                          <p className="text-sm text-gray-600">Phone: {user.phone}</p>
                         )}
+                        {user.mobileNumber && (
+                          <p className="text-sm text-gray-600">Mobile: {user.mobileNumber}</p>
+                        )}
+                        {user.whatsappNumber && (
+                          <p className="text-sm text-gray-600">WhatsApp: {user.whatsappNumber}</p>
+                        )}
+                        <div className="flex gap-2 mt-1">
+                          {user.enableSmsNotifications && (
+                            <Badge variant="secondary" className="text-xs">SMS</Badge>
+                          )}
+                          {user.enableWhatsappNotifications && (
+                            <Badge variant="secondary" className="text-xs">WhatsApp</Badge>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="flex items-center gap-2">
