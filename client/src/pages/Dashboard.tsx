@@ -23,7 +23,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
+        if (value && value !== "all") params.append(key, value);
       });
       
       const response = await fetch(`/api/complaints?${params}`, {
@@ -89,7 +89,7 @@ export default function Dashboard() {
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="initiated">Initiated</SelectItem>
                   <SelectItem value="inspection">Inspection</SelectItem>
                   <SelectItem value="work_in_progress">Work In Progress</SelectItem>
@@ -108,7 +108,7 @@ export default function Dashboard() {
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="smoke">Smoke</SelectItem>
                   <SelectItem value="industrial">Industrial</SelectItem>
                   <SelectItem value="odor">Odor</SelectItem>

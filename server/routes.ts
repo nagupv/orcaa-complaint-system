@@ -127,6 +127,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Statistics endpoint - must come before /:id route
+  app.get('/api/complaints/statistics', isAuthenticated, async (req, res) => {
+    try {
+      const statistics = await storage.getComplaintStatistics();
+      res.json(statistics);
+    } catch (error) {
+      console.error("Error fetching statistics:", error);
+      res.status(500).json({ message: "Failed to fetch statistics" });
+    }
+  });
+
   app.get('/api/complaints/:id', isAuthenticated, async (req, res) => {
     try {
       const complaintId = parseInt(req.params.id);
@@ -270,16 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Statistics endpoint
-  app.get('/api/complaints/statistics', isAuthenticated, async (req, res) => {
-    try {
-      const statistics = await storage.getComplaintStatistics();
-      res.json(statistics);
-    } catch (error) {
-      console.error("Error fetching statistics:", error);
-      res.status(500).json({ message: "Failed to fetch statistics" });
-    }
-  });
+
 
   // Work descriptions
   app.post('/api/complaints/:id/work-descriptions', isAuthenticated, async (req: any, res) => {
