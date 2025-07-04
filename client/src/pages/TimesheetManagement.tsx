@@ -601,11 +601,7 @@ export default function TimesheetManagement() {
         </TabsList>
 
         <TabsContent value="timesheets" className="space-y-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-xl font-semibold">{user?.firstName} {user?.lastName}</h2>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-            </div>
+          <div className="flex justify-end items-center">
             <div className="flex items-center gap-2">
               <Select value={selectedWeek} onValueChange={setSelectedWeek}>
                 <SelectTrigger className="w-[180px]">
