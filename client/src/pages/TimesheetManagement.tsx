@@ -350,24 +350,28 @@ export default function TimesheetManagement() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Business Work ID / Complaint ID</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <div className="relative">
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a valid complaint ID (optional)" />
-                          </SelectTrigger>
+                          <Input
+                            placeholder="Enter complaint ID (optional)"
+                            {...field}
+                            value={field.value === "none" ? "" : field.value}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              field.onChange(value === "" ? "none" : value);
+                            }}
+                            list="complaint-ids"
+                          />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">None (optional)</SelectItem>
+                        <datalist id="complaint-ids">
                           {validComplaintIds.map((complaintId: string) => (
-                            <SelectItem key={complaintId} value={complaintId}>
-                              {complaintId}
-                            </SelectItem>
+                            <option key={complaintId} value={complaintId} />
                           ))}
-                        </SelectContent>
-                      </Select>
+                        </datalist>
+                      </div>
                       <FormMessage />
                       <div className="text-xs text-muted-foreground">
-                        Only valid complaint IDs are available for selection
+                        Start typing to see suggestions. Only valid complaint IDs will be accepted.
                       </div>
                     </FormItem>
                   )}
