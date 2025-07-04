@@ -601,22 +601,6 @@ export default function TimesheetManagement() {
         </TabsList>
 
         <TabsContent value="timesheets" className="space-y-6">
-          <div className="flex justify-end items-center">
-            <div className="flex items-center gap-2">
-              <Select value={selectedWeek} onValueChange={setSelectedWeek}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Select week" />
-                </SelectTrigger>
-                <SelectContent>
-                  {weekOptions.map(week => (
-                    <SelectItem key={week.value} value={week.value}>
-                      {week.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
           <div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
