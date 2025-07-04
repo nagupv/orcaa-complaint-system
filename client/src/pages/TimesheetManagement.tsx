@@ -61,6 +61,11 @@ export default function TimesheetManagement() {
     queryKey: ["/api/timesheet-activities"],
   });
 
+  // Fetch valid complaint IDs
+  const { data: validComplaintIds = [], isLoading: complaintIdsLoading } = useQuery({
+    queryKey: ["/api/valid-complaint-ids"],
+  });
+
   // Create timesheet mutation
   const createMutation = useMutation({
     mutationFn: async (data: TimesheetFormData) => {
@@ -226,7 +231,7 @@ export default function TimesheetManagement() {
     sum + parseFloat(ts.timeInHours), 0
   );
 
-  if (timesheetsLoading || activitiesLoading) {
+  if (timesheetsLoading || activitiesLoading || complaintIdsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-lg">Loading timesheets...</div>
@@ -339,10 +344,25 @@ export default function TimesheetManagement() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Business Work ID / Complaint ID</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., AQ-2025-001, DN-2025-001" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} value={field.value || ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a valid complaint ID (optional)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">None (optional)</SelectItem>
+                          {validComplaintIds.map((complaintId: string) => (
+                            <SelectItem key={complaintId} value={complaintId}>
+                              {complaintId}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
+                      <div className="text-xs text-muted-foreground">
+                        Only valid complaint IDs are available for selection
+                      </div>
                     </FormItem>
                   )}
                 />

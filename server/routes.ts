@@ -783,6 +783,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/timesheets', isAuthenticated, async (req, res) => {
     try {
+      // Validate Business Work ID if provided
+      if (req.body.businessWorkId) {
+        const complaint = await storage.getComplaintByComplaintId(req.body.businessWorkId);
+        if (!complaint) {
+          return res.status(400).json({ error: 'Invalid Business Work ID / Complaint ID. Please enter a valid complaint number.' });
+        }
+      }
+      
       const timesheet = await storage.createTimesheet(req.body);
       res.json(timesheet);
     } catch (error) {
@@ -793,6 +801,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put('/api/timesheets/:id', isAuthenticated, async (req, res) => {
     try {
+      // Validate Business Work ID if provided
+      if (req.body.businessWorkId) {
+        const complaint = await storage.getComplaintByComplaintId(req.body.businessWorkId);
+        if (!complaint) {
+          return res.status(400).json({ error: 'Invalid Business Work ID / Complaint ID. Please enter a valid complaint number.' });
+        }
+      }
+      
       const id = parseInt(req.params.id);
       const timesheet = await storage.updateTimesheet(id, req.body);
       res.json(timesheet);
@@ -820,6 +836,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching timesheet activities:', error);
       res.status(500).json({ error: 'Failed to fetch timesheet activities' });
+    }
+  });
+
+  app.get('/api/valid-complaint-ids', isAuthenticated, async (req, res) => {
+    try {
+      const complaints = await storage.getComplaints();
+      const complaintIds = complaints.map(complaint => complaint.complaintId);
+      res.json(complaintIds);
+    } catch (error) {
+      console.error('Error fetching valid complaint IDs:', error);
+      res.status(500).json({ error: 'Failed to fetch valid complaint IDs' });
     }
   });
 
