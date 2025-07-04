@@ -45,6 +45,26 @@ export default function RoleManagement() {
     queryKey: ['/api/roles'],
   });
 
+  const seedRolesMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/roles/seed");
+    },
+    onSuccess: () => {
+      toast({
+        title: "Default roles created successfully",
+        description: "The system has been initialized with default roles.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/roles'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating default roles",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const createMutation = useMutation({
     mutationFn: async (data: RoleFormData) => {
       await apiRequest("POST", "/api/roles", data);
@@ -369,12 +389,19 @@ export default function RoleManagement() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8">
-                      <div className="flex flex-col items-center space-y-2">
+                      <div className="flex flex-col items-center space-y-4">
                         <Users className="h-12 w-12 text-muted-foreground" />
                         <p className="text-muted-foreground">No roles found</p>
                         <p className="text-sm text-muted-foreground">
-                          Create your first role to get started
+                          Initialize the system with default roles or create custom ones
                         </p>
+                        <Button 
+                          onClick={() => seedRolesMutation.mutate()}
+                          disabled={seedRolesMutation.isPending}
+                          className="bg-orcaa-blue hover:bg-orcaa-blue/90"
+                        >
+                          Initialize Default Roles
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>

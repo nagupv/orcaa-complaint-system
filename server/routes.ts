@@ -485,6 +485,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Initialize default roles if none exist
+  app.post('/api/roles/seed', isAuthenticated, async (req, res) => {
+    try {
+      const existingRoles = await storage.getRoles();
+      if (existingRoles.length > 0) {
+        return res.json({ message: 'Roles already exist', count: existingRoles.length });
+      }
+
+      const defaultRoles = [
+        {
+          name: 'field_staff',
+          displayName: 'Field Staff',
+          description: 'Field inspection staff responsible for on-site complaint investigation',
+          permissions: ['create_complaints', 'edit_complaints', 'view_audit_trail'],
+          isActive: true
+        },
+        {
+          name: 'contract_staff',
+          displayName: 'Contract Staff',
+          description: 'Contract workers handling specific complaint types',
+          permissions: ['create_complaints', 'edit_complaints'],
+          isActive: true
+        },
+        {
+          name: 'supervisor',
+          displayName: 'Supervisor',
+          description: 'Supervisory staff overseeing complaint processing and workflow',
+          permissions: ['create_complaints', 'edit_complaints', 'manage_workflow', 'view_audit_trail', 'send_notifications'],
+          isActive: true
+        },
+        {
+          name: 'approver',
+          displayName: 'Approver',
+          description: 'Senior staff with approval authority for complaint resolutions',
+          permissions: ['create_complaints', 'edit_complaints', 'manage_workflow', 'view_audit_trail', 'send_notifications'],
+          isActive: true
+        },
+        {
+          name: 'admin',
+          displayName: 'Administrator',
+          description: 'System administrators with full access to all features',
+          permissions: ['create_complaints', 'edit_complaints', 'delete_complaints', 'manage_users', 'manage_roles', 'view_audit_trail', 'send_notifications', 'manage_workflow'],
+          isActive: true
+        }
+      ];
+
+      const createdRoles = [];
+      for (const role of defaultRoles) {
+        const createdRole = await storage.createRole(role);
+        createdRoles.push(createdRole);
+      }
+
+      res.json({ message: 'Default roles created successfully', roles: createdRoles });
+    } catch (error) {
+      console.error('Error seeding roles:', error);
+      res.status(500).json({ error: 'Failed to seed roles' });
+    }
+  });
+
   // Role management routes
   app.get('/api/roles', isAuthenticated, async (req, res) => {
     try {
