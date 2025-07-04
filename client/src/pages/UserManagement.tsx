@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { USER_ROLES } from "@/lib/constants";
 import { User } from "@shared/schema";
-import { UserPlus, Edit, Save, X, Trash2 } from "lucide-react";
+import { UserPlus, Edit, Save, X, Trash2, Info } from "lucide-react";
 
 const createUserSchema = z.object({
   email: z.string().email("Valid email is required"),
@@ -224,7 +224,7 @@ export default function UserManagement() {
   };
 
   const handleDeleteUser = (userId: string) => {
-    if (confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
+    if (confirm("Are you sure you want to delete this user? This will deactivate their account and immediately revoke their access to the system. This action cannot be undone.")) {
       deleteUserMutation.mutate(userId);
     }
   };
@@ -280,6 +280,20 @@ export default function UserManagement() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Authentication Integration Info */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-start space-x-3">
+              <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-blue-900 mb-1">Authentication Integration</p>
+                <p className="text-blue-700">
+                  Creating a user profile here sets up their account details and permissions. 
+                  Users must still log in through Replit Auth to activate their account and gain access to the system.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>

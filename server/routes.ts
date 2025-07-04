@@ -418,8 +418,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         enableSmsNotifications, enableWhatsappNotifications
       });
       
+      // Check if user already exists by email
+      const existingUsers = await storage.getAllUsers();
+      const existingUser = existingUsers.find(user => user.email === email);
+      
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: "User with this email already exists",
+          suggestion: "This user may need to log in via Replit Auth first, then their profile can be updated with additional details."
+        });
+      }
+      
       // Generate a temporary user ID (this would normally be handled by the auth provider)
-      const userId = `temp_${Date.now()}`;
+      const userId = `pending_${Date.now()}`;
       
       const newUser = await storage.upsertUser({
         id: userId,
@@ -432,15 +443,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         whatsappNumber: whatsappNumber || null,
         enableSmsNotifications: enableSmsNotifications !== undefined ? enableSmsNotifications : true,
         enableWhatsappNotifications: enableWhatsappNotifications !== undefined ? enableWhatsappNotifications : true,
-        isActive: true,
+        isActive: false, // Mark as inactive until they log in via Replit Auth
       });
 
       // Create audit entry for user creation
       await storage.createAuditEntry({
-        action: 'user_created',
+        action: 'user_profile_created',
         newValue: `${firstName} ${lastName} (${email}) - ${roles.join(', ')}`,
         userId: req.user.claims.sub,
-        reason: `New user account created: ${email} with roles ${roles.join(', ')}`
+        reason: `User profile created for ${email} with roles ${roles.join(', ')}. Account pending activation via Replit Auth login.`
       });
 
       res.json(newUser);
@@ -516,17 +527,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      await storage.deleteUser(userId);
+      // Mark user as inactive instead of hard delete for auth integrity
+      await storage.updateUser(userId, {
+        isActive: false,
+        firstName: `[DELETED] ${userToDelete.firstName}`,
+        lastName: userToDelete.lastName,
+        email: `deleted_${Date.now()}_${userToDelete.email}`,
+        roles: JSON.stringify([]),
+      });
       
       // Create audit entry for user deletion
       await storage.createAuditEntry({
         action: 'user_deleted',
         previousValue: `${userToDelete.firstName} ${userToDelete.lastName} (${userToDelete.email})`,
         userId: req.user.claims.sub,
-        reason: `User ${userToDelete.email} deleted from system`
+        reason: `User ${userToDelete.email} deleted from system. Account deactivated and marked as deleted.`
       });
 
-      res.json({ message: "User deleted successfully" });
+      res.json({ 
+        message: "User deleted successfully",
+        note: "User account has been deactivated and will no longer have access to the system."
+      });
     } catch (error) {
       console.error("Error deleting user:", error);
       res.status(500).json({ message: "Failed to delete user" });

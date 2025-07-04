@@ -108,6 +108,8 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Authentication-Integrated User Management** (July 04, 2025): Enhanced User Management system with proper authentication integration. User creation now creates pending profiles that require Replit Auth activation. User deletion performs soft deletion by deactivating accounts and revoking system access immediately while preserving audit trail. Added real-time active user verification in authentication middleware.
+- **Fixed Leave/Overtime Request Display** (July 04, 2025): Resolved critical data rendering bug where leave requests and overtime requests weren't displaying due to incorrect query result property access. Fixed conditional logic for proper data rendering in TimeSheet management interface.
 - **Removed User Info Box from TimeSheet Interface** (July 04, 2025): Removed redundant current user information display from TimeSheet management page to save screen space while preserving week selector functionality
 - **Complete Leave and Overtime Request System** (July 04, 2025): Implemented comprehensive HR functionality with leave request forms (8 leave types), overtime request system with project tracking, role-based approval/rejection workflow, and status tracking tables with proper validation
 - **TimeSheet Tabular Layout** (July 04, 2025): Converted time entries from card-based layout to clean tabular format with columns for Date, Hours, Activity, Work ID, Comments, and Actions. Improved data density and scanning efficiency with proper column alignment, truncated comments with tooltips, and consistent iconography.
