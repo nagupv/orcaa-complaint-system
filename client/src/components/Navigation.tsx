@@ -61,13 +61,13 @@ export default function Navigation() {
           </div>
           
           <div className="flex items-center space-x-4">
-            {user && (
+            {user && user.firstName && (
               <>
                 <span className="text-sm text-gray-600">
                   {user.firstName} {user.lastName}
                 </span>
                 <div className="flex gap-1">
-                  {(typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles).map((role: string) => (
+                  {user.roles && (typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles).map((role: string) => (
                     <Badge key={role} className={getRoleBadgeColor(role)}>
                       {formatRoleName(role)}
                     </Badge>

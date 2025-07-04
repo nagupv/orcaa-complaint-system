@@ -31,8 +31,8 @@ This is a full-stack web application for managing air quality complaints for ORC
 ## Key Components
 
 ### Database Schema
-- **Users**: Stores user information with role-based access (field_staff, contract_staff, supervisor, approver, admin)
-- **Complaints**: Main complaint records with auto-generated IDs (format: AQ-YYYY-NNN)
+- **Users**: Stores user information with multiple role support (field_staff, contract_staff, supervisor, approver, admin) - each user can have multiple roles stored as JSONB array
+- **Complaints**: Main complaint records with auto-generated IDs (format: AQ-YYYY-NNN for air quality, DN-YYYY-NNN for demolition)
 - **Workflow Stages**: Configurable workflow stages for complaint processing
 - **Attachments**: File storage for complaint evidence (images/videos up to 14MB)
 - **Audit Trail**: Complete audit log of all complaint actions
