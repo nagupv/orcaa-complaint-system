@@ -5,6 +5,7 @@ import UserManagement from "./UserManagement";
 import RoleManagement from "./RoleManagement";
 import UserRoleMapping from "./UserRoleMapping";
 import UserRoleReport from "./UserRoleReport";
+import ListValueManagement from "./ListValueManagement";
 
 export default function ApplicationManagement() {
   const [activeTab, setActiveTab] = useState("users");
@@ -30,6 +31,9 @@ export default function ApplicationManagement() {
                 <TabsTrigger value="roles" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
                   Role Management
                 </TabsTrigger>
+                <TabsTrigger value="list-values" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
+                  List Values
+                </TabsTrigger>
                 <TabsTrigger value="mapping" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
                   User & Role Mapping
                 </TabsTrigger>
@@ -44,6 +48,10 @@ export default function ApplicationManagement() {
 
               <TabsContent value="roles" className="mt-6">
                 <RoleManagement />
+              </TabsContent>
+
+              <TabsContent value="list-values" className="mt-6">
+                <ListValueManagement />
               </TabsContent>
 
               <TabsContent value="mapping" className="mt-6">

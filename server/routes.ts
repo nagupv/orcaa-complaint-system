@@ -694,6 +694,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // List Values routes
+  app.get('/api/list-values', isAuthenticated, async (req, res) => {
+    try {
+      const listValues = await storage.getListValues();
+      res.json(listValues);
+    } catch (error) {
+      console.error('Error fetching list values:', error);
+      res.status(500).json({ error: 'Failed to fetch list values' });
+    }
+  });
+
+  app.post('/api/list-values', isAuthenticated, async (req, res) => {
+    try {
+      const listValue = await storage.createListValue(req.body);
+      res.json(listValue);
+    } catch (error) {
+      console.error('Error creating list value:', error);
+      res.status(500).json({ error: 'Failed to create list value' });
+    }
+  });
+
+  app.put('/api/list-values/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const listValue = await storage.updateListValue(id, req.body);
+      res.json(listValue);
+    } catch (error) {
+      console.error('Error updating list value:', error);
+      res.status(500).json({ error: 'Failed to update list value' });
+    }
+  });
+
+  app.delete('/api/list-values/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteListValue(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting list value:', error);
+      res.status(500).json({ error: 'Failed to delete list value' });
+    }
+  });
+
   // Serve uploaded files
   app.use('/uploads', express.static('./uploads'));
 

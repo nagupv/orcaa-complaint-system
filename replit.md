@@ -108,6 +108,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **List Values Functionality** (July 04, 2025): Added comprehensive List Values management with CRUD operations for configuration values, including fields for list_value_code, list_value_descr, order, and list_value. Integrated as new tab in Application Management with full database schema and API endpoints
 - **Removed Public Complaint Form for Signed-in Users** (July 04, 2025): Eliminated public complaint form access from authenticated dashboard, ensuring staff only see internal management tools
 - **ORCAA Logo Integration** (July 04, 2025): Downloaded and integrated official ORCAA logo from orcaa.org website into application header and landing page for authentic branding
 - **User Management Table Layout** (July 04, 2025): Converted user display from card-based layout to clean tabular format with organized columns for Name, Email, Contact Details, Roles, Notifications, and Actions

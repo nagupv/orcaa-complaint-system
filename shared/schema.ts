@@ -157,6 +157,18 @@ export const roles = pgTable("roles", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// List values table for managing configuration values
+export const listValues = pgTable("list_values", {
+  id: serial("id").primaryKey(),
+  listValueCode: varchar("list_value_code", { length: 100 }).notNull(),
+  listValueDescr: text("list_value_descr").notNull(),
+  order: integer("order").notNull(),
+  listValue: varchar("list_value", { length: 255 }).notNull(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const complaintsRelations = relations(complaints, ({ one, many }) => ({
   assignedUser: one(users, {
@@ -207,6 +219,10 @@ export const rolesRelations = relations(roles, ({ many }) => ({
   // No direct relations for now, but can add user mappings later
 }));
 
+export const listValuesRelations = relations(listValues, ({ }) => ({
+  // No direct relations for now
+}));
+
 // Zod schemas
 export const insertComplaintSchema = createInsertSchema(complaints).omit({
   id: true,
@@ -236,6 +252,12 @@ export const insertRoleSchema = createInsertSchema(roles).omit({
   updatedAt: true,
 });
 
+export const insertListValueSchema = createInsertSchema(listValues).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -250,3 +272,5 @@ export type AuditEntry = typeof auditTrail.$inferSelect;
 export type InsertAuditEntry = z.infer<typeof insertAuditSchema>;
 export type Role = typeof roles.$inferSelect;
 export type InsertRole = z.infer<typeof insertRoleSchema>;
+export type ListValue = typeof listValues.$inferSelect;
+export type InsertListValue = z.infer<typeof insertListValueSchema>;

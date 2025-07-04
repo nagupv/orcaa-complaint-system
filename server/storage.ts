@@ -6,6 +6,7 @@ import {
   workDescriptions,
   auditTrail,
   roles,
+  listValues,
   type User,
   type UpsertUser,
   type Complaint,
@@ -19,6 +20,8 @@ import {
   type InsertAuditEntry,
   type Role,
   type InsertRole,
+  type ListValue,
+  type InsertListValue,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, gte, lte, isNull, sql } from "drizzle-orm";
@@ -75,6 +78,13 @@ export interface IStorage {
   updateRole(id: number, updates: Partial<Role>): Promise<Role>;
   deleteRole(id: number): Promise<void>;
   getRoleById(id: number): Promise<Role | undefined>;
+  
+  // List values operations
+  getListValues(): Promise<ListValue[]>;
+  createListValue(listValue: InsertListValue): Promise<ListValue>;
+  updateListValue(id: number, updates: Partial<ListValue>): Promise<ListValue>;
+  deleteListValue(id: number): Promise<void>;
+  getListValueById(id: number): Promise<ListValue | undefined>;
   
   // Chart data methods
   getMonthlyComplaintStats(): Promise<Array<{
@@ -377,6 +387,34 @@ export class DatabaseStorage implements IStorage {
   async getRoleById(id: number): Promise<Role | undefined> {
     const [role] = await db.select().from(roles).where(eq(roles.id, id));
     return role;
+  }
+
+  // List values operations
+  async getListValues(): Promise<ListValue[]> {
+    return await db.select().from(listValues).orderBy(listValues.listValueCode, listValues.order);
+  }
+
+  async createListValue(listValue: InsertListValue): Promise<ListValue> {
+    const [newListValue] = await db.insert(listValues).values(listValue).returning();
+    return newListValue;
+  }
+
+  async updateListValue(id: number, updates: Partial<ListValue>): Promise<ListValue> {
+    const [updatedListValue] = await db
+      .update(listValues)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(listValues.id, id))
+      .returning();
+    return updatedListValue;
+  }
+
+  async deleteListValue(id: number): Promise<void> {
+    await db.delete(listValues).where(eq(listValues.id, id));
+  }
+
+  async getListValueById(id: number): Promise<ListValue | undefined> {
+    const [listValue] = await db.select().from(listValues).where(eq(listValues.id, id));
+    return listValue;
   }
 
   // Chart data methods
