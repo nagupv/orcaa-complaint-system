@@ -108,6 +108,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **Removed User Info Box from TimeSheet Interface** (July 04, 2025): Removed redundant current user information display from TimeSheet management page to save screen space while preserving week selector functionality
 - **Removed Duplicate Week Dropdown** (July 04, 2025): Fixed duplicate week selector display in Time Entries screen by removing redundant dropdown that appeared above the timesheet content, keeping only the properly positioned one in the Time Entries card header.
 - **Authentication-Integrated User Management** (July 04, 2025): Enhanced User Management system with proper authentication integration. User creation now creates pending profiles that require Replit Auth activation. User deletion performs soft deletion by deactivating accounts and revoking system access immediately while preserving audit trail. Added real-time active user verification in authentication middleware.
 - **Fixed Leave/Overtime Request Display** (July 04, 2025): Resolved critical data rendering bug where leave requests and overtime requests weren't displaying due to incorrect query result property access. Fixed conditional logic for proper data rendering in TimeSheet management interface.

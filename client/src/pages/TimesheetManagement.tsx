@@ -604,21 +604,6 @@ export default function TimesheetManagement() {
 
           <div>
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-            <Button onClick={() => {
-              setEditingTimesheet(null);
-              form.reset({
-                date: today,
-                activity: "",
-                comments: "",
-                businessWorkId: "none",
-                timeInHours: 8,
-              });
-            }}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Time Entry
-            </Button>
-          </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>
@@ -764,39 +749,6 @@ export default function TimesheetManagement() {
         </Dialog>
           </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Hours This Month</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalHoursThisMonth.toFixed(1)}h</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Entries This Month</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{currentMonthTimesheets.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Average Hours/Day</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {currentMonthTimesheets.length > 0 
-                ? (totalHoursThisMonth / currentMonthTimesheets.length).toFixed(1) 
-                : '0.0'}h
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-
 
       {/* Timesheet Entries */}
       <Card>
@@ -931,6 +883,38 @@ export default function TimesheetManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Total Hours This Month</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalHoursThisMonth.toFixed(1)}h</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Entries This Month</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{currentMonthTimesheets.length}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Average Hours/Day</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {currentMonthTimesheets.length > 0 
+                ? (totalHoursThisMonth / currentMonthTimesheets.length).toFixed(1) 
+                : '0.0'}h
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* GitHub-style Contributions Heatmap */}
       {timesheets.length > 0 && (
