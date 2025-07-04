@@ -25,7 +25,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
-  updateUserRole(id: string, role: string): Promise<User>;
+  updateUserRoles(id: string, roles: string[]): Promise<User>;
   
   // Complaint operations
   createComplaint(complaint: InsertComplaint): Promise<Complaint>;
@@ -94,10 +94,10 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users).where(eq(users.isActive, true));
   }
 
-  async updateUserRole(id: string, role: string): Promise<User> {
+  async updateUserRoles(id: string, roles: string[]): Promise<User> {
     const [user] = await db
       .update(users)
-      .set({ role, updatedAt: new Date() })
+      .set({ roles: JSON.stringify(roles), updatedAt: new Date() })
       .where(eq(users.id, id))
       .returning();
     return user;

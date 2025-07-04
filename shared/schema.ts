@@ -32,7 +32,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role").notNull().default("field_staff"), // field_staff, contract_staff, supervisor, approver, admin
+  roles: jsonb("roles").notNull().default('["field_staff"]'), // Array of roles: field_staff, contract_staff, supervisor, approver, admin
   phone: varchar("phone"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { USER_ROLES } from "@/lib/constants";
@@ -19,7 +20,7 @@ const createUserSchema = z.object({
   email: z.string().email("Valid email is required"),
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  role: z.string().min(1, "Role is required"),
+  roles: z.array(z.string()).min(1, "At least one role is required"),
   phone: z.string().optional(),
 });
 
@@ -29,7 +30,7 @@ export default function UserManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingUser, setEditingUser] = useState<string | null>(null);
-  const [editRole, setEditRole] = useState<string>("");
+  const [editRoles, setEditRoles] = useState<string[]>([]);
 
   const form = useForm<CreateUserData>({
     resolver: zodResolver(createUserSchema),
@@ -37,7 +38,7 @@ export default function UserManagement() {
       email: "",
       firstName: "",
       lastName: "",
-      role: "",
+      roles: [],
       phone: "",
     },
   });
@@ -76,10 +77,10 @@ export default function UserManagement() {
     },
   });
 
-  // Update user role mutation
-  const updateRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
-      return await apiRequest(`/api/users/${userId}/role`, "PUT", { role });
+  // Update user roles mutation
+  const updateRolesMutation = useMutation({
+    mutationFn: async ({ userId, roles }: { userId: string; roles: string[] }) => {
+      return await apiRequest(`/api/users/${userId}/roles`, "PUT", { roles });
     },
     onSuccess: () => {
       toast({
@@ -87,7 +88,7 @@ export default function UserManagement() {
         description: "User role has been updated successfully.",
       });
       setEditingUser(null);
-      setEditRole("");
+      setEditRoles([]);
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
     },
     onError: (error: Error) => {
@@ -103,18 +104,18 @@ export default function UserManagement() {
     createUserMutation.mutate(data);
   };
 
-  const handleEditRole = (userId: string, currentRole: string) => {
+  const handleEditRole = (userId: string, currentRoles: string[]) => {
     setEditingUser(userId);
-    setEditRole(currentRole);
+    setEditRoles(currentRoles);
   };
 
   const handleSaveRole = (userId: string) => {
-    updateRoleMutation.mutate({ userId, role: editRole });
+    updateRolesMutation.mutate({ userId, roles: editRoles });
   };
 
   const handleCancelEdit = () => {
     setEditingUser(null);
-    setEditRole("");
+    setEditRoles([]);
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -198,21 +199,30 @@ export default function UserManagement() {
               </div>
 
               <div>
-                <Label htmlFor="role">Role *</Label>
-                <Select onValueChange={(value) => form.setValue("role", value)}>
-                  <SelectTrigger className={form.formState.errors.role ? "border-red-500" : ""}>
-                    <SelectValue placeholder="Select Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {USER_ROLES.map((role) => (
-                      <SelectItem key={role.value} value={role.value}>
+                <Label htmlFor="roles">Roles *</Label>
+                <div className="space-y-2">
+                  {USER_ROLES.map((role) => (
+                    <div key={role.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={role.value}
+                        checked={form.watch("roles")?.includes(role.value)}
+                        onCheckedChange={(checked) => {
+                          const currentRoles = form.watch("roles") || [];
+                          if (checked) {
+                            form.setValue("roles", [...currentRoles, role.value]);
+                          } else {
+                            form.setValue("roles", currentRoles.filter((r) => r !== role.value));
+                          }
+                        }}
+                      />
+                      <Label htmlFor={role.value} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                         {role.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.role && (
-                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.role.message}</p>
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                {form.formState.errors.roles && (
+                  <p className="text-red-500 text-sm mt-1">{form.formState.errors.roles.message}</p>
                 )}
               </div>
             </div>
@@ -259,23 +269,31 @@ export default function UserManagement() {
                       
                       <div className="flex items-center gap-2">
                         {editingUser === user.id ? (
-                          <div className="flex items-center gap-2">
-                            <Select value={editRole} onValueChange={setEditRole}>
-                              <SelectTrigger className="w-40">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {USER_ROLES.map((role) => (
-                                  <SelectItem key={role.value} value={role.value}>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex flex-wrap gap-2">
+                              {USER_ROLES.map((role) => (
+                                <div key={role.value} className="flex items-center space-x-1">
+                                  <Checkbox
+                                    id={`edit-${role.value}`}
+                                    checked={editRoles.includes(role.value)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setEditRoles([...editRoles, role.value]);
+                                      } else {
+                                        setEditRoles(editRoles.filter((r) => r !== role.value));
+                                      }
+                                    }}
+                                  />
+                                  <Label htmlFor={`edit-${role.value}`} className="text-xs">
                                     {role.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
                             <Button
                               size="sm"
                               onClick={() => handleSaveRole(user.id)}
-                              disabled={updateRoleMutation.isPending}
+                              disabled={updateRolesMutation.isPending}
                             >
                               <Save className="h-4 w-4" />
                             </Button>
@@ -288,14 +306,16 @@ export default function UserManagement() {
                             </Button>
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2">
-                            <Badge className={getRoleBadgeColor(user.role)}>
-                              {USER_ROLES.find(r => r.value === user.role)?.label || user.role}
-                            </Badge>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {(typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles).map((role: string) => (
+                              <Badge key={role} className={getRoleBadgeColor(role)}>
+                                {USER_ROLES.find(r => r.value === role)?.label || role}
+                              </Badge>
+                            ))}
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleEditRole(user.id, user.role)}
+                              onClick={() => handleEditRole(user.id, typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles)}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>

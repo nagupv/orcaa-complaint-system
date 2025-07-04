@@ -66,9 +66,13 @@ export default function Navigation() {
                 <span className="text-sm text-gray-600">
                   {user.firstName} {user.lastName}
                 </span>
-                <Badge className={getRoleBadgeColor(user.role)}>
-                  {formatRoleName(user.role)}
-                </Badge>
+                <div className="flex gap-1">
+                  {(typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles).map((role: string) => (
+                    <Badge key={role} className={getRoleBadgeColor(role)}>
+                      {formatRoleName(role)}
+                    </Badge>
+                  ))}
+                </div>
               </>
             )}
             <Button

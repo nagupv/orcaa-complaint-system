@@ -58,7 +58,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (initialStage && initialStage.smsNotification) {
         // Find users with the assigned role
         const users = await storage.getAllUsers();
-        const assignedUsers = users.filter(user => user.role === initialStage.assignedRole);
+        const assignedUsers = users.filter(user => {
+          const userRoles = typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles;
+          return userRoles.includes(initialStage.assignedRole);
+        });
         
         for (const user of assignedUsers) {
           if (user.phone) {
@@ -361,11 +364,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Check if user has admin role
       const currentUser = await storage.getUser(req.user.claims.sub);
-      if (!currentUser || currentUser.role !== 'admin') {
+      if (!currentUser) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      const userRoles = typeof currentUser.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser.roles;
+      if (!userRoles.includes('admin')) {
         return res.status(403).json({ message: "Only admins can create users" });
       }
 
-      const { email, firstName, lastName, role, phone } = req.body;
+      const { email, firstName, lastName, roles, phone } = req.body;
       
       // Generate a temporary user ID (this would normally be handled by the auth provider)
       const userId = `temp_${Date.now()}`;
@@ -375,7 +382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email,
         firstName,
         lastName,
-        role,
+        roles: JSON.stringify(roles),
         phone,
         isActive: true,
       });
@@ -383,9 +390,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create audit entry for user creation
       await storage.createAuditEntry({
         action: 'user_created',
-        newValue: `${firstName} ${lastName} (${email}) - ${role}`,
+        newValue: `${firstName} ${lastName} (${email}) - ${roles.join(', ')}`,
         userId: req.user.claims.sub,
-        reason: `New user account created: ${email} with role ${role}`
+        reason: `New user account created: ${email} with roles ${roles.join(', ')}`
       });
 
       res.json(newUser);
@@ -395,16 +402,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/users/:id/role', isAuthenticated, async (req: any, res) => {
+  app.put('/api/users/:id/roles', isAuthenticated, async (req: any, res) => {
     try {
       // Check if user has admin role
       const currentUser = await storage.getUser(req.user.claims.sub);
-      if (!currentUser || currentUser.role !== 'admin') {
+      if (!currentUser) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      const userRoles = typeof currentUser.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser.roles;
+      if (!userRoles.includes('admin')) {
         return res.status(403).json({ message: "Only admins can update user roles" });
       }
 
       const userId = req.params.id;
-      const { role } = req.body;
+      const { roles } = req.body;
       
       // Get the user being updated for audit trail
       const userToUpdate = await storage.getUser(userId);
@@ -412,15 +423,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const updatedUser = await storage.updateUserRole(userId, role);
+      const updatedUser = await storage.updateUserRoles(userId, roles);
       
       // Create audit entry for role change
+      const previousRoles = typeof userToUpdate.roles === 'string' ? JSON.parse(userToUpdate.roles) : userToUpdate.roles;
       await storage.createAuditEntry({
-        action: 'role_changed',
-        previousValue: userToUpdate.role,
-        newValue: role,
+        action: 'roles_changed',
+        previousValue: previousRoles.join(', '),
+        newValue: roles.join(', '),
         userId: req.user.claims.sub,
-        reason: `User ${userToUpdate.email} role changed from ${userToUpdate.role} to ${role}`
+        reason: `User ${userToUpdate.email} roles changed from ${previousRoles.join(', ')} to ${roles.join(', ')}`
       });
 
       res.json(updatedUser);
