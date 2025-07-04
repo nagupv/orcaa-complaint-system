@@ -43,7 +43,7 @@ export const users = pgTable("users", {
 export const complaints = pgTable("complaints", {
   id: serial("id").primaryKey(),
   complaintId: varchar("complaint_id").notNull().unique(), // Auto-generated like AQ-2024-001
-  complaintType: varchar("complaint_type").notNull().default("AIR_QUALITY"),
+  complaintType: varchar("complaint_type").notNull().default("AIR_QUALITY"), // AIR_QUALITY, DEMOLITION_NOTICE
   
   // Complainant Information
   isAnonymous: boolean("is_anonymous").default(false),
@@ -69,6 +69,25 @@ export const complaints = pgTable("complaints", {
   status: varchar("status").notNull().default("initiated"), // initiated, inspection, work_in_progress, work_completed, reviewed, approved, closed
   assignedTo: varchar("assigned_to").references(() => users.id),
   priority: varchar("priority").default("normal"), // low, normal, high, urgent
+  
+  // Demolition Notification specific fields
+  propertyOwnerName: varchar("property_owner_name"),
+  propertyOwnerEmail: varchar("property_owner_email"),
+  propertyOwnerPhone: varchar("property_owner_phone"),
+  propertyOwnerAddress: text("property_owner_address"),
+  workSiteAddress: text("work_site_address"),
+  workSiteCity: varchar("work_site_city"),
+  workSiteZip: varchar("work_site_zip"),
+  workSiteCounty: varchar("work_site_county"),
+  isPrimaryResidence: boolean("is_primary_residence"),
+  asbestosToBeRemoved: boolean("asbestos_to_be_removed"),
+  asbestosNotificationNumber: varchar("asbestos_notification_number"),
+  projectStartDate: timestamp("project_start_date"),
+  projectCompletionDate: timestamp("project_completion_date"),
+  asbestosSquareFeet: integer("asbestos_square_feet"),
+  asbestosLinearFeet: integer("asbestos_linear_feet"),
+  asbestosContractorName: varchar("asbestos_contractor_name"),
+  isNeshapProject: boolean("is_neshap_project"),
   
   // Metadata
   createdAt: timestamp("created_at").defaultNow(),

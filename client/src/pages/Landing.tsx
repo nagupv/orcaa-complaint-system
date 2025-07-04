@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Users, Shield, Database } from "lucide-react";
+import { FileText, Users, Shield, Database, ArrowRight } from "lucide-react";
+import { Link } from "wouter";
 
 export default function Landing() {
   return (
@@ -33,16 +34,25 @@ export default function Landing() {
             <span className="text-orcaa-blue"> Management System</span>
           </h1>
           <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-            ORCAA accepts complaints related to smoke, open fire, wood stoves, odors, and other emissions. 
+            ORCAA provides environmental services including air quality complaint management and demolition notifications. 
             Our jurisdiction includes Clallam, Grays Harbor, Jefferson, Mason, Pacific, and Thurston Counties.
           </p>
-          <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
+          <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8 gap-4">
+            <div className="rounded-md shadow">
+              <Link href="/services">
+                <Button className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-orcaa-blue hover:bg-orcaa-blue-light md:py-4 md:text-lg md:px-10">
+                  Submit Request
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
             <div className="rounded-md shadow">
               <Button 
                 onClick={() => window.location.href = '/api/login'}
-                className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-orcaa-blue hover:bg-orcaa-blue-light md:py-4 md:text-lg md:px-10"
+                variant="outline"
+                className="w-full flex items-center justify-center px-8 py-3 border border-gray-300 text-base font-medium rounded-md text-orcaa-blue bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
               >
-                Get Started
+                Staff Login
               </Button>
             </div>
           </div>

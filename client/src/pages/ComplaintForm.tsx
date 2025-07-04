@@ -20,6 +20,7 @@ const complaintFormSchema = insertComplaintSchema.extend({
 type ComplaintFormData = z.infer<typeof complaintFormSchema>;
 
 export default function ComplaintForm() {
+  // This form handles AIR_QUALITY complaints
   const { toast } = useToast();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [complaintId, setComplaintId] = useState<string>("");

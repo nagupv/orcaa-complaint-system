@@ -65,7 +65,7 @@ export interface IStorage {
   getAuditTrail(complaintId?: number): Promise<AuditEntry[]>;
   
   // Helper methods
-  generateComplaintId(): Promise<string>;
+  generateComplaintId(serviceType?: string): Promise<string>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -105,7 +105,7 @@ export class DatabaseStorage implements IStorage {
 
   // Complaint operations
   async createComplaint(complaint: InsertComplaint): Promise<Complaint> {
-    const complaintId = await this.generateComplaintId();
+    const complaintId = await this.generateComplaintId(complaint.complaintType);
     const [newComplaint] = await db
       .insert(complaints)
       .values({ ...complaint, complaintId })
@@ -309,15 +309,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Helper methods
-  async generateComplaintId(): Promise<string> {
+  async generateComplaintId(serviceType?: string): Promise<string> {
     const year = new Date().getFullYear();
+    const prefix = serviceType === "DEMOLITION_NOTICE" ? "DN" : "AQ";
+    
     const [result] = await db
       .select({ count: sql<number>`count(*)` })
       .from(complaints)
-      .where(like(complaints.complaintId, `AQ-${year}-%`));
+      .where(like(complaints.complaintId, `${prefix}-${year}-%`));
     
     const nextNumber = Number(result.count) + 1;
-    return `AQ-${year}-${nextNumber.toString().padStart(3, '0')}`;
+    return `${prefix}-${year}-${nextNumber.toString().padStart(3, '0')}`;
   }
 }
 

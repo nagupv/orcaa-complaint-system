@@ -10,6 +10,30 @@ export const PROBLEM_TYPES = [
   { value: "other", label: "Other" },
 ];
 
+export const SERVICE_TYPES = [
+  {
+    value: "AIR_QUALITY",
+    label: "Air Quality Complaint",
+    description: "Report air quality issues like smoke, odor, dust, or other air pollution problems",
+    icon: "wind",
+  },
+  {
+    value: "DEMOLITION_NOTICE",
+    label: "Demolition Notification",
+    description: "Required notification for demolition projects larger than 120 sq. ft. with 14-day advance notice",
+    icon: "construction",
+  },
+];
+
+export const COUNTIES = [
+  { value: "clallam", label: "Clallam County" },
+  { value: "grays_harbor", label: "Grays Harbor County" },
+  { value: "jefferson", label: "Jefferson County" },
+  { value: "mason", label: "Mason County" },
+  { value: "pacific", label: "Pacific County" },
+  { value: "thurston", label: "Thurston County" },
+];
+
 export const US_STATES = [
   "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware",
   "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky",
