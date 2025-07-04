@@ -63,9 +63,11 @@ export default function Header() {
           {/* Logo */}
           <Link href="/">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 bg-orcaa-blue rounded-full flex items-center justify-center">
-                <span className="text-white font-bold text-xl">O</span>
-              </div>
+              <img 
+                src="/orcaa-logo.png" 
+                alt="ORCAA Logo" 
+                className="w-12 h-12 object-contain"
+              />
               <div>
                 <h1 className="text-xl font-bold text-gray-900">ORCAA</h1>
                 <p className="text-sm text-gray-600">Olympic Region Clean Air Agency</p>

@@ -108,6 +108,9 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **ORCAA Logo Integration** (July 04, 2025): Downloaded and integrated official ORCAA logo from orcaa.org website into application header and landing page for authentic branding
+- **User Management Table Layout** (July 04, 2025): Converted user display from card-based layout to clean tabular format with organized columns for Name, Email, Contact Details, Roles, Notifications, and Actions
+- **Complete User CRUD Operations** (July 04, 2025): Implemented full user management with update and delete functionality, including main screen editing form for all fields except email, role-based permissions, and comprehensive audit trail logging
 - **Complete Application Management System** (July 04, 2025): Restructured User Management into comprehensive Application Management with 4 modules: User Management, Role Management, User and Role Mapping, User Role Report. Added roles database table with full CRUD operations and role seeding functionality
 - **WhatsApp and SMS Integration** (July 04, 2025): Enhanced user management with WhatsApp account and mobile number fields for Twilio SMS/WhatsApp notifications. Added notification preferences and enhanced Twilio service with user-based notification functions
 - **Navigation Layout Fix** (July 04, 2025): Fixed horizontal tab navigation display using flex layout instead of grid to ensure tabs appear in a single line

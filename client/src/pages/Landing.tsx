@@ -17,6 +17,13 @@ export default function Landing() {
           </Button>
         </div>
         <div className="text-center">
+          <div className="flex justify-center mb-8">
+            <img 
+              src="/orcaa-logo.png" 
+              alt="ORCAA Logo" 
+              className="h-20 w-20 object-contain"
+            />
+          </div>
           <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl md:text-6xl">
             Air Quality Complaint
             <span className="text-orcaa-blue"> Management System</span>
