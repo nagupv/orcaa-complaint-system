@@ -53,9 +53,18 @@ export default function ListValueManagement() {
 
   const createMutation = useMutation({
     mutationFn: async (data: ListValueFormData) => {
-      return await apiRequest("/api/list-values", "POST", data);
+      console.log('Mutation: Making API request with data:', data);
+      try {
+        const result = await apiRequest("/api/list-values", "POST", data);
+        console.log('Mutation: API request successful, result:', result);
+        return result;
+      } catch (error) {
+        console.error('Mutation: API request failed:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
+      console.log('Mutation: Success callback triggered');
       queryClient.invalidateQueries({ queryKey: ["/api/list-values"] });
       toast({
         title: "Success",
@@ -65,6 +74,7 @@ export default function ListValueManagement() {
       form.reset();
     },
     onError: (error: Error) => {
+      console.error('Mutation: Error callback triggered:', error);
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -78,7 +88,7 @@ export default function ListValueManagement() {
       }
       toast({
         title: "Error",
-        description: "Failed to create list value",
+        description: error.message || "Failed to create list value",
         variant: "destructive",
       });
     },
@@ -149,9 +159,13 @@ export default function ListValueManagement() {
   });
 
   const onSubmit = (data: ListValueFormData) => {
+    console.log('Form submission data:', data);
+    console.log('Form validation errors:', form.formState.errors);
+    
     if (editingListValue) {
       updateMutation.mutate({ id: editingListValue.id, data });
     } else {
+      console.log('Creating new list value with data:', data);
       createMutation.mutate(data);
     }
   };
