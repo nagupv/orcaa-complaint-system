@@ -103,6 +103,7 @@ export default function WorkflowManagement() {
   };
 
   const formatRoleName = (role: string) => {
+    if (!role || typeof role !== 'string') return '';
     return role.split('_').map(word => 
       word.charAt(0).toUpperCase() + word.slice(1)
     ).join(' ');
@@ -162,9 +163,13 @@ export default function WorkflowManagement() {
                       {user.firstName} {user.lastName}
                     </TableCell>
                     <TableCell>
-                      <Badge className={getRoleBadgeColor(user.role)}>
-                        {formatRoleName(user.role)}
-                      </Badge>
+                      <div className="flex gap-1 flex-wrap">
+                        {user.roles && (typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles).map((role: string) => (
+                          <Badge key={role} className={getRoleBadgeColor(role)}>
+                            {formatRoleName(role)}
+                          </Badge>
+                        ))}
+                      </div>
                     </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.phone || "N/A"}</TableCell>
@@ -180,9 +185,10 @@ export default function WorkflowManagement() {
                           size="sm"
                           onClick={() => {
                             // This would open a role selection dialog
-                            const newRole = prompt("Enter new role:", user.role);
-                            if (newRole && newRole !== user.role) {
-                              handleUserRoleUpdate(user.id, newRole);
+                            const currentRoles = user.roles && (typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles) || [];
+                            const newRoles = prompt("Enter roles (comma-separated):", currentRoles.join(', '));
+                            if (newRoles && newRoles !== currentRoles.join(', ')) {
+                              handleUserRoleUpdate(user.id, newRoles.split(',').map(r => r.trim()));
                             }
                           }}
                         >

@@ -11,8 +11,10 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("public-form");
   const { user } = useAuth();
   
-  const isAdmin = user?.roles && (typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles).includes('admin');
-  const tabCount = isAdmin ? 5 : 4;
+  const hasUserManagementAccess = user?.roles && (typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles).some((role: string) => 
+    ['admin', 'supervisor', 'approver'].includes(role)
+  );
+  const tabCount = hasUserManagementAccess ? 5 : 4;
 
   return (
     <div className="bg-gray-50">
@@ -31,7 +33,7 @@ export default function Home() {
             <TabsTrigger value="audit" className="data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
               Audit Trail
             </TabsTrigger>
-            {isAdmin && (
+            {hasUserManagementAccess && (
               <TabsTrigger value="users" className="data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
                 User Management
               </TabsTrigger>
@@ -54,7 +56,7 @@ export default function Home() {
             <AuditTrail />
           </TabsContent>
 
-          {isAdmin && (
+          {hasUserManagementAccess && (
             <TabsContent value="users" className="mt-6">
               <UserManagement />
             </TabsContent>
