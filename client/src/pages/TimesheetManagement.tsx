@@ -1369,7 +1369,7 @@ export default function TimesheetManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {leaveRequests.data.map((request: any) => (
+                      {leaveRequests.map((request: any) => (
                         <TableRow key={request.id}>
                           <TableCell className="font-medium">{request.leaveType}</TableCell>
                           <TableCell>{formatDate(request.startDate)}</TableCell>
@@ -1481,7 +1481,7 @@ export default function TimesheetManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {overtimeRequests.data.map((request: any) => (
+                      {overtimeRequests.map((request: any) => (
                         <TableRow key={request.id}>
                           <TableCell className="font-medium">{formatDate(request.date)}</TableCell>
                           <TableCell>{request.totalHours}h</TableCell>
