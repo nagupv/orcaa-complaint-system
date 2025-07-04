@@ -4,14 +4,14 @@ import ComplaintForm from "@/pages/ComplaintForm";
 import Dashboard from "@/pages/Dashboard";
 import WorkflowManagement from "@/pages/WorkflowManagement";
 import AuditTrail from "@/pages/AuditTrail";
-import UserManagement from "@/pages/UserManagement";
+import ApplicationManagement from "@/pages/ApplicationManagement";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("public-form");
   const { user } = useAuth();
   
-  const hasUserManagementAccess = user?.roles && (typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles).some((role: string) => 
+  const hasUserManagementAccess = user?.roles && Array.isArray(typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles) && (typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles).some((role: string) => 
     ['admin', 'supervisor', 'approver'].includes(role)
   );
   const tabCount = hasUserManagementAccess ? 5 : 4;
@@ -35,7 +35,7 @@ export default function Home() {
             </TabsTrigger>
             {hasUserManagementAccess && (
               <TabsTrigger value="users" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-                User Management
+                Application Management
               </TabsTrigger>
             )}
           </TabsList>
@@ -58,7 +58,7 @@ export default function Home() {
 
           {hasUserManagementAccess && (
             <TabsContent value="users" className="mt-6">
-              <UserManagement />
+              <ApplicationManagement />
             </TabsContent>
           )}
         </Tabs>

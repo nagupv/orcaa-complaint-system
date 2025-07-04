@@ -485,6 +485,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Role management routes
+  app.get('/api/roles', isAuthenticated, async (req, res) => {
+    try {
+      const roles = await storage.getRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error('Error fetching roles:', error);
+      res.status(500).json({ error: 'Failed to fetch roles' });
+    }
+  });
+
+  app.post('/api/roles', isAuthenticated, async (req, res) => {
+    try {
+      const role = await storage.createRole(req.body);
+      res.json(role);
+    } catch (error) {
+      console.error('Error creating role:', error);
+      res.status(500).json({ error: 'Failed to create role' });
+    }
+  });
+
+  app.put('/api/roles/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const role = await storage.updateRole(id, req.body);
+      res.json(role);
+    } catch (error) {
+      console.error('Error updating role:', error);
+      res.status(500).json({ error: 'Failed to update role' });
+    }
+  });
+
+  app.delete('/api/roles/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteRole(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting role:', error);
+      res.status(500).json({ error: 'Failed to delete role' });
+    }
+  });
+
   // Serve uploaded files
   app.use('/uploads', express.static('./uploads'));
 

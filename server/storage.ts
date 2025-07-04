@@ -5,6 +5,7 @@ import {
   workflowStages,
   workDescriptions,
   auditTrail,
+  roles,
   type User,
   type UpsertUser,
   type Complaint,
@@ -16,6 +17,8 @@ import {
   type InsertWorkDescription,
   type AuditEntry,
   type InsertAuditEntry,
+  type Role,
+  type InsertRole,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, gte, lte, isNull, sql } from "drizzle-orm";
@@ -63,6 +66,13 @@ export interface IStorage {
   // Audit trail operations
   createAuditEntry(entry: InsertAuditEntry): Promise<AuditEntry>;
   getAuditTrail(complaintId?: number): Promise<AuditEntry[]>;
+  
+  // Role operations
+  getRoles(): Promise<Role[]>;
+  createRole(role: InsertRole): Promise<Role>;
+  updateRole(id: number, updates: Partial<Role>): Promise<Role>;
+  deleteRole(id: number): Promise<void>;
+  getRoleById(id: number): Promise<Role | undefined>;
   
   // Helper methods
   generateComplaintId(serviceType?: string): Promise<string>;
@@ -306,6 +316,34 @@ export class DatabaseStorage implements IStorage {
     }
     
     return await query.orderBy(desc(auditTrail.timestamp));
+  }
+
+  // Role operations
+  async getRoles(): Promise<Role[]> {
+    return await db.select().from(roles).orderBy(roles.displayName);
+  }
+
+  async createRole(role: InsertRole): Promise<Role> {
+    const [newRole] = await db.insert(roles).values(role).returning();
+    return newRole;
+  }
+
+  async updateRole(id: number, updates: Partial<Role>): Promise<Role> {
+    const [updatedRole] = await db
+      .update(roles)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(roles.id, id))
+      .returning();
+    return updatedRole;
+  }
+
+  async deleteRole(id: number): Promise<void> {
+    await db.delete(roles).where(eq(roles.id, id));
+  }
+
+  async getRoleById(id: number): Promise<Role | undefined> {
+    const [role] = await db.select().from(roles).where(eq(roles.id, id));
+    return role;
   }
 
   // Helper methods

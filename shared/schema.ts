@@ -145,6 +145,18 @@ export const auditTrail = pgTable("audit_trail", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
+// Roles table for dynamic role management
+export const roles = pgTable("roles", {
+  id: serial("id").primaryKey(),
+  name: varchar("name").notNull().unique(), // e.g., "field_staff", "admin"
+  displayName: varchar("display_name").notNull(), // e.g., "Field Staff", "Administrator"
+  description: text("description"),
+  permissions: jsonb("permissions").default("[]"), // Array of permission strings
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const complaintsRelations = relations(complaints, ({ one, many }) => ({
   assignedUser: one(users, {
@@ -191,6 +203,10 @@ export const auditTrailRelations = relations(auditTrail, ({ one }) => ({
   }),
 }));
 
+export const rolesRelations = relations(roles, ({ many }) => ({
+  // No direct relations for now, but can add user mappings later
+}));
+
 // Zod schemas
 export const insertComplaintSchema = createInsertSchema(complaints).omit({
   id: true,
@@ -214,6 +230,12 @@ export const insertWorkflowStageSchema = createInsertSchema(workflowStages).omit
   createdAt: true,
 });
 
+export const insertRoleSchema = createInsertSchema(roles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -226,3 +248,5 @@ export type WorkDescription = typeof workDescriptions.$inferSelect;
 export type InsertWorkDescription = z.infer<typeof insertWorkDescriptionSchema>;
 export type AuditEntry = typeof auditTrail.$inferSelect;
 export type InsertAuditEntry = z.infer<typeof insertAuditSchema>;
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
