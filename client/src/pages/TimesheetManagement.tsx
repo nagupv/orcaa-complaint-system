@@ -1349,11 +1349,11 @@ export default function TimesheetManagement() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {leaveRequests.isLoading ? (
+              {leaveRequestsLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
                 </div>
-              ) : leaveRequests.data && leaveRequests.data.length > 0 ? (
+              ) : leaveRequests && leaveRequests.length > 0 ? (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -1462,11 +1462,11 @@ export default function TimesheetManagement() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {overtimeRequests.isLoading ? (
+              {overtimeRequestsLoading ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
                 </div>
-              ) : overtimeRequests.data && overtimeRequests.data.length > 0 ? (
+              ) : overtimeRequests && overtimeRequests.length > 0 ? (
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
