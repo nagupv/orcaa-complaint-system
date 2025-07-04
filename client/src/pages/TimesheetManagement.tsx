@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
@@ -236,6 +237,68 @@ export default function TimesheetManagement() {
   const totalHoursThisMonth = currentMonthTimesheets.reduce((sum: number, ts: Timesheet) => 
     sum + parseFloat(ts.timeInHours), 0
   );
+
+  // Calculate summaries by day and activity
+  const dailyActivitySummary = timesheets.reduce((acc: any, ts: Timesheet) => {
+    const date = ts.date;
+    const activity = ts.activity;
+    const hours = parseFloat(ts.timeInHours);
+    
+    if (!acc[date]) acc[date] = {};
+    if (!acc[date][activity]) acc[date][activity] = 0;
+    acc[date][activity] += hours;
+    
+    return acc;
+  }, {});
+
+  // Calculate summaries by day and work ID
+  const dailyWorkIdSummary = timesheets.reduce((acc: any, ts: Timesheet) => {
+    const date = ts.date;
+    const workId = ts.businessWorkId || 'No Work ID';
+    const hours = parseFloat(ts.timeInHours);
+    
+    if (!acc[date]) acc[date] = {};
+    if (!acc[date][workId]) acc[date][workId] = 0;
+    acc[date][workId] += hours;
+    
+    return acc;
+  }, {});
+
+  // Calculate weekly summaries
+  const getWeekStart = (date: string) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day;
+    return new Date(d.setDate(diff)).toISOString().split('T')[0];
+  };
+
+  const weeklyActivitySummary = timesheets.reduce((acc: any, ts: Timesheet) => {
+    const weekStart = getWeekStart(ts.date);
+    const activity = ts.activity;
+    const hours = parseFloat(ts.timeInHours);
+    
+    if (!acc[weekStart]) acc[weekStart] = {};
+    if (!acc[weekStart][activity]) acc[weekStart][activity] = 0;
+    acc[weekStart][activity] += hours;
+    
+    return acc;
+  }, {});
+
+  const weeklyWorkIdSummary = timesheets.reduce((acc: any, ts: Timesheet) => {
+    const weekStart = getWeekStart(ts.date);
+    const workId = ts.businessWorkId || 'No Work ID';
+    const hours = parseFloat(ts.timeInHours);
+    
+    if (!acc[weekStart]) acc[weekStart] = {};
+    if (!acc[weekStart][workId]) acc[weekStart][workId] = 0;
+    acc[weekStart][workId] += hours;
+    
+    return acc;
+  }, {});
+
+  // Get unique activities and work IDs for table headers
+  const allActivities = [...new Set(timesheets.map((ts: Timesheet) => ts.activity))];
+  const allWorkIds = [...new Set(timesheets.map((ts: Timesheet) => ts.businessWorkId || 'No Work ID'))];
 
   if (timesheetsLoading || activitiesLoading || complaintIdsLoading) {
     return (
@@ -553,6 +616,191 @@ export default function TimesheetManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Summary Tables */}
+      {timesheets.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Daily Activity Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Daily Activity Summary
+              </CardTitle>
+              <CardDescription>
+                Hours spent by day and activity
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      {allActivities.map(activity => (
+                        <TableHead key={activity}>{activity}</TableHead>
+                      ))}
+                      <TableHead className="font-semibold">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(dailyActivitySummary).sort().map(([date, activities]) => {
+                      const dayTotal = Object.values(activities as any).reduce((sum: number, hours: any) => sum + hours, 0);
+                      return (
+                        <TableRow key={date}>
+                          <TableCell className="font-medium">{formatDate(date)}</TableCell>
+                          {allActivities.map(activity => (
+                            <TableCell key={activity}>
+                              {(activities as any)[activity] ? `${(activities as any)[activity]}h` : '-'}
+                            </TableCell>
+                          ))}
+                          <TableCell className="font-semibold">{dayTotal}h</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Weekly Activity Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Weekly Activity Summary
+              </CardTitle>
+              <CardDescription>
+                Hours spent by week and activity
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Week Start</TableHead>
+                      {allActivities.map(activity => (
+                        <TableHead key={activity}>{activity}</TableHead>
+                      ))}
+                      <TableHead className="font-semibold">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(weeklyActivitySummary).sort().map(([weekStart, activities]) => {
+                      const weekTotal = Object.values(activities as any).reduce((sum: number, hours: any) => sum + hours, 0);
+                      return (
+                        <TableRow key={weekStart}>
+                          <TableCell className="font-medium">{formatDate(weekStart)}</TableCell>
+                          {allActivities.map(activity => (
+                            <TableCell key={activity}>
+                              {(activities as any)[activity] ? `${(activities as any)[activity]}h` : '-'}
+                            </TableCell>
+                          ))}
+                          <TableCell className="font-semibold">{weekTotal}h</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Daily Work ID Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Daily Work ID Summary
+              </CardTitle>
+              <CardDescription>
+                Hours spent by day and work ID
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      {allWorkIds.map(workId => (
+                        <TableHead key={workId} className="max-w-32 truncate">
+                          {workId.length > 12 ? workId.substring(0, 12) + '...' : workId}
+                        </TableHead>
+                      ))}
+                      <TableHead className="font-semibold">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(dailyWorkIdSummary).sort().map(([date, workIds]) => {
+                      const dayTotal = Object.values(workIds as any).reduce((sum: number, hours: any) => sum + hours, 0);
+                      return (
+                        <TableRow key={date}>
+                          <TableCell className="font-medium">{formatDate(date)}</TableCell>
+                          {allWorkIds.map(workId => (
+                            <TableCell key={workId}>
+                              {(workIds as any)[workId] ? `${(workIds as any)[workId]}h` : '-'}
+                            </TableCell>
+                          ))}
+                          <TableCell className="font-semibold">{dayTotal}h</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Weekly Work ID Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Weekly Work ID Summary
+              </CardTitle>
+              <CardDescription>
+                Hours spent by week and work ID
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Week Start</TableHead>
+                      {allWorkIds.map(workId => (
+                        <TableHead key={workId} className="max-w-32 truncate">
+                          {workId.length > 12 ? workId.substring(0, 12) + '...' : workId}
+                        </TableHead>
+                      ))}
+                      <TableHead className="font-semibold">Total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(weeklyWorkIdSummary).sort().map(([weekStart, workIds]) => {
+                      const weekTotal = Object.values(workIds as any).reduce((sum: number, hours: any) => sum + hours, 0);
+                      return (
+                        <TableRow key={weekStart}>
+                          <TableCell className="font-medium">{formatDate(weekStart)}</TableCell>
+                          {allWorkIds.map(workId => (
+                            <TableCell key={workId}>
+                              {(workIds as any)[workId] ? `${(workIds as any)[workId]}h` : '-'}
+                            </TableCell>
+                          ))}
+                          <TableCell className="font-semibold">{weekTotal}h</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
