@@ -34,6 +34,10 @@ export default function ListValueManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Debug state changes
+  console.log('ListValueManagement render - isCreateDialogOpen:', isCreateDialogOpen);
+  console.log('ListValueManagement render - editingListValue:', editingListValue);
+
   const form = useForm<ListValueFormData>({
     resolver: zodResolver(listValueFormSchema),
     defaultValues: {
@@ -211,16 +215,18 @@ export default function ListValueManagement() {
             Manage configuration list values used throughout the application
           </p>
         </div>
+        <Button 
+          onClick={() => {
+            console.log('Add List Value button clicked');
+            setIsCreateDialogOpen(true);
+          }}
+          className="bg-orcaa-blue hover:bg-orcaa-blue/90"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add List Value
+        </Button>
+        
         <Dialog open={isCreateDialogOpen || !!editingListValue} onOpenChange={handleDialogClose}>
-          <DialogTrigger asChild>
-            <Button 
-              onClick={() => setIsCreateDialogOpen(true)}
-              className="bg-orcaa-blue hover:bg-orcaa-blue/90"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add List Value
-            </Button>
-          </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>
@@ -365,7 +371,10 @@ export default function ListValueManagement() {
             <div className="text-center py-8">
               <p className="text-muted-foreground">No list values found</p>
               <Button
-                onClick={() => setIsCreateDialogOpen(true)}
+                onClick={() => {
+                  console.log('Create your first list value button clicked');
+                  setIsCreateDialogOpen(true);
+                }}
                 variant="outline"
                 className="mt-4"
               >
