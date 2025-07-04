@@ -300,6 +300,47 @@ export default function TimesheetManagement() {
   const allActivities = [...new Set(timesheets.map((ts: Timesheet) => ts.activity))];
   const allWorkIds = [...new Set(timesheets.map((ts: Timesheet) => ts.businessWorkId || 'No Work ID'))];
 
+  // Generate heatmap data for the last 6 months
+  const generateHeatmapData = () => {
+    const today = new Date();
+    const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
+    const heatmapData = [];
+    
+    for (let d = new Date(sixMonthsAgo); d <= today; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      const dayTimesheets = timesheets.filter((ts: Timesheet) => ts.date === dateStr);
+      const totalHours = dayTimesheets.reduce((sum: number, ts: Timesheet) => 
+        sum + parseFloat(ts.timeInHours), 0
+      );
+      
+      heatmapData.push({
+        date: dateStr,
+        hours: totalHours,
+        count: dayTimesheets.length,
+        dayOfWeek: d.getDay(),
+        weekIndex: Math.floor((d.getTime() - sixMonthsAgo.getTime()) / (7 * 24 * 60 * 60 * 1000))
+      });
+    }
+    
+    return heatmapData;
+  };
+
+  const heatmapData = generateHeatmapData();
+  
+  // Get intensity level for heat map coloring (0-4 scale like GitHub)
+  const getIntensity = (hours: number) => {
+    if (hours === 0) return 0;
+    if (hours <= 2) return 1;
+    if (hours <= 4) return 2;
+    if (hours <= 6) return 3;
+    return 4;
+  };
+
+  // Group heatmap data by weeks
+  const weeks = Array.from({ length: 26 }, (_, i) => 
+    heatmapData.filter(day => day.weekIndex === i)
+  ).filter(week => week.length > 0);
+
   if (timesheetsLoading || activitiesLoading || complaintIdsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -616,6 +657,203 @@ export default function TimesheetManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* GitHub-style Contributions Heatmap */}
+      {timesheets.length > 0 && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Activity Heatmap - Last 6 Months
+            </CardTitle>
+            <CardDescription>
+              Daily time tracking visualization (GitHub contributions style)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <div className="flex flex-col gap-1 min-w-[800px]">
+                {/* Day labels */}
+                <div className="flex gap-1 mb-2">
+                  <div className="w-8"></div>
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                    <div key={day} className="w-3 h-3 text-xs text-muted-foreground flex items-center justify-center" style={{marginLeft: index === 0 ? '0' : '2px'}}>
+                      {index % 2 === 0 ? day.charAt(0) : ''}
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Heatmap grid */}
+                <div className="flex gap-1">
+                  {weeks.map((week, weekIndex) => (
+                    <div key={weekIndex} className="flex flex-col gap-1">
+                      {Array.from({ length: 7 }, (_, dayIndex) => {
+                        const dayData = week.find(d => d.dayOfWeek === dayIndex);
+                        const intensity = dayData ? getIntensity(dayData.hours) : 0;
+                        
+                        return (
+                          <div
+                            key={dayIndex}
+                            className={`w-3 h-3 rounded-sm border cursor-pointer ${
+                              intensity === 0 ? 'bg-muted border-border' :
+                              intensity === 1 ? 'bg-green-200 border-green-300 dark:bg-green-900 dark:border-green-800' :
+                              intensity === 2 ? 'bg-green-300 border-green-400 dark:bg-green-800 dark:border-green-700' :
+                              intensity === 3 ? 'bg-green-400 border-green-500 dark:bg-green-700 dark:border-green-600' :
+                              'bg-green-500 border-green-600 dark:bg-green-600 dark:border-green-500'
+                            }`}
+                            title={dayData ? `${dayData.date}: ${dayData.hours}h (${dayData.count} entries)` : 'No data'}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Legend */}
+                <div className="flex items-center gap-2 mt-4 text-sm text-muted-foreground">
+                  <span>Less</span>
+                  <div className="flex gap-1">
+                    {[0, 1, 2, 3, 4].map(level => (
+                      <div
+                        key={level}
+                        className={`w-3 h-3 rounded-sm border ${
+                          level === 0 ? 'bg-muted border-border' :
+                          level === 1 ? 'bg-green-200 border-green-300 dark:bg-green-900 dark:border-green-800' :
+                          level === 2 ? 'bg-green-300 border-green-400 dark:bg-green-800 dark:border-green-700' :
+                          level === 3 ? 'bg-green-400 border-green-500 dark:bg-green-700 dark:border-green-600' :
+                          'bg-green-500 border-green-600 dark:bg-green-600 dark:border-green-500'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span>More</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Color-coded Allocation Widgets */}
+      {timesheets.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Activity Time Allocation */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                Activity Time Allocation
+              </CardTitle>
+              <CardDescription>
+                Time distribution across different activities
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {(() => {
+                  const activityTotals = timesheets.reduce((acc: any, ts: Timesheet) => {
+                    acc[ts.activity] = (acc[ts.activity] || 0) + parseFloat(ts.timeInHours);
+                    return acc;
+                  }, {});
+                  
+                  const totalHours = Object.values(activityTotals).reduce((sum: number, hours: any) => sum + hours, 0);
+                  const activityColors = [
+                    'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 
+                    'bg-pink-500', 'bg-indigo-500', 'bg-red-500', 'bg-orange-500',
+                    'bg-teal-500', 'bg-cyan-500', 'bg-lime-500', 'bg-amber-500'
+                  ];
+                  
+                  return Object.entries(activityTotals)
+                    .sort((a: any, b: any) => b[1] - a[1])
+                    .map(([activity, hours]: any, index) => {
+                      const percentage = ((hours / totalHours) * 100).toFixed(1);
+                      const colorClass = activityColors[index % activityColors.length];
+                      
+                      return (
+                        <div key={activity} className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${colorClass}`}></div>
+                              <span className="text-sm font-medium">{activity}</span>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {hours}h ({percentage}%)
+                            </div>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full ${colorClass}`}
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    });
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Work ID Time Allocation */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Work ID Time Allocation
+              </CardTitle>
+              <CardDescription>
+                Time distribution across work/complaint IDs
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {(() => {
+                  const workIdTotals = timesheets.reduce((acc: any, ts: Timesheet) => {
+                    const workId = ts.businessWorkId || 'No Work ID';
+                    acc[workId] = (acc[workId] || 0) + parseFloat(ts.timeInHours);
+                    return acc;
+                  }, {});
+                  
+                  const totalHours = Object.values(workIdTotals).reduce((sum: number, hours: any) => sum + hours, 0);
+                  const workIdColors = [
+                    'bg-emerald-500', 'bg-blue-600', 'bg-violet-500', 'bg-rose-500',
+                    'bg-orange-600', 'bg-teal-600', 'bg-indigo-600', 'bg-pink-600',
+                    'bg-cyan-600', 'bg-lime-600', 'bg-amber-600', 'bg-red-600'
+                  ];
+                  
+                  return Object.entries(workIdTotals)
+                    .sort((a: any, b: any) => b[1] - a[1])
+                    .map(([workId, hours]: any, index) => {
+                      const percentage = ((hours / totalHours) * 100).toFixed(1);
+                      const colorClass = workIdColors[index % workIdColors.length];
+                      const displayWorkId = workId.length > 20 ? workId.substring(0, 20) + '...' : workId;
+                      
+                      return (
+                        <div key={workId} className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${colorClass}`}></div>
+                              <span className="text-sm font-medium" title={workId}>{displayWorkId}</span>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {hours}h ({percentage}%)
+                            </div>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full ${colorClass}`}
+                              style={{ width: `${percentage}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      );
+                    });
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Summary Tables */}
       {timesheets.length > 0 && (
