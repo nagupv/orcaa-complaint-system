@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Calendar, Clock, Plus, Edit, Trash2, User, FileText, Plane, AlertCircle } from "lucide-react";
+import { Calendar, Clock, Plus, Edit, Trash2, User, FileText, Plane, AlertCircle, Check, X, Calendar1, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,8 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -31,12 +31,37 @@ const timesheetFormSchema = z.object({
 
 type TimesheetFormData = z.infer<typeof timesheetFormSchema>;
 
+// Leave request form schema
+const leaveRequestFormSchema = z.object({
+  leaveType: z.string().min(1, "Leave type is required"),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().min(1, "End date is required"),
+  reason: z.string().min(1, "Reason is required"),
+});
+
+type LeaveRequestFormData = z.infer<typeof leaveRequestFormSchema>;
+
+// Overtime request form schema
+const overtimeRequestFormSchema = z.object({
+  date: z.string().min(1, "Date is required"),
+  hours: z.number().min(0.5, "Hours must be at least 0.5").max(12, "Hours cannot exceed 12"),
+  reason: z.string().min(1, "Reason is required"),
+  projectDescription: z.string().optional(),
+});
+
+type OvertimeRequestFormData = z.infer<typeof overtimeRequestFormSchema>;
+
 export default function TimesheetManagement() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTimesheet, setEditingTimesheet] = useState<Timesheet | null>(null);
+  const [activeTab, setActiveTab] = useState("time-entries");
+  const [editingLeaveRequest, setEditingLeaveRequest] = useState<any | null>(null);
+  const [editingOvertimeRequest, setEditingOvertimeRequest] = useState<any | null>(null);
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
+  const [isOvertimeDialogOpen, setIsOvertimeDialogOpen] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(() => {
     // Get current week start (Monday)
     const today = new Date();
@@ -61,6 +86,28 @@ export default function TimesheetManagement() {
     },
   });
 
+  // Leave request form
+  const leaveForm = useForm<LeaveRequestFormData>({
+    resolver: zodResolver(leaveRequestFormSchema),
+    defaultValues: {
+      leaveType: "",
+      startDate: "",
+      endDate: "",
+      reason: "",
+    },
+  });
+
+  // Overtime request form
+  const overtimeForm = useForm<OvertimeRequestFormData>({
+    resolver: zodResolver(overtimeRequestFormSchema),
+    defaultValues: {
+      date: today,
+      hours: 0,
+      reason: "",
+      projectDescription: "",
+    },
+  });
+
   // Fetch timesheets for current user
   const { data: timesheets = [], isLoading: timesheetsLoading } = useQuery({
     queryKey: ["/api/timesheets", user?.id],
@@ -75,6 +122,16 @@ export default function TimesheetManagement() {
   // Fetch valid complaint IDs
   const { data: validComplaintIds = [], isLoading: complaintIdsLoading } = useQuery({
     queryKey: ["/api/valid-complaint-ids"],
+  });
+
+  // Fetch leave requests
+  const { data: leaveRequests = [], isLoading: leaveRequestsLoading } = useQuery({
+    queryKey: ["/api/leave-requests"],
+  });
+
+  // Fetch overtime requests
+  const { data: overtimeRequests = [], isLoading: overtimeRequestsLoading } = useQuery({
+    queryKey: ["/api/overtime-requests"],
   });
 
   // Create timesheet mutation
@@ -223,6 +280,125 @@ export default function TimesheetManagement() {
     });
     setIsCreateDialogOpen(true);
   };
+
+  // Leave request mutations
+  const createLeaveRequestMutation = useMutation({
+    mutationFn: async (data: LeaveRequestFormData) => {
+      const startDate = new Date(data.startDate);
+      const endDate = new Date(data.endDate);
+      const timeDiff = endDate.getTime() - startDate.getTime();
+      const totalDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+      
+      const requestData = {
+        ...data,
+        totalDays: totalDays.toString(),
+      };
+      return await apiRequest("POST", "/api/leave-requests", requestData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leave-requests"] });
+      leaveForm.reset();
+      setIsLeaveDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Leave request submitted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to submit leave request",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const approveLeaveRequestMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("POST", `/api/leave-requests/${id}/approve`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leave-requests"] });
+      toast({
+        title: "Success",
+        description: "Leave request approved successfully",
+      });
+    },
+  });
+
+  const rejectLeaveRequestMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
+      return await apiRequest("POST", `/api/leave-requests/${id}/reject`, { reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leave-requests"] });
+      toast({
+        title: "Success",
+        description: "Leave request rejected",
+      });
+    },
+  });
+
+  // Overtime request mutations
+  const createOvertimeRequestMutation = useMutation({
+    mutationFn: async (data: OvertimeRequestFormData) => {
+      const requestData = {
+        ...data,
+        date: data.date,
+        startTime: "18:00",
+        endTime: "20:00",
+        totalHours: data.hours.toString(),
+        businessWorkId: data.projectDescription || null,
+      };
+      return await apiRequest("POST", "/api/overtime-requests", requestData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/overtime-requests"] });
+      overtimeForm.reset();
+      setIsOvertimeDialogOpen(false);
+      toast({
+        title: "Success",
+        description: "Overtime request submitted successfully",
+      });
+    },
+  });
+
+  const approveOvertimeRequestMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("POST", `/api/overtime-requests/${id}/approve`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/overtime-requests"] });
+      toast({
+        title: "Success",
+        description: "Overtime request approved successfully",
+      });
+    },
+  });
+
+  const rejectOvertimeRequestMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
+      return await apiRequest("POST", `/api/overtime-requests/${id}/reject`, { reason });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/overtime-requests"] });
+      toast({
+        title: "Success",
+        description: "Overtime request rejected",
+      });
+    },
+  });
 
   const handleDelete = (id: number) => {
     if (confirm("Are you sure you want to delete this timesheet entry?")) {
@@ -1184,7 +1360,7 @@ export default function TimesheetManagement() {
                   <Plane className="h-5 w-5" />
                   Leave Requests
                 </div>
-                <Button>
+                <Button onClick={() => setIsLeaveDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Request Leave
                 </Button>
@@ -1194,13 +1370,97 @@ export default function TimesheetManagement() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <Plane className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Leave request functionality coming soon</h3>
-                <p className="text-muted-foreground">
-                  Submit vacation, sick leave, and personal time off requests.
-                </p>
-              </div>
+              {leaveRequests.isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                </div>
+              ) : leaveRequests.data && leaveRequests.data.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Leave Type</TableHead>
+                        <TableHead>Start Date</TableHead>
+                        <TableHead>End Date</TableHead>
+                        <TableHead>Days</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Submitted</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {leaveRequests.data.map((request: any) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-medium">{request.leaveType}</TableCell>
+                          <TableCell>{formatDate(request.startDate)}</TableCell>
+                          <TableCell>{formatDate(request.endDate)}</TableCell>
+                          <TableCell>{request.totalDays}</TableCell>
+                          <TableCell className="max-w-48 truncate">{request.reason || 'N/A'}</TableCell>
+                          <TableCell>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              request.status === 'approved' 
+                                ? 'bg-green-100 text-green-800' 
+                                : request.status === 'rejected'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {request.status}
+                            </span>
+                          </TableCell>
+                          <TableCell>{formatDate(request.createdAt)}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              {(user?.roles?.includes('approver') || user?.roles?.includes('supervisor')) && request.status === 'pending' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => approveLeaveRequestMutation.mutate(request.id)}
+                                    disabled={approveLeaveRequestMutation.isPending}
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      const reason = prompt('Enter rejection reason:');
+                                      if (reason) {
+                                        rejectLeaveRequestMutation.mutate({ id: request.id, reason });
+                                      }
+                                    }}
+                                    disabled={rejectLeaveRequestMutation.isPending}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                              {request.status === 'rejected' && request.rejectionReason && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => alert(`Rejection reason: ${request.rejectionReason}`)}
+                                >
+                                  <Info className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Plane className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No leave requests found</h3>
+                  <p className="text-muted-foreground">
+                    Submit your first leave request to get started.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1213,7 +1473,7 @@ export default function TimesheetManagement() {
                   <AlertCircle className="h-5 w-5" />
                   Overtime Requests
                 </div>
-                <Button>
+                <Button onClick={() => setIsOvertimeDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Request Overtime
                 </Button>
@@ -1223,17 +1483,294 @@ export default function TimesheetManagement() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-8">
-                <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Overtime request functionality coming soon</h3>
-                <p className="text-muted-foreground">
-                  Request approval for additional work hours and overtime compensation.
-                </p>
-              </div>
+              {overtimeRequests.isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                </div>
+              ) : overtimeRequests.data && overtimeRequests.data.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Hours</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Project</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Submitted</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {overtimeRequests.data.map((request: any) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-medium">{formatDate(request.date)}</TableCell>
+                          <TableCell>{request.totalHours}h</TableCell>
+                          <TableCell className="max-w-48 truncate">{request.reason}</TableCell>
+                          <TableCell className="max-w-32 truncate">{request.businessWorkId || 'N/A'}</TableCell>
+                          <TableCell>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              request.status === 'approved' 
+                                ? 'bg-green-100 text-green-800' 
+                                : request.status === 'rejected'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {request.status}
+                            </span>
+                          </TableCell>
+                          <TableCell>{formatDate(request.createdAt)}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              {(user?.roles?.includes('approver') || user?.roles?.includes('supervisor')) && request.status === 'pending' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => approveOvertimeRequestMutation.mutate(request.id)}
+                                    disabled={approveOvertimeRequestMutation.isPending}
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      const reason = prompt('Enter rejection reason:');
+                                      if (reason) {
+                                        rejectOvertimeRequestMutation.mutate({ id: request.id, reason });
+                                      }
+                                    }}
+                                    disabled={rejectOvertimeRequestMutation.isPending}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                              {request.status === 'rejected' && request.rejectionReason && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => alert(`Rejection reason: ${request.rejectionReason}`)}
+                                >
+                                  <Info className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No overtime requests found</h3>
+                  <p className="text-muted-foreground">
+                    Submit your first overtime request to get started.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Leave Request Dialog */}
+      <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Request Leave</DialogTitle>
+            <DialogDescription>
+              Submit a new leave request for approval.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...leaveForm}>
+            <form onSubmit={leaveForm.handleSubmit((data) => createLeaveRequestMutation.mutate(data))} className="space-y-4">
+              <FormField
+                control={leaveForm.control}
+                name="leaveType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Leave Type *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select leave type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="vacation">Vacation</SelectItem>
+                        <SelectItem value="sick">Sick Leave</SelectItem>
+                        <SelectItem value="personal">Personal Leave</SelectItem>
+                        <SelectItem value="maternity">Maternity Leave</SelectItem>
+                        <SelectItem value="paternity">Paternity Leave</SelectItem>
+                        <SelectItem value="bereavement">Bereavement Leave</SelectItem>
+                        <SelectItem value="jury_duty">Jury Duty</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={leaveForm.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start Date *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={leaveForm.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End Date *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={leaveForm.control}
+                name="reason"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Reason</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Optional: Reason for leave request"
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsLeaveDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createLeaveRequestMutation.isPending}>
+                  {createLeaveRequestMutation.isPending ? "Submitting..." : "Submit Request"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Overtime Request Dialog */}
+      <Dialog open={isOvertimeDialogOpen} onOpenChange={setIsOvertimeDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Request Overtime</DialogTitle>
+            <DialogDescription>
+              Submit a new overtime request for approval.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...overtimeForm}>
+            <form onSubmit={overtimeForm.handleSubmit((data) => createOvertimeRequestMutation.mutate(data))} className="space-y-4">
+              <FormField
+                control={overtimeForm.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={overtimeForm.control}
+                name="hours"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Hours *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0.5"
+                        max="12"
+                        step="0.5"
+                        placeholder="e.g., 2.5"
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormDescription>Number of overtime hours (0.5 - 12)</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={overtimeForm.control}
+                name="reason"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Reason *</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Explain the reason for overtime work"
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={overtimeForm.control}
+                name="projectDescription"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project/Work ID</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Related project or complaint ID (optional)"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsOvertimeDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createOvertimeRequestMutation.isPending}>
+                  {createOvertimeRequestMutation.isPending ? "Submitting..." : "Submit Request"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

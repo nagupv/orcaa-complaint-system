@@ -850,6 +850,318 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Leave Request Routes
+  app.get('/api/leave-requests', isAuthenticated, async (req: any, res) => {
+    try {
+      const { userId, status } = req.query;
+      const currentUserId = req.user.claims.sub;
+      
+      // Users can only see their own requests unless they have supervisor/admin role
+      const currentUser = await storage.getUser(currentUserId);
+      const userRoles = typeof currentUser?.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser?.roles || [];
+      const canViewAll = userRoles.some((role: string) => ['admin', 'supervisor', 'approver'].includes(role));
+      
+      const queryUserId = canViewAll ? userId : currentUserId;
+      const requests = await storage.getLeaveRequests(queryUserId, status);
+      res.json(requests);
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+      res.status(500).json({ error: 'Failed to fetch leave requests' });
+    }
+  });
+
+  app.post('/api/leave-requests', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const requestData = { ...req.body, userId, status: 'pending' };
+      
+      const request = await storage.createLeaveRequest(requestData);
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        action: 'leave_request_created',
+        newValue: `Leave request from ${requestData.startDate} to ${requestData.endDate} (${requestData.leaveType})`,
+        userId,
+        reason: `Leave request submitted: ${requestData.reason || 'No reason provided'}`
+      });
+      
+      res.json(request);
+    } catch (error) {
+      console.error('Error creating leave request:', error);
+      res.status(500).json({ error: 'Failed to create leave request' });
+    }
+  });
+
+  app.put('/api/leave-requests/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.user.claims.sub;
+      const updateData = req.body;
+      
+      const existingRequest = await storage.getLeaveRequestById(id);
+      if (!existingRequest) {
+        return res.status(404).json({ error: 'Leave request not found' });
+      }
+      
+      // Only allow updates by the request owner or supervisors
+      const currentUser = await storage.getUser(userId);
+      const userRoles = typeof currentUser?.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser?.roles || [];
+      const canUpdate = existingRequest.userId === userId || userRoles.some((role: string) => ['admin', 'supervisor', 'approver'].includes(role));
+      
+      if (!canUpdate) {
+        return res.status(403).json({ error: 'Not authorized to update this request' });
+      }
+      
+      const updatedRequest = await storage.updateLeaveRequest(id, updateData);
+      res.json(updatedRequest);
+    } catch (error) {
+      console.error('Error updating leave request:', error);
+      res.status(500).json({ error: 'Failed to update leave request' });
+    }
+  });
+
+  app.delete('/api/leave-requests/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.user.claims.sub;
+      
+      const existingRequest = await storage.getLeaveRequestById(id);
+      if (!existingRequest) {
+        return res.status(404).json({ error: 'Leave request not found' });
+      }
+      
+      // Only allow deletion by the request owner
+      if (existingRequest.userId !== userId) {
+        return res.status(403).json({ error: 'Not authorized to delete this request' });
+      }
+      
+      await storage.deleteLeaveRequest(id);
+      res.json({ message: 'Leave request deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting leave request:', error);
+      res.status(500).json({ error: 'Failed to delete leave request' });
+    }
+  });
+
+  app.post('/api/leave-requests/:id/approve', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const approvedBy = req.user.claims.sub;
+      
+      // Check if user has approval authority
+      const currentUser = await storage.getUser(approvedBy);
+      const userRoles = typeof currentUser?.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser?.roles || [];
+      const canApprove = userRoles.some((role: string) => ['admin', 'supervisor', 'approver'].includes(role));
+      
+      if (!canApprove) {
+        return res.status(403).json({ error: 'Not authorized to approve leave requests' });
+      }
+      
+      const approvedRequest = await storage.approveLeaveRequest(id, approvedBy);
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        action: 'leave_request_approved',
+        newValue: `Leave request approved by ${currentUser?.firstName} ${currentUser?.lastName}`,
+        userId: approvedBy,
+        reason: 'Leave request approved'
+      });
+      
+      res.json(approvedRequest);
+    } catch (error) {
+      console.error('Error approving leave request:', error);
+      res.status(500).json({ error: 'Failed to approve leave request' });
+    }
+  });
+
+  app.post('/api/leave-requests/:id/reject', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const approvedBy = req.user.claims.sub;
+      const { reason } = req.body;
+      
+      // Check if user has approval authority
+      const currentUser = await storage.getUser(approvedBy);
+      const userRoles = typeof currentUser?.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser?.roles || [];
+      const canApprove = userRoles.some((role: string) => ['admin', 'supervisor', 'approver'].includes(role));
+      
+      if (!canApprove) {
+        return res.status(403).json({ error: 'Not authorized to reject leave requests' });
+      }
+      
+      const rejectedRequest = await storage.rejectLeaveRequest(id, approvedBy, reason);
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        action: 'leave_request_rejected',
+        newValue: `Leave request rejected by ${currentUser?.firstName} ${currentUser?.lastName}`,
+        userId: approvedBy,
+        reason: reason || 'Leave request rejected'
+      });
+      
+      res.json(rejectedRequest);
+    } catch (error) {
+      console.error('Error rejecting leave request:', error);
+      res.status(500).json({ error: 'Failed to reject leave request' });
+    }
+  });
+
+  // Overtime Request Routes
+  app.get('/api/overtime-requests', isAuthenticated, async (req: any, res) => {
+    try {
+      const { userId, status } = req.query;
+      const currentUserId = req.user.claims.sub;
+      
+      // Users can only see their own requests unless they have supervisor/admin role
+      const currentUser = await storage.getUser(currentUserId);
+      const userRoles = typeof currentUser?.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser?.roles || [];
+      const canViewAll = userRoles.some((role: string) => ['admin', 'supervisor', 'approver'].includes(role));
+      
+      const queryUserId = canViewAll ? userId : currentUserId;
+      const requests = await storage.getOvertimeRequests(queryUserId, status);
+      res.json(requests);
+    } catch (error) {
+      console.error('Error fetching overtime requests:', error);
+      res.status(500).json({ error: 'Failed to fetch overtime requests' });
+    }
+  });
+
+  app.post('/api/overtime-requests', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const requestData = { ...req.body, userId, status: 'pending' };
+      
+      const request = await storage.createOvertimeRequest(requestData);
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        action: 'overtime_request_created',
+        newValue: `Overtime request for ${requestData.date} (${requestData.hours} hours)`,
+        userId,
+        reason: `Overtime request submitted: ${requestData.reason || 'No reason provided'}`
+      });
+      
+      res.json(request);
+    } catch (error) {
+      console.error('Error creating overtime request:', error);
+      res.status(500).json({ error: 'Failed to create overtime request' });
+    }
+  });
+
+  app.put('/api/overtime-requests/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.user.claims.sub;
+      const updateData = req.body;
+      
+      const existingRequest = await storage.getOvertimeRequestById(id);
+      if (!existingRequest) {
+        return res.status(404).json({ error: 'Overtime request not found' });
+      }
+      
+      // Only allow updates by the request owner or supervisors
+      const currentUser = await storage.getUser(userId);
+      const userRoles = typeof currentUser?.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser?.roles || [];
+      const canUpdate = existingRequest.userId === userId || userRoles.some((role: string) => ['admin', 'supervisor', 'approver'].includes(role));
+      
+      if (!canUpdate) {
+        return res.status(403).json({ error: 'Not authorized to update this request' });
+      }
+      
+      const updatedRequest = await storage.updateOvertimeRequest(id, updateData);
+      res.json(updatedRequest);
+    } catch (error) {
+      console.error('Error updating overtime request:', error);
+      res.status(500).json({ error: 'Failed to update overtime request' });
+    }
+  });
+
+  app.delete('/api/overtime-requests/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const userId = req.user.claims.sub;
+      
+      const existingRequest = await storage.getOvertimeRequestById(id);
+      if (!existingRequest) {
+        return res.status(404).json({ error: 'Overtime request not found' });
+      }
+      
+      // Only allow deletion by the request owner
+      if (existingRequest.userId !== userId) {
+        return res.status(403).json({ error: 'Not authorized to delete this request' });
+      }
+      
+      await storage.deleteOvertimeRequest(id);
+      res.json({ message: 'Overtime request deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting overtime request:', error);
+      res.status(500).json({ error: 'Failed to delete overtime request' });
+    }
+  });
+
+  app.post('/api/overtime-requests/:id/approve', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const approvedBy = req.user.claims.sub;
+      
+      // Check if user has approval authority
+      const currentUser = await storage.getUser(approvedBy);
+      const userRoles = typeof currentUser?.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser?.roles || [];
+      const canApprove = userRoles.some((role: string) => ['admin', 'supervisor', 'approver'].includes(role));
+      
+      if (!canApprove) {
+        return res.status(403).json({ error: 'Not authorized to approve overtime requests' });
+      }
+      
+      const approvedRequest = await storage.approveOvertimeRequest(id, approvedBy);
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        action: 'overtime_request_approved',
+        newValue: `Overtime request approved by ${currentUser?.firstName} ${currentUser?.lastName}`,
+        userId: approvedBy,
+        reason: 'Overtime request approved'
+      });
+      
+      res.json(approvedRequest);
+    } catch (error) {
+      console.error('Error approving overtime request:', error);
+      res.status(500).json({ error: 'Failed to approve overtime request' });
+    }
+  });
+
+  app.post('/api/overtime-requests/:id/reject', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const approvedBy = req.user.claims.sub;
+      const { reason } = req.body;
+      
+      // Check if user has approval authority
+      const currentUser = await storage.getUser(approvedBy);
+      const userRoles = typeof currentUser?.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser?.roles || [];
+      const canApprove = userRoles.some((role: string) => ['admin', 'supervisor', 'approver'].includes(role));
+      
+      if (!canApprove) {
+        return res.status(403).json({ error: 'Not authorized to reject overtime requests' });
+      }
+      
+      const rejectedRequest = await storage.rejectOvertimeRequest(id, approvedBy, reason);
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        action: 'overtime_request_rejected',
+        newValue: `Overtime request rejected by ${currentUser?.firstName} ${currentUser?.lastName}`,
+        userId: approvedBy,
+        reason: reason || 'Overtime request rejected'
+      });
+      
+      res.json(rejectedRequest);
+    } catch (error) {
+      console.error('Error rejecting overtime request:', error);
+      res.status(500).json({ error: 'Failed to reject overtime request' });
+    }
+  });
+
   // Serve uploaded files
   app.use('/uploads', express.static('./uploads'));
 

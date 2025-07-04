@@ -8,6 +8,8 @@ import {
   roles,
   listValues,
   timesheets,
+  leaveRequests,
+  overtimeRequests,
   type User,
   type UpsertUser,
   type Complaint,
@@ -25,6 +27,10 @@ import {
   type InsertListValue,
   type Timesheet,
   type InsertTimesheet,
+  type LeaveRequest,
+  type InsertLeaveRequest,
+  type OvertimeRequest,
+  type InsertOvertimeRequest,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, gte, lte, isNull, sql } from "drizzle-orm";
@@ -110,6 +116,24 @@ export interface IStorage {
   deleteTimesheet(id: number): Promise<void>;
   getTimesheetById(id: number): Promise<Timesheet | undefined>;
   getTimesheetActivities(): Promise<string[]>;
+  
+  // Leave request operations
+  getLeaveRequests(userId?: string, status?: string): Promise<LeaveRequest[]>;
+  createLeaveRequest(leaveRequest: InsertLeaveRequest): Promise<LeaveRequest>;
+  updateLeaveRequest(id: number, updates: Partial<LeaveRequest>): Promise<LeaveRequest>;
+  deleteLeaveRequest(id: number): Promise<void>;
+  getLeaveRequestById(id: number): Promise<LeaveRequest | undefined>;
+  approveLeaveRequest(id: number, approvedBy: string): Promise<LeaveRequest>;
+  rejectLeaveRequest(id: number, approvedBy: string, reason?: string): Promise<LeaveRequest>;
+  
+  // Overtime request operations
+  getOvertimeRequests(userId?: string, status?: string): Promise<OvertimeRequest[]>;
+  createOvertimeRequest(overtimeRequest: InsertOvertimeRequest): Promise<OvertimeRequest>;
+  updateOvertimeRequest(id: number, updates: Partial<OvertimeRequest>): Promise<OvertimeRequest>;
+  deleteOvertimeRequest(id: number): Promise<void>;
+  getOvertimeRequestById(id: number): Promise<OvertimeRequest | undefined>;
+  approveOvertimeRequest(id: number, approvedBy: string): Promise<OvertimeRequest>;
+  rejectOvertimeRequest(id: number, approvedBy: string, reason?: string): Promise<OvertimeRequest>;
   
   // Helper methods
   generateComplaintId(serviceType?: string): Promise<string>;
@@ -571,6 +595,144 @@ export class DatabaseStorage implements IStorage {
       .orderBy(listValues.order);
     
     return activities.map(a => a.activity);
+  }
+
+  // Leave request operations
+  async getLeaveRequests(userId?: string, status?: string): Promise<LeaveRequest[]> {
+    let query = db.select().from(leaveRequests);
+    
+    if (userId) {
+      query = query.where(eq(leaveRequests.userId, userId));
+    }
+    if (status) {
+      query = query.where(eq(leaveRequests.status, status));
+    }
+    
+    return await query.orderBy(desc(leaveRequests.createdAt));
+  }
+
+  async createLeaveRequest(leaveRequest: InsertLeaveRequest): Promise<LeaveRequest> {
+    const [request] = await db
+      .insert(leaveRequests)
+      .values(leaveRequest)
+      .returning();
+    return request;
+  }
+
+  async updateLeaveRequest(id: number, updates: Partial<LeaveRequest>): Promise<LeaveRequest> {
+    const [request] = await db
+      .update(leaveRequests)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(leaveRequests.id, id))
+      .returning();
+    return request;
+  }
+
+  async deleteLeaveRequest(id: number): Promise<void> {
+    await db.delete(leaveRequests).where(eq(leaveRequests.id, id));
+  }
+
+  async getLeaveRequestById(id: number): Promise<LeaveRequest | undefined> {
+    const [request] = await db.select().from(leaveRequests).where(eq(leaveRequests.id, id));
+    return request;
+  }
+
+  async approveLeaveRequest(id: number, approvedBy: string): Promise<LeaveRequest> {
+    const [request] = await db
+      .update(leaveRequests)
+      .set({
+        status: 'approved',
+        approvedBy,
+        approvedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(leaveRequests.id, id))
+      .returning();
+    return request;
+  }
+
+  async rejectLeaveRequest(id: number, approvedBy: string, reason?: string): Promise<LeaveRequest> {
+    const [request] = await db
+      .update(leaveRequests)
+      .set({
+        status: 'rejected',
+        approvedBy,
+        approvedAt: new Date(),
+        rejectionReason: reason,
+        updatedAt: new Date()
+      })
+      .where(eq(leaveRequests.id, id))
+      .returning();
+    return request;
+  }
+
+  // Overtime request operations
+  async getOvertimeRequests(userId?: string, status?: string): Promise<OvertimeRequest[]> {
+    let query = db.select().from(overtimeRequests);
+    
+    if (userId) {
+      query = query.where(eq(overtimeRequests.userId, userId));
+    }
+    if (status) {
+      query = query.where(eq(overtimeRequests.status, status));
+    }
+    
+    return await query.orderBy(desc(overtimeRequests.createdAt));
+  }
+
+  async createOvertimeRequest(overtimeRequest: InsertOvertimeRequest): Promise<OvertimeRequest> {
+    const [request] = await db
+      .insert(overtimeRequests)
+      .values(overtimeRequest)
+      .returning();
+    return request;
+  }
+
+  async updateOvertimeRequest(id: number, updates: Partial<OvertimeRequest>): Promise<OvertimeRequest> {
+    const [request] = await db
+      .update(overtimeRequests)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(overtimeRequests.id, id))
+      .returning();
+    return request;
+  }
+
+  async deleteOvertimeRequest(id: number): Promise<void> {
+    await db.delete(overtimeRequests).where(eq(overtimeRequests.id, id));
+  }
+
+  async getOvertimeRequestById(id: number): Promise<OvertimeRequest | undefined> {
+    const [request] = await db.select().from(overtimeRequests).where(eq(overtimeRequests.id, id));
+    return request;
+  }
+
+  async approveOvertimeRequest(id: number, approvedBy: string): Promise<OvertimeRequest> {
+    const [request] = await db
+      .update(overtimeRequests)
+      .set({
+        status: 'approved',
+        approvedBy,
+        approvedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(overtimeRequests.id, id))
+      .returning();
+    return request;
+  }
+
+  async rejectOvertimeRequest(id: number, approvedBy: string, reason?: string): Promise<OvertimeRequest> {
+    const [request] = await db
+      .update(overtimeRequests)
+      .set({
+        status: 'rejected',
+        approvedBy,
+        approvedAt: new Date(),
+        rejectionReason: reason,
+        updatedAt: new Date()
+      })
+      .where(eq(overtimeRequests.id, id))
+      .returning();
+    return request;
   }
 
   // Helper methods

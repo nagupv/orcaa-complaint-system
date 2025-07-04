@@ -196,6 +196,7 @@ export const leaveRequests = pgTable("leave_requests", {
   status: varchar("status").notNull().default("pending"), // pending, approved, rejected
   approvedBy: varchar("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at"),
+  rejectionReason: text("rejection_reason"), // Reason for rejection
   comments: text("comments"), // Admin comments
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -214,6 +215,7 @@ export const overtimeRequests = pgTable("overtime_requests", {
   status: varchar("status").notNull().default("pending"), // pending, approved, rejected
   approvedBy: varchar("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at"),
+  rejectionReason: text("rejection_reason"), // Reason for rejection
   comments: text("comments"), // Admin comments
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
