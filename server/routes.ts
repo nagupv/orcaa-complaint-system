@@ -141,6 +141,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Chart data endpoints for dashboard - must come before /:id route
+  app.get('/api/complaints/monthly-stats', isAuthenticated, async (req, res) => {
+    try {
+      const monthlyStats = await storage.getMonthlyComplaintStats();
+      res.json(monthlyStats);
+    } catch (error) {
+      console.error('Error fetching monthly stats:', error);
+      res.status(500).json({ error: 'Failed to fetch monthly statistics' });
+    }
+  });
+
+  app.get('/api/complaints/yearly-stats', isAuthenticated, async (req, res) => {
+    try {
+      const yearlyStats = await storage.getYearlyComplaintStats();
+      res.json(yearlyStats);
+    } catch (error) {
+      console.error('Error fetching yearly stats:', error);
+      res.status(500).json({ error: 'Failed to fetch yearly statistics' });
+    }
+  });
+
   app.get('/api/complaints/:id', isAuthenticated, async (req, res) => {
     try {
       const complaintId = parseInt(req.params.id);

@@ -74,6 +74,20 @@ export interface IStorage {
   deleteRole(id: number): Promise<void>;
   getRoleById(id: number): Promise<Role | undefined>;
   
+  // Chart data methods
+  getMonthlyComplaintStats(): Promise<Array<{
+    month: string;
+    total: number;
+    inProgress: number;
+    resolved: number;
+  }>>;
+  getYearlyComplaintStats(): Promise<Array<{
+    month: string;
+    total: number;
+    inProgress: number;
+    resolved: number;
+  }>>;
+  
   // Helper methods
   generateComplaintId(serviceType?: string): Promise<string>;
 }
@@ -344,6 +358,90 @@ export class DatabaseStorage implements IStorage {
   async getRoleById(id: number): Promise<Role | undefined> {
     const [role] = await db.select().from(roles).where(eq(roles.id, id));
     return role;
+  }
+
+  // Chart data methods
+  async getMonthlyComplaintStats(): Promise<Array<{
+    month: string;
+    total: number;
+    inProgress: number;
+    resolved: number;
+  }>> {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // JavaScript months are 0-indexed
+    
+    const monthlyStats = [];
+    
+    for (let month = 1; month <= currentMonth; month++) {
+      const monthName = new Date(currentYear, month - 1).toLocaleString('default', { month: 'long' });
+      
+      const [totalResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(complaints)
+        .where(sql`EXTRACT(YEAR FROM created_at) = ${currentYear} AND EXTRACT(MONTH FROM created_at) = ${month}`);
+      
+      const [inProgressResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(complaints)
+        .where(sql`EXTRACT(YEAR FROM created_at) = ${currentYear} AND EXTRACT(MONTH FROM created_at) = ${month} AND status IN ('initiated', 'in_progress', 'inspection')`);
+      
+      const [resolvedResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(complaints)
+        .where(sql`EXTRACT(YEAR FROM created_at) = ${currentYear} AND EXTRACT(MONTH FROM created_at) = ${month} AND status IN ('resolved', 'closed')`);
+      
+      monthlyStats.push({
+        month: monthName,
+        total: Number(totalResult.count) || 0,
+        inProgress: Number(inProgressResult.count) || 0,
+        resolved: Number(resolvedResult.count) || 0,
+      });
+    }
+    
+    return monthlyStats;
+  }
+
+  async getYearlyComplaintStats(): Promise<Array<{
+    month: string;
+    total: number;
+    inProgress: number;
+    resolved: number;
+  }>> {
+    const currentDate = new Date();
+    const yearlyStats = [];
+    
+    // Get last 12 months of data
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const monthName = date.toLocaleString('default', { month: 'short', year: 'numeric' });
+      
+      const [totalResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(complaints)
+        .where(sql`EXTRACT(YEAR FROM created_at) = ${year} AND EXTRACT(MONTH FROM created_at) = ${month}`);
+      
+      const [inProgressResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(complaints)
+        .where(sql`EXTRACT(YEAR FROM created_at) = ${year} AND EXTRACT(MONTH FROM created_at) = ${month} AND status IN ('initiated', 'in_progress', 'inspection')`);
+      
+      const [resolvedResult] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(complaints)
+        .where(sql`EXTRACT(YEAR FROM created_at) = ${year} AND EXTRACT(MONTH FROM created_at) = ${month} AND status IN ('resolved', 'closed')`);
+      
+      yearlyStats.push({
+        month: monthName,
+        total: Number(totalResult.count) || 0,
+        inProgress: Number(inProgressResult.count) || 0,
+        resolved: Number(resolvedResult.count) || 0,
+      });
+    }
+    
+    return yearlyStats;
   }
 
   // Helper methods

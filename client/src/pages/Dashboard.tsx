@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatisticsCards from "@/components/StatisticsCards";
 import ComplaintTable from "@/components/ComplaintTable";
 import { Complaint } from "@shared/schema";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 export default function Dashboard() {
   const [filters, setFilters] = useState({
@@ -38,6 +40,14 @@ export default function Dashboard() {
     },
   });
 
+  const { data: monthlyStats, isLoading: monthlyLoading } = useQuery({
+    queryKey: ["/api/complaints/monthly-stats"],
+  });
+
+  const { data: yearlyStats, isLoading: yearlyLoading } = useQuery({
+    queryKey: ["/api/complaints/yearly-stats"],
+  });
+
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
@@ -64,6 +74,73 @@ export default function Dashboard() {
 
       {/* Statistics Cards */}
       <StatisticsCards />
+
+      {/* Charts Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Complaint Analytics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="monthly" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="monthly">Monthly Statistics</TabsTrigger>
+              <TabsTrigger value="yearly">Yearly Trends</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="monthly" className="space-y-4">
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold mb-2">Monthly Complaint Statistics</h3>
+                {monthlyLoading ? (
+                  <div className="h-64 flex items-center justify-center">
+                    <div className="text-gray-500">Loading chart data...</div>
+                  </div>
+                ) : (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={monthlyStats || []}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="total" fill="#3b82f6" name="Total Complaints" />
+                        <Bar dataKey="inProgress" fill="#f59e0b" name="In Progress" />
+                        <Bar dataKey="resolved" fill="#10b981" name="Resolved" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="yearly" className="space-y-4">
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold mb-2">Yearly Complaint Trends (Last 12 Months)</h3>
+                {yearlyLoading ? (
+                  <div className="h-64 flex items-center justify-center">
+                    <div className="text-gray-500">Loading chart data...</div>
+                  </div>
+                ) : (
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={yearlyStats || []}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="total" stroke="#3b82f6" name="Total Complaints" strokeWidth={2} />
+                        <Line type="monotone" dataKey="inProgress" stroke="#f59e0b" name="In Progress" strokeWidth={2} />
+                        <Line type="monotone" dataKey="resolved" stroke="#10b981" name="Resolved" strokeWidth={2} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Search and Filter Section */}
       <Card>
