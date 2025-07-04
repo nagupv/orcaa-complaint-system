@@ -3,7 +3,9 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertComplaintSchema, insertWorkDescriptionSchema, insertAuditSchema, insertListValueSchema } from "@shared/schema";
+import { insertComplaintSchema, insertWorkDescriptionSchema, insertAuditSchema, insertListValueSchema, users } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import { handleFileUpload } from "./services/fileUpload";
 import { sendSMSNotification } from "./services/twilioService";
 import multer from "multer";
@@ -418,15 +420,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         enableSmsNotifications, enableWhatsappNotifications
       });
       
-      // Check if user already exists by email
-      const existingUsers = await storage.getAllUsers();
-      const existingUser = existingUsers.find(user => user.email === email);
-      
-      if (existingUser) {
-        return res.status(400).json({ 
-          message: "User with this email already exists",
-          suggestion: "This user may need to log in via Replit Auth first, then their profile can be updated with additional details."
-        });
+      // Check if user already exists by email (including inactive users)
+      try {
+        // First check active users
+        const activeUsers = await storage.getAllUsers();
+        const activeUser = activeUsers.find(user => user.email === email);
+        
+        if (activeUser) {
+          return res.status(400).json({ 
+            message: `User with email ${email} already exists (active)`,
+            suggestion: "This user already has an active account. You can update their profile instead of creating a new one."
+          });
+        }
+        
+        // Then check all users including inactive ones using direct query
+        const allUsers = await db.select().from(users).where(eq(users.email, email));
+        if (allUsers.length > 0) {
+          const existingUser = allUsers[0];
+          return res.status(400).json({ 
+            message: `User with email ${email} already exists (inactive)`,
+            suggestion: "This user profile exists but is inactive. They need to log in via Replit Auth to activate their account, then you can update their profile."
+          });
+        }
+      } catch (emailCheckError) {
+        console.error("Error checking existing users:", emailCheckError);
+        // Continue with user creation if email check fails
       }
       
       // Generate a temporary user ID (this would normally be handled by the auth provider)

@@ -115,9 +115,29 @@ export default function UserManagement() {
       console.error("Full error object:", error);
       console.error("Error message:", error.message);
       console.error("Error stack:", error.stack);
+      
+      // Try to parse the error message to get suggestion
+      let errorMessage = error.message;
+      let suggestionMessage = "";
+      
+      try {
+        // Check if error message contains JSON with suggestion
+        const errorMatch = error.message.match(/\{.*\}/);
+        if (errorMatch) {
+          const errorData = JSON.parse(errorMatch[0]);
+          errorMessage = errorData.message || error.message;
+          suggestionMessage = errorData.suggestion || "";
+        }
+      } catch (parseError) {
+        // If parsing fails, use original error message
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Failed to Create User",
-        description: `Error: ${error.message}`,
+        description: suggestionMessage 
+          ? `${errorMessage}\n\nSuggestion: ${suggestionMessage}`
+          : `Error: ${errorMessage}`,
         variant: "destructive",
       });
     },
