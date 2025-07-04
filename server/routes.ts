@@ -130,6 +130,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/complaints/:id', isAuthenticated, async (req, res) => {
     try {
       const complaintId = parseInt(req.params.id);
+      if (isNaN(complaintId)) {
+        return res.status(400).json({ message: "Invalid complaint ID" });
+      }
       const complaint = await storage.getComplaint(complaintId);
       
       if (!complaint) {

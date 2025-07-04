@@ -21,7 +21,7 @@ export default function AuditTrail() {
     queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) params.append(key, value);
+        if (value && value !== "all") params.append(key, value);
       });
       
       const response = await fetch(`/api/audit-trail?${params}`, {
@@ -78,12 +78,12 @@ export default function AuditTrail() {
             
             <div>
               <Label htmlFor="actionType">Action Type</Label>
-              <Select value={filters.actionType} onValueChange={(value) => handleFilterChange("actionType", value)}>
+              <Select value={filters.actionType || undefined} onValueChange={(value) => handleFilterChange("actionType", value || "")}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Actions" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Actions</SelectItem>
+                  <SelectItem value="all">All Actions</SelectItem>
                   <SelectItem value="created">Created</SelectItem>
                   <SelectItem value="status_changed">Status Changed</SelectItem>
                   <SelectItem value="assigned">Assigned</SelectItem>

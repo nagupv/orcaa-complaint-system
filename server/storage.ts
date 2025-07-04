@@ -192,21 +192,42 @@ export class DatabaseStorage implements IStorage {
     resolved: number;
     urgent: number;
   }> {
-    const [stats] = await db
-      .select({
-        total: sql<number>`count(*)`,
-        inProgress: sql<number>`count(case when status in ('initiated', 'inspection', 'work_in_progress') then 1 end)`,
-        resolved: sql<number>`count(case when status in ('closed', 'approved') then 1 end)`,
-        urgent: sql<number>`count(case when priority = 'urgent' then 1 end)`,
-      })
-      .from(complaints);
-    
-    return {
-      total: Number(stats.total),
-      inProgress: Number(stats.inProgress),
-      resolved: Number(stats.resolved),
-      urgent: Number(stats.urgent),
-    };
+    try {
+      // Get total count first
+      const totalCount = await db.select({ count: sql<number>`count(*)` }).from(complaints);
+      const total = Number(totalCount[0]?.count || 0);
+      
+      // Get individual counts
+      const inProgressCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(complaints)
+        .where(sql`status in ('initiated', 'inspection', 'work_in_progress')`);
+      
+      const resolvedCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(complaints)
+        .where(sql`status in ('closed', 'approved')`);
+      
+      const urgentCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(complaints)
+        .where(sql`priority = 'urgent'`);
+      
+      return {
+        total,
+        inProgress: Number(inProgressCount[0]?.count || 0),
+        resolved: Number(resolvedCount[0]?.count || 0),
+        urgent: Number(urgentCount[0]?.count || 0),
+      };
+    } catch (error) {
+      console.error("Error fetching complaint statistics:", error);
+      return {
+        total: 0,
+        inProgress: 0,
+        resolved: 0,
+        urgent: 0,
+      };
+    }
   }
 
   // File operations
