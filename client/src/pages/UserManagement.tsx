@@ -21,9 +21,9 @@ const createUserSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   roles: z.array(z.string()).min(1, "At least one role is required"),
-  phone: z.string().optional(),
-  mobileNumber: z.string().optional(),
-  whatsappNumber: z.string().optional(),
+  phone: z.string().transform(val => val === "" ? undefined : val).optional(),
+  mobileNumber: z.string().transform(val => val === "" ? undefined : val).optional(),
+  whatsappNumber: z.string().transform(val => val === "" ? undefined : val).optional(),
   enableSmsNotifications: z.boolean().default(true),
   enableWhatsappNotifications: z.boolean().default(true),
 });
