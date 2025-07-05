@@ -1451,22 +1451,25 @@ export default function WorkflowDesigner() {
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Node Palette */}
-            <div className="lg:col-span-1">
-              <div className="h-[600px] overflow-x-auto overflow-y-hidden">
-                <div className="flex flex-col space-y-4 w-max min-w-full">
-                  <div>
-                    <h3 className="font-semibold mb-3">Available Nodes</h3>
-                    <div className="grid grid-cols-2 gap-2 w-max">
+            <div className="lg:col-span-1 space-y-4">
+              {/* Available Nodes Panel */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Available Nodes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[250px] overflow-y-auto pr-2">
+                    <div className="grid grid-cols-1 gap-2">
                       {nodeTypes.map((nodeType) => {
                         const Icon = nodeType.icon;
                         return (
                           <div
                             key={nodeType.id}
-                            className={`p-2 rounded border cursor-pointer transition-all hover:shadow-sm ${nodeType.color} w-32`}
+                            className={`p-2 rounded border cursor-pointer transition-all hover:shadow-sm ${nodeType.color} w-full`}
                             onClick={() => onAddNode(nodeType)}
                           >
-                            <div className="flex items-center gap-1">
-                              <Icon className="h-3 w-3 flex-shrink-0" />
+                            <div className="flex items-center gap-2">
+                              <Icon className="h-4 w-4 flex-shrink-0" />
                               <span className="text-xs font-medium truncate">{nodeType.label}</span>
                             </div>
                           </div>
@@ -1474,9 +1477,16 @@ export default function WorkflowDesigner() {
                       })}
                     </div>
                   </div>
+                </CardContent>
+              </Card>
 
-                  <div>
-                    <h3 className="font-semibold mb-3">Connector Types</h3>
+              {/* Connector Types Panel */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm">Connector Types</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[200px] overflow-y-auto pr-2">
                     <div className="space-y-2">
                       <Button
                         onClick={() => setSelectedEdgeType('default')}
@@ -1511,12 +1521,12 @@ export default function WorkflowDesigner() {
                         🔄 Self Loop
                       </Button>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-2">
+                    <div className="text-xs text-muted-foreground mt-3 p-2 bg-muted rounded">
                       Selected: <strong>{selectedEdgeType}</strong>
                     </div>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Workflow Canvas */}
