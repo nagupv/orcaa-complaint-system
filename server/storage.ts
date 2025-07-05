@@ -1127,21 +1127,27 @@ export class DatabaseStorage implements IStorage {
       return; // Workflow completed
     }
 
-    // Define task types that create workflow tasks
+    // Define task types that create workflow tasks (including decision nodes)
     const taskTypes = [
       'INITIAL_INSPECTION',
       'ASSESSMENT', 
       'ENFORCEMENT_ACTION',
       'RESOLUTION',
       'SAFETY_INSPECTION',
-      'REJECT_DEMOLITION'
+      'REJECT_DEMOLITION',
+      'TASK',
+      'DECISION' // Include decision nodes as they need user interaction
     ];
 
     // Convert node label to task type format
     const nodeLabel = nextNode.data?.label || nextNode.type;
     const nodeType = nodeLabel?.toUpperCase().replace(/\s+/g, '_');
     
-    if (!taskTypes.includes(nodeType)) {
+    // Check if it's a task or decision node
+    const isTaskNode = taskTypes.includes(nodeType) || nextNode.type === 'task' || nextNode.type === 'decision';
+    
+    if (!isTaskNode) {
+      console.log(`Skipping non-task node: ${nodeType}, type: ${nextNode.type}`);
       return; // Not a task node
     }
 
