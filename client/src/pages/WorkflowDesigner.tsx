@@ -1455,22 +1455,29 @@ export default function WorkflowDesigner() {
               {/* Available Nodes Panel */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Available Nodes</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Available Nodes
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[250px] overflow-y-auto pr-2">
+                  <div className="h-[280px] overflow-y-auto pr-2">
                     <div className="grid grid-cols-1 gap-2">
                       {nodeTypes.map((nodeType) => {
                         const Icon = nodeType.icon;
                         return (
                           <div
                             key={nodeType.id}
-                            className={`p-2 rounded border cursor-pointer transition-all hover:shadow-sm ${nodeType.color} w-full`}
+                            className={`p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md hover:scale-105 ${nodeType.color} w-full`}
                             onClick={() => onAddNode(nodeType)}
+                            title={nodeType.description}
                           >
-                            <div className="flex items-center gap-2">
-                              <Icon className="h-4 w-4 flex-shrink-0" />
-                              <span className="text-xs font-medium truncate">{nodeType.label}</span>
+                            <div className="flex items-center gap-3">
+                              <Icon className="h-5 w-5 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <span className="text-sm font-medium block truncate">{nodeType.label}</span>
+                                <span className="text-xs text-muted-foreground truncate block">{nodeType.description}</span>
+                              </div>
                             </div>
                           </div>
                         );
@@ -1483,46 +1490,65 @@ export default function WorkflowDesigner() {
               {/* Connector Types Panel */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Connector Types</CardTitle>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <GitBranch className="h-4 w-4" />
+                    Connector Types
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-[200px] overflow-y-auto pr-2">
+                  <div className="h-[220px] overflow-y-auto pr-2">
                     <div className="space-y-2">
                       <Button
                         onClick={() => setSelectedEdgeType('default')}
                         variant={selectedEdgeType === 'default' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs justify-start w-full"
+                        className="text-xs justify-start w-full h-10"
                       >
-                        🏹 Default
+                        <span className="text-lg mr-2">🏹</span>
+                        <div className="text-left">
+                          <div className="font-medium">Default</div>
+                          <div className="text-xs text-muted-foreground">Standard flow</div>
+                        </div>
                       </Button>
                       <Button
                         onClick={() => setSelectedEdgeType('bidirectional')}
                         variant={selectedEdgeType === 'bidirectional' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs justify-start w-full"
+                        className="text-xs justify-start w-full h-10"
                       >
-                        ↔️ Bidirectional
+                        <span className="text-lg mr-2">↔️</span>
+                        <div className="text-left">
+                          <div className="font-medium">Bidirectional</div>
+                          <div className="text-xs text-muted-foreground">Two-way sync</div>
+                        </div>
                       </Button>
                       <Button
                         onClick={() => setSelectedEdgeType('conditional')}
                         variant={selectedEdgeType === 'conditional' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs justify-start w-full"
+                        className="text-xs justify-start w-full h-10"
                       >
-                        🔀 Conditional
+                        <span className="text-lg mr-2">🔀</span>
+                        <div className="text-left">
+                          <div className="font-medium">Conditional</div>
+                          <div className="text-xs text-muted-foreground">If/then logic</div>
+                        </div>
                       </Button>
                       <Button
                         onClick={() => setSelectedEdgeType('selfConnecting')}
                         variant={selectedEdgeType === 'selfConnecting' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs justify-start w-full"
+                        className="text-xs justify-start w-full h-10"
                       >
-                        🔄 Self Loop
+                        <span className="text-lg mr-2">🔄</span>
+                        <div className="text-left">
+                          <div className="font-medium">Self Loop</div>
+                          <div className="text-xs text-muted-foreground">Repeat task</div>
+                        </div>
                       </Button>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-3 p-2 bg-muted rounded">
-                      Selected: <strong>{selectedEdgeType}</strong>
+                    <div className="text-xs text-muted-foreground mt-3 p-2 bg-muted rounded text-center">
+                      <strong>Selected:</strong> {selectedEdgeType}
                     </div>
                   </div>
                 </CardContent>
@@ -1549,13 +1575,125 @@ export default function WorkflowDesigner() {
                     <Background color="#aaa" gap={16} />
                     <Controls />
                     <MiniMap />
+                    {/* Enhanced Zoom & Pan Controls Panel */}
                     <Panel position="top-right">
-                      <div className="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-lg">
-                        <div className="text-xs text-muted-foreground">
-                          Drag nodes to reposition • Click and drag between handles to connect
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg border">
+                        <div className="space-y-3">
+                          {/* Zoom Controls */}
+                          <div className="flex items-center gap-2">
+                            <Button
+                              onClick={onZoomIn}
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title="Zoom In"
+                            >
+                              <ZoomIn className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              onClick={onZoomOut}
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title="Zoom Out"
+                            >
+                              <ZoomOut className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              onClick={onFitView}
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title="Fit View"
+                            >
+                              <Move className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              onClick={onCenterView}
+                              variant="outline"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title="Center View"
+                            >
+                              <RotateCw className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          {/* Zoom Level Display */}
+                          <div className="text-xs text-muted-foreground text-center bg-muted rounded px-2 py-1">
+                            Zoom: {Math.round(zoomLevel * 100)}%
+                          </div>
+                          
+                          {/* Connector Type Display */}
+                          <div className="text-xs text-muted-foreground text-center">
+                            Connector: <strong>{selectedEdgeType}</strong>
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          Selected connector: <strong>{selectedEdgeType}</strong>
+                      </div>
+                    </Panel>
+                    
+                    {/* Designer Actions Panel */}
+                    <Panel position="top-left">
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg border">
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Designer Actions</h4>
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              onClick={() => {
+                                setSelectedWorkflowId(null);
+                                setWorkflowName('');
+                                setWorkflowDescription('');
+                                setSaveDialogOpen(true);
+                              }}
+                              variant="outline"
+                              size="sm"
+                              className="h-8 justify-start"
+                              title="Save Workflow"
+                            >
+                              <Save className="h-4 w-4 mr-2" />
+                              Save
+                            </Button>
+                            <Button
+                              onClick={() => setLoadDialogOpen(true)}
+                              variant="outline"
+                              size="sm"
+                              className="h-8 justify-start"
+                              title="Load Workflow"
+                            >
+                              <FolderOpen className="h-4 w-4 mr-2" />
+                              Load
+                            </Button>
+                            <Button
+                              onClick={onClearDesigner}
+                              variant="outline"
+                              size="sm"
+                              className="h-8 justify-start"
+                              title="Clear Designer"
+                            >
+                              <RotateCcw className="h-4 w-4 mr-2" />
+                              Clear
+                            </Button>
+                            <Button
+                              onClick={onExportWorkflow}
+                              variant="outline"
+                              size="sm"
+                              className="h-8 justify-start"
+                              title="Export Workflow"
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Export
+                            </Button>
+                            <Button
+                              onClick={onLoadExampleWorkflow}
+                              variant="outline"
+                              size="sm"
+                              className="h-8 justify-start"
+                              title="Load Example"
+                            >
+                              <Lightbulb className="h-4 w-4 mr-2" />
+                              Example
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </Panel>
@@ -1578,54 +1716,7 @@ export default function WorkflowDesigner() {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-3">Zoom & Pan Controls</h3>
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        onClick={onZoomIn}
-                        variant="outline"
-                        size="sm"
-                        className="text-xs"
-                      >
-                        <ZoomIn className="h-3 w-3 mr-1" />
-                        Zoom In
-                      </Button>
-                      <Button
-                        onClick={onZoomOut}
-                        variant="outline"
-                        size="sm"
-                        className="text-xs"
-                      >
-                        <ZoomOut className="h-3 w-3 mr-1" />
-                        Zoom Out
-                      </Button>
-                      <Button
-                        onClick={onFitView}
-                        variant="outline"
-                        size="sm"
-                        className="text-xs"
-                      >
-                        <Move className="h-3 w-3 mr-1" />
-                        Fit View
-                      </Button>
-                      <Button
-                        onClick={onCenterView}
-                        variant="outline"
-                        size="sm"
-                        className="text-xs"
-                      >
-                        <RotateCw className="h-3 w-3 mr-1" />
-                        Center
-                      </Button>
-                    </div>
-                    <div className="text-xs text-muted-foreground text-center">
-                      Zoom: {Math.round(zoomLevel * 100)}%
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-semibold mb-3">Actions</h3>
+                  <h3 className="font-semibold mb-3">Workflow Management</h3>
                   <div className="space-y-2">
                     <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
                       <DialogTrigger asChild>
