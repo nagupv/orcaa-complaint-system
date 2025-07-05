@@ -1119,6 +1119,8 @@ export class DatabaseStorage implements IStorage {
     const outgoingEdges = workflowData.edges.filter((edge: any) => edge.source === currentNodeId);
     
     if (outgoingEdges.length === 0) {
+      // End of workflow - update complaint status to completed
+      await this.handleWorkflowCompletion(completedTask.complaintId, completedTask.completedBy || 'system', 'Workflow completed successfully');
       return; // No next task (end of workflow)
     }
 
@@ -1130,6 +1132,15 @@ export class DatabaseStorage implements IStorage {
     const nextNode = workflowData.nodes.find((node: any) => node.id === nextEdge.target);
     
     if (!nextNode) {
+      return;
+    }
+
+    // Check if next node is an "end" node - indicates workflow completion
+    if (nextNode.type === 'end') {
+      // Determine completion status based on the edge label or path taken
+      const completionStatus = this.determineCompletionStatus(nextEdge, completedTask);
+      console.log(`Workflow reached end node for complaint ${completedTask.complaintId}. Status: ${completionStatus}, Edge: ${nextEdge.label || 'unnamed'}`);
+      await this.handleWorkflowCompletion(completedTask.complaintId, completedTask.completedBy || 'system', `Workflow completed via ${nextEdge.label || 'final step'}`, completionStatus);
       return;
     }
 
@@ -1262,6 +1273,60 @@ export class DatabaseStorage implements IStorage {
     });
 
     console.log(`Created next workflow task: ${nextTask.taskName} for complaint ${completedTask.complaintId} using Role-Action Mapping`);
+  }
+
+  // Handle workflow completion by updating complaint status
+  async handleWorkflowCompletion(complaintId: number, completedBy: string, reason: string, completionStatus: string = 'completed'): Promise<void> {
+    try {
+      // Update complaint status
+      const [updatedComplaint] = await db
+        .update(complaints)
+        .set({ 
+          status: completionStatus,
+          updatedAt: new Date()
+        })
+        .where(eq(complaints.id, complaintId))
+        .returning();
+
+      // Create audit entry
+      await this.createAuditEntry({
+        complaintId,
+        action: 'WORKFLOW_COMPLETED',
+        actionBy: completedBy,
+        description: `Workflow completed - complaint status updated to ${completionStatus}. ${reason}`,
+        oldValue: 'in_progress',
+        newValue: completionStatus
+      });
+
+      console.log(`Complaint ${updatedComplaint?.complaintId} workflow completed with status: ${completionStatus}`);
+    } catch (error) {
+      console.error('Error handling workflow completion:', error);
+    }
+  }
+
+  // Determine completion status based on workflow path
+  determineCompletionStatus(edge: any, completedTask: WorkflowTask): string {
+    const edgeLabel = edge.label?.toLowerCase() || '';
+    const taskType = completedTask.taskType?.toLowerCase() || '';
+    
+    // Check for rejection/dismissal patterns
+    if (edgeLabel.includes('no violation') || 
+        edgeLabel.includes('dismissed') || 
+        edgeLabel.includes('rejected') ||
+        edgeLabel.includes('invalid') ||
+        taskType.includes('rejection')) {
+      return 'closed'; // Use 'closed' for rejected/dismissed complaints
+    }
+    
+    // Check for resolution patterns
+    if (edgeLabel.includes('resolved') || 
+        edgeLabel.includes('resolution') ||
+        taskType.includes('resolution')) {
+      return 'closed'; // Use 'closed' for resolved complaints
+    }
+    
+    // Default to completed for successful workflow completion
+    return 'approved';
   }
 
   // Inbox operations
