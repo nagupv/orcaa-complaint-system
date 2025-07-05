@@ -288,22 +288,37 @@ export default function Inbox() {
       status: request.status,
       createdAt: request.createdAt,
     })),
-    // Add workflow tasks as actionable items
-    ...workflowTasks.filter((task: any) => task.assignedTo === user?.id).map((task: any) => {
-      const complaint = complaints.find((c: any) => c.id === task.complaintId);
-      const workflow = workflows.find((w: any) => w.id === task.workflowId);
-      return {
-        ...task,
-        type: "workflow_task",
-        title: `${task.taskName} - ${complaint?.complaintId || 'Unknown'}`,
-        description: `${task.taskType.replace(/_/g, ' ')} for complaint ${complaint?.complaintId || 'Unknown'}${workflow ? ` | Workflow: ${workflow.name}` : ''}`,
-        priority: task.priority || "medium",
-        status: task.status,
-        createdAt: task.createdAt,
-        complaintId: task.complaintId,
-        workflowTaskId: task.id,
-      };
-    }),
+    // Add workflow tasks as actionable items - only show current pending tasks per complaint
+    ...workflowTasks
+      .filter((task: any) => task.assignedTo === user?.id && task.status === 'pending')
+      .reduce((uniqueTasks: any[], task: any) => {
+        // Only keep the latest task per complaint
+        const existingTaskIndex = uniqueTasks.findIndex(t => t.complaintId === task.complaintId);
+        if (existingTaskIndex === -1) {
+          uniqueTasks.push(task);
+        } else {
+          // Keep the more recent task
+          if (new Date(task.createdAt) > new Date(uniqueTasks[existingTaskIndex].createdAt)) {
+            uniqueTasks[existingTaskIndex] = task;
+          }
+        }
+        return uniqueTasks;
+      }, [])
+      .map((task: any) => {
+        const complaint = complaints.find((c: any) => c.id === task.complaintId);
+        const workflow = workflows.find((w: any) => w.id === task.workflowId);
+        return {
+          ...task,
+          type: "workflow_task",
+          title: `${task.taskName} - ${complaint?.complaintId || 'Unknown'}`,
+          description: `${task.taskType.replace(/_/g, ' ')} for complaint ${complaint?.complaintId || 'Unknown'}${workflow ? ` | Workflow: ${workflow.name}` : ''}`,
+          priority: task.priority || "medium",
+          status: task.status,
+          createdAt: task.createdAt,
+          complaintId: task.complaintId,
+          workflowTaskId: task.id,
+        };
+      }),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const filteredItems = activeTab === "all" ? allItems : allItems.filter(item => {
