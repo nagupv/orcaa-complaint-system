@@ -61,7 +61,8 @@ import {
   Eye,
   Gavel,
   Building,
-  AlertTriangle
+  AlertTriangle,
+  Lightbulb
 } from 'lucide-react';
 
 // Define the node types with their properties
@@ -456,7 +457,7 @@ const CustomNode = ({ data, id }: NodeProps) => {
         <Handle
           type="target"
           position={Position.Top}
-          className="w-3 h-3 bg-gray-400 border-2 border-white"
+          className="w-4 h-4 bg-blue-500 border-2 border-white shadow-md hover:bg-blue-600 transition-colors"
           isConnectable={true}
         />
         
@@ -499,7 +500,7 @@ const CustomNode = ({ data, id }: NodeProps) => {
         <Handle
           type="source"
           position={Position.Bottom}
-          className="w-3 h-3 bg-gray-400 border-2 border-white"
+          className="w-4 h-4 bg-green-500 border-2 border-white shadow-md hover:bg-green-600 transition-colors"
           isConnectable={true}
         />
       </div>
@@ -1021,8 +1022,8 @@ export default function WorkflowDesigner() {
     );
   }, []);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(onDeleteNode));
-  const [edges, setEdges, onEdgesChange] = useEdgesState(createInitialEdges(onDeleteEdge));
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNodeType, setSelectedNodeType] = useState<string | null>(null);
   const [selectedEdgeType, setSelectedEdgeType] = useState<string>('default');
   const [zoomLevel, setZoomLevel] = useState<number>(1);
@@ -1157,6 +1158,105 @@ export default function WorkflowDesigner() {
       description: "All nodes and edges have been removed from the designer.",
     });
   }, [setNodes, setEdges, reactFlowInstance, toast]);
+
+  const onLoadExampleWorkflow = useCallback(() => {
+    const exampleNodes = [
+      {
+        id: 'ex1',
+        type: 'custom',
+        position: { x: 100, y: 100 },
+        data: {
+          label: 'Start',
+          icon: Play,
+          color: 'bg-green-100 border-green-400 text-green-800',
+          description: 'Start point of the workflow',
+          onDelete: onDeleteNode,
+          onConfigUpdate: onConfigUpdate,
+          config: {}
+        },
+      },
+      {
+        id: 'ex2',
+        type: 'custom',
+        position: { x: 300, y: 100 },
+        data: {
+          label: 'Initial Inspection',
+          icon: Eye,
+          color: 'bg-blue-100 border-blue-300 text-blue-800',
+          description: 'Perform initial field inspection',
+          onDelete: onDeleteNode,
+          onConfigUpdate: onConfigUpdate,
+          config: {}
+        },
+      },
+      {
+        id: 'ex3',
+        type: 'custom',
+        position: { x: 500, y: 100 },
+        data: {
+          label: 'Assessment',
+          icon: Search,
+          color: 'bg-yellow-100 border-yellow-300 text-yellow-800',
+          description: 'Assess complaint validity',
+          onDelete: onDeleteNode,
+          onConfigUpdate: onConfigUpdate,
+          config: {}
+        },
+      },
+      {
+        id: 'ex4',
+        type: 'custom',
+        position: { x: 700, y: 100 },
+        data: {
+          label: 'Resolution',
+          icon: CheckCircle,
+          color: 'bg-emerald-100 border-emerald-300 text-emerald-800',
+          description: 'Close and resolve complaint',
+          onDelete: onDeleteNode,
+          onConfigUpdate: onConfigUpdate,
+          config: {}
+        },
+      },
+    ];
+
+    const exampleEdges = [
+      {
+        id: 'ex-e1-2',
+        source: 'ex1',
+        target: 'ex2',
+        type: 'default',
+        animated: true,
+        label: 'Process',
+        data: { onDelete: onDeleteEdge }
+      },
+      {
+        id: 'ex-e2-3',
+        source: 'ex2',
+        target: 'ex3',
+        type: 'default',
+        animated: true,
+        label: 'Process',
+        data: { onDelete: onDeleteEdge }
+      },
+      {
+        id: 'ex-e3-4',
+        source: 'ex3',
+        target: 'ex4',
+        type: 'default',
+        animated: true,
+        label: 'Process',
+        data: { onDelete: onDeleteEdge }
+      },
+    ];
+
+    setNodes(exampleNodes);
+    setEdges(exampleEdges);
+    
+    toast({
+      title: "Example Workflow Loaded",
+      description: "A simple air quality complaint workflow has been loaded. You can now see the connection handles and try dragging between them.",
+    });
+  }, [setNodes, setEdges, onDeleteNode, onDeleteEdge, onConfigUpdate, toast]);
 
   const onExportWorkflow = useCallback(() => {
     const workflowData = {
@@ -1645,6 +1745,16 @@ export default function WorkflowDesigner() {
                         </div>
                       </DialogContent>
                     </Dialog>
+
+                    <Button
+                      onClick={onLoadExampleWorkflow}
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start"
+                    >
+                      <Lightbulb className="h-4 w-4 mr-2" />
+                      Load Example Workflow
+                    </Button>
 
                     <Button
                       onClick={onClearDesigner}
