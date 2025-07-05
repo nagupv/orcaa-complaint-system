@@ -1577,7 +1577,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (status) filters.status = status;
       if (taskType) filters.taskType = taskType;
       
+      console.log('Workflow tasks filters:', filters);
       const tasks = await storage.getWorkflowTasks(filters);
+      console.log(`Found ${tasks.length} workflow tasks:`, tasks.map(t => ({id: t.id, complaintId: t.complaintId, status: t.status, assignedTo: t.assignedTo})));
       res.json(tasks);
     } catch (error) {
       console.error('Error fetching workflow tasks:', error);
