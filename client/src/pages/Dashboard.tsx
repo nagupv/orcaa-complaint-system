@@ -15,7 +15,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Search, Filter, X, Calendar, MapPin, AlertTriangle, Download, FileSpreadsheet, FileText } from "lucide-react";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 export default function Dashboard() {
   const [filters, setFilters] = useState({
@@ -188,7 +188,7 @@ export default function Dashboard() {
     ]);
 
     // Add table
-    (doc as any).autoTable({
+    autoTable(doc, {
       head: [['ID', 'Type', 'Status', 'Priority', 'Problem', 'Complainant', 'City', 'Assigned To', 'Created']],
       body: tableData,
       startY: 60,
