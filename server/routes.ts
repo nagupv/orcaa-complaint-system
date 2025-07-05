@@ -1800,6 +1800,143 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Workflow Task Action Endpoints
+  app.post('/api/workflow-tasks/:id/approve', isAuthenticated, async (req: any, res) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      const approvedBy = req.user.claims.sub;
+      const { reason } = req.body;
+      
+      // Get the workflow task
+      const task = await storage.getWorkflowTaskById(taskId);
+      if (!task) {
+        return res.status(404).json({ error: 'Workflow task not found' });
+      }
+      
+      // Check if user has permission to approve
+      const currentUser = await storage.getUser(approvedBy);
+      const userRoles = typeof currentUser?.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser?.roles || [];
+      const canApprove = userRoles.some((role: string) => ['admin', 'supervisor', 'approver'].includes(role));
+      
+      if (!canApprove && task.assignedTo !== approvedBy) {
+        return res.status(403).json({ error: 'Not authorized to approve this task' });
+      }
+      
+      // Complete the workflow task (which will create the next task automatically)
+      const completedTask = await storage.completeWorkflowTask(taskId, approvedBy, reason);
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        complaintId: task.complaintId,
+        action: 'workflow_task_approved',
+        newValue: `Task "${task.taskName}" approved and completed by ${currentUser?.firstName} ${currentUser?.lastName}`,
+        userId: approvedBy,
+        reason: reason || 'Workflow task approved'
+      });
+      
+      res.json(completedTask);
+    } catch (error) {
+      console.error('Error approving workflow task:', error);
+      res.status(500).json({ error: 'Failed to approve workflow task' });
+    }
+  });
+
+  app.post('/api/workflow-tasks/:id/reject', isAuthenticated, async (req: any, res) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      const rejectedBy = req.user.claims.sub;
+      const { reason } = req.body;
+      
+      // Get the workflow task
+      const task = await storage.getWorkflowTaskById(taskId);
+      if (!task) {
+        return res.status(404).json({ error: 'Workflow task not found' });
+      }
+      
+      // Check if user has permission to reject
+      const currentUser = await storage.getUser(rejectedBy);
+      const userRoles = typeof currentUser?.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser?.roles || [];
+      const canReject = userRoles.some((role: string) => ['admin', 'supervisor', 'approver'].includes(role));
+      
+      if (!canReject && task.assignedTo !== rejectedBy) {
+        return res.status(403).json({ error: 'Not authorized to reject this task' });
+      }
+      
+      // Update task status to rejected
+      const rejectedTask = await storage.updateWorkflowTask(taskId, { 
+        status: 'rejected',
+        completedBy: rejectedBy,
+        completedAt: new Date(),
+        completionNotes: reason
+      });
+      
+      // Update related inbox item
+      // Note: We could also create a new task or escalate based on workflow rules
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        complaintId: task.complaintId,
+        action: 'workflow_task_rejected',
+        newValue: `Task "${task.taskName}" rejected by ${currentUser?.firstName} ${currentUser?.lastName}`,
+        userId: rejectedBy,
+        reason: reason || 'Workflow task rejected'
+      });
+      
+      res.json(rejectedTask);
+    } catch (error) {
+      console.error('Error rejecting workflow task:', error);
+      res.status(500).json({ error: 'Failed to reject workflow task' });
+    }
+  });
+
+  app.post('/api/workflow-tasks/:id/forward', isAuthenticated, async (req: any, res) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      const forwardedBy = req.user.claims.sub;
+      const { forwardTo, comments } = req.body;
+      
+      // Get the workflow task
+      const task = await storage.getWorkflowTaskById(taskId);
+      if (!task) {
+        return res.status(404).json({ error: 'Workflow task not found' });
+      }
+      
+      // Get the target user
+      const targetUser = await storage.getUserByEmail?.(forwardTo);
+      if (!targetUser) {
+        return res.status(404).json({ error: 'Target user not found' });
+      }
+      
+      // Check if user has permission to forward
+      const currentUser = await storage.getUser(forwardedBy);
+      const userRoles = typeof currentUser?.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser?.roles || [];
+      const canForward = userRoles.some((role: string) => ['admin', 'supervisor', 'approver'].includes(role));
+      
+      if (!canForward && task.assignedTo !== forwardedBy) {
+        return res.status(403).json({ error: 'Not authorized to forward this task' });
+      }
+      
+      // Update task assignment
+      const forwardedTask = await storage.updateWorkflowTask(taskId, { 
+        assignedTo: targetUser.id 
+      });
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        complaintId: task.complaintId,
+        action: 'workflow_task_forwarded',
+        newValue: `Task "${task.taskName}" forwarded to ${targetUser.firstName} ${targetUser.lastName} (${targetUser.email})`,
+        userId: forwardedBy,
+        reason: comments || 'Workflow task forwarded'
+      });
+      
+      res.json(forwardedTask);
+    } catch (error) {
+      console.error('Error forwarding workflow task:', error);
+      res.status(500).json({ error: 'Failed to forward workflow task' });
+    }
+  });
+
   // Serve uploaded files
   app.use('/uploads', express.static('./uploads'));
 

@@ -105,6 +105,8 @@ export default function Inbox() {
           endpoint = `/api/overtime-requests/${item.id}/${action}`;
         } else if (item.type === "complaint") {
           endpoint = `/api/complaints/${item.id}/${action}`;
+        } else if (item.type === "workflow_task") {
+          endpoint = `/api/workflow-tasks/${item.id}/${action}`;
         }
         
         await apiRequest("POST", endpoint, { 
@@ -116,6 +118,7 @@ export default function Inbox() {
       queryClient.invalidateQueries({ queryKey: ["/api/leave-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/overtime-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/complaints"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/workflow-tasks"] });
       
       const actionText = variables.action === "forward" 
         ? `forwarded to ${variables.forwardEmail}`
@@ -285,6 +288,22 @@ export default function Inbox() {
       status: request.status,
       createdAt: request.createdAt,
     })),
+    // Add workflow tasks as actionable items
+    ...workflowTasks.filter((task: any) => task.assignedTo === user?.id).map((task: any) => {
+      const complaint = complaints.find((c: any) => c.id === task.complaintId);
+      const workflow = workflows.find((w: any) => w.id === task.workflowId);
+      return {
+        ...task,
+        type: "workflow_task",
+        title: `${task.taskName} - ${complaint?.complaintId || 'Unknown'}`,
+        description: `${task.taskType.replace(/_/g, ' ')} for complaint ${complaint?.complaintId || 'Unknown'}${workflow ? ` | Workflow: ${workflow.name}` : ''}`,
+        priority: task.priority || "medium",
+        status: task.status,
+        createdAt: task.createdAt,
+        complaintId: task.complaintId,
+        workflowTaskId: task.id,
+      };
+    }),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const filteredItems = activeTab === "all" ? allItems : allItems.filter(item => {
