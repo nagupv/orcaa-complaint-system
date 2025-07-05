@@ -38,8 +38,9 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       maxAge: sessionTtl,
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     },
   });
 }
@@ -131,8 +132,14 @@ export async function setupAuth(app: Express) {
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   const user = req.user as any;
 
-  if (!req.isAuthenticated() || !user.expires_at) {
-    return res.status(401).json({ message: "Unauthorized" });
+  if (!req.isAuthenticated()) {
+    console.log("Authentication failed: User not authenticated");
+    return res.status(401).json({ message: "Unauthorized - not authenticated" });
+  }
+
+  if (!user || !user.expires_at) {
+    console.log("Authentication failed: No user or expires_at found", { user: !!user, expires_at: user?.expires_at });
+    return res.status(401).json({ message: "Unauthorized - invalid session" });
   }
 
   const now = Math.floor(Date.now() / 1000);
@@ -167,6 +174,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     // Check if user is still active after token refresh
     const userRecord = await storage.getUser(user.claims.sub);
     if (!userRecord || userRecord.isActive === false) {
+      console.log("User account deactivated:", user.claims.sub);
       req.logout(() => {
         res.status(401).json({ message: "Account has been deactivated" });
       });
@@ -175,7 +183,8 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     
     return next();
   } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
+    console.error("Token refresh failed:", error);
+    res.status(401).json({ message: "Token refresh failed - please log in again" });
     return;
   }
 };
