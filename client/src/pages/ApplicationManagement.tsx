@@ -58,40 +58,46 @@ export default function ApplicationManagement() {
           </CardHeader>
           <CardContent>
             {/* Hover Navigation Menu */}
-            <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-200 pb-4">
+            <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 pb-4">
               {menuItems.map((item) => (
                 <div key={item.id} className="relative group">
-                  <button
-                    onClick={() => setActiveSection(item.id)}
-                    className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-1 ${
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setActiveSection(item.id);
+                    }}
+                    className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-1 hover:no-underline ${
                       activeSection === item.id
                         ? "bg-orcaa-blue text-white"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-orcaa-blue"
+                        : "text-orcaa-blue hover:bg-orcaa-blue hover:text-white border border-orcaa-blue"
                     }`}
                   >
                     {item.label}
                     {item.submenu && <ChevronDown className="h-4 w-4" />}
-                  </button>
+                  </a>
                   
                   {/* Dropdown for Mappings */}
                   {item.submenu && (
                     <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
                       <div className="py-1">
                         {item.submenu.map((subItem) => (
-                          <button
+                          <a
                             key={subItem.id}
-                            onClick={() => {
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
                               setActiveSection("mappings");
                               setActiveMappingSection(subItem.id);
                             }}
-                            className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                            className={`block w-full text-left px-4 py-2 text-sm transition-colors hover:no-underline ${
                               activeSection === "mappings" && activeMappingSection === subItem.id
                                 ? "bg-orcaa-blue text-white"
-                                : "text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue"
+                                : "text-orcaa-blue hover:bg-orcaa-blue hover:text-white"
                             }`}
                           >
                             {subItem.label}
-                          </button>
+                          </a>
                         ))}
                       </div>
                     </div>
