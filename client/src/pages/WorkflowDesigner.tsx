@@ -37,7 +37,14 @@ import {
   Download,
   Upload,
   Trash2,
-  X
+  X,
+  MessageSquare,
+  Phone,
+  BarChart3,
+  ZoomIn,
+  ZoomOut,
+  Move,
+  RotateCw
 } from 'lucide-react';
 
 // Define the node types with their properties
@@ -49,6 +56,22 @@ const nodeTypes = [
     icon: Mail,
     color: 'bg-blue-100 border-blue-300 text-blue-800',
     description: 'Send automated email notifications'
+  },
+  {
+    id: 'sms-notification',
+    type: 'custom',
+    label: 'SMS Notification',
+    icon: MessageSquare,
+    color: 'bg-cyan-100 border-cyan-300 text-cyan-800',
+    description: 'Send SMS text message notifications'
+  },
+  {
+    id: 'whatsapp-notification',
+    type: 'custom',
+    label: 'WhatsApp Notification',
+    icon: Phone,
+    color: 'bg-green-100 border-green-400 text-green-800',
+    description: 'Send WhatsApp message notifications'
   },
   {
     id: 'complaint-planning',
@@ -91,6 +114,14 @@ const nodeTypes = [
     description: 'Generate periodic status reports'
   },
   {
+    id: 'analytics-reporting',
+    type: 'custom',
+    label: 'Advanced Analytics & Reporting',
+    icon: BarChart3,
+    color: 'bg-pink-100 border-pink-300 text-pink-800',
+    description: 'Generate advanced analytics and reports'
+  },
+  {
     id: 'work-completion',
     type: 'custom',
     label: 'Work Completion',
@@ -127,6 +158,30 @@ const createInitialNodes = (onDeleteNode: (id: string) => void): Node[] => [
     type: 'custom',
     position: { x: 100, y: 220 },
     data: { 
+      label: 'SMS Notification',
+      icon: MessageSquare,
+      color: 'bg-cyan-100 border-cyan-300 text-cyan-800',
+      description: 'Send SMS text message notifications',
+      onDelete: onDeleteNode
+    },
+  },
+  {
+    id: '3',
+    type: 'custom',
+    position: { x: 100, y: 340 },
+    data: { 
+      label: 'WhatsApp Notification',
+      icon: Phone,
+      color: 'bg-green-100 border-green-400 text-green-800',
+      description: 'Send WhatsApp message notifications',
+      onDelete: onDeleteNode
+    },
+  },
+  {
+    id: '4',
+    type: 'custom',
+    position: { x: 350, y: 100 },
+    data: { 
       label: 'Complaint Planning',
       icon: FileText,
       color: 'bg-green-100 border-green-300 text-green-800',
@@ -135,9 +190,9 @@ const createInitialNodes = (onDeleteNode: (id: string) => void): Node[] => [
     },
   },
   {
-    id: '3',
+    id: '5',
     type: 'custom',
-    position: { x: 100, y: 340 },
+    position: { x: 350, y: 220 },
     data: { 
       label: 'Field Verification',
       icon: Search,
@@ -147,9 +202,9 @@ const createInitialNodes = (onDeleteNode: (id: string) => void): Node[] => [
     },
   },
   {
-    id: '4',
+    id: '6',
     type: 'custom',
-    position: { x: 350, y: 100 },
+    position: { x: 350, y: 340 },
     data: { 
       label: 'Field Work',
       icon: Wrench,
@@ -159,33 +214,21 @@ const createInitialNodes = (onDeleteNode: (id: string) => void): Node[] => [
     },
   },
   {
-    id: '5',
-    type: 'custom',
-    position: { x: 350, y: 220 },
-    data: { 
-      label: 'Field Contract Work',
-      icon: Users,
-      color: 'bg-purple-100 border-purple-300 text-purple-800',
-      description: 'Coordinate with contract workers',
-      onDelete: onDeleteNode
-    },
-  },
-  {
-    id: '6',
-    type: 'custom',
-    position: { x: 350, y: 340 },
-    data: { 
-      label: 'Work Status Periodic Report',
-      icon: ClipboardList,
-      color: 'bg-indigo-100 border-indigo-300 text-indigo-800',
-      description: 'Generate periodic status reports',
-      onDelete: onDeleteNode
-    },
-  },
-  {
     id: '7',
     type: 'custom',
     position: { x: 600, y: 100 },
+    data: { 
+      label: 'Advanced Analytics & Reporting',
+      icon: BarChart3,
+      color: 'bg-pink-100 border-pink-300 text-pink-800',
+      description: 'Generate advanced analytics and reports',
+      onDelete: onDeleteNode
+    },
+  },
+  {
+    id: '8',
+    type: 'custom',
+    position: { x: 600, y: 220 },
     data: { 
       label: 'Work Completion',
       icon: CheckCircle,
@@ -195,9 +238,9 @@ const createInitialNodes = (onDeleteNode: (id: string) => void): Node[] => [
     },
   },
   {
-    id: '8',
+    id: '9',
     type: 'custom',
-    position: { x: 600, y: 220 },
+    position: { x: 600, y: 340 },
     data: { 
       label: 'Work Review and Closure',
       icon: Archive,
@@ -547,6 +590,8 @@ export default function WorkflowDesigner() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(createInitialEdges(onDeleteEdge));
   const [selectedNodeType, setSelectedNodeType] = useState<string | null>(null);
   const [selectedEdgeType, setSelectedEdgeType] = useState<string>('default');
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -608,17 +653,69 @@ export default function WorkflowDesigner() {
       nodes,
       edges,
       timestamp: new Date().toISOString(),
+      zoomLevel,
+      analytics: {
+        totalNodes: nodes.length,
+        totalConnections: edges.length,
+        nodeTypes: nodes.reduce((acc, node) => {
+          const label = node.data.label;
+          acc[label] = (acc[label] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>),
+        connectionTypes: edges.reduce((acc, edge) => {
+          acc[edge.type || 'default'] = (acc[edge.type || 'default'] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      }
     };
     const dataStr = JSON.stringify(workflowData, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     
-    const exportFileDefaultName = `workflow-${new Date().toISOString().split('T')[0]}.json`;
+    const exportFileDefaultName = `workflow-analytics-${new Date().toISOString().split('T')[0]}.json`;
     
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
-  }, [nodes, edges]);
+  }, [nodes, edges, zoomLevel]);
+
+  // Advanced zoom and pan controls
+  const onZoomIn = useCallback(() => {
+    if (reactFlowInstance) {
+      const currentZoom = reactFlowInstance.getZoom();
+      const newZoom = Math.min(currentZoom * 1.2, 4);
+      reactFlowInstance.zoomTo(newZoom);
+      setZoomLevel(newZoom);
+    }
+  }, [reactFlowInstance]);
+
+  const onZoomOut = useCallback(() => {
+    if (reactFlowInstance) {
+      const currentZoom = reactFlowInstance.getZoom();
+      const newZoom = Math.max(currentZoom * 0.8, 0.1);
+      reactFlowInstance.zoomTo(newZoom);
+      setZoomLevel(newZoom);
+    }
+  }, [reactFlowInstance]);
+
+  const onFitView = useCallback(() => {
+    if (reactFlowInstance) {
+      reactFlowInstance.fitView({ padding: 0.2 });
+      setZoomLevel(reactFlowInstance.getZoom());
+    }
+  }, [reactFlowInstance]);
+
+  const onCenterView = useCallback(() => {
+    if (reactFlowInstance) {
+      const center = { x: 400, y: 300 };
+      reactFlowInstance.setCenter(center.x, center.y);
+    }
+  }, [reactFlowInstance]);
+
+  const onInit = useCallback((rfi: any) => {
+    setReactFlowInstance(rfi);
+    setZoomLevel(rfi.getZoom());
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -703,6 +800,53 @@ export default function WorkflowDesigner() {
                 </div>
 
                 <div>
+                  <h3 className="font-semibold mb-3">Zoom & Pan Controls</h3>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        onClick={onZoomIn}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        <ZoomIn className="h-3 w-3 mr-1" />
+                        Zoom In
+                      </Button>
+                      <Button
+                        onClick={onZoomOut}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        <ZoomOut className="h-3 w-3 mr-1" />
+                        Zoom Out
+                      </Button>
+                      <Button
+                        onClick={onFitView}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        <Move className="h-3 w-3 mr-1" />
+                        Fit View
+                      </Button>
+                      <Button
+                        onClick={onCenterView}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        <RotateCw className="h-3 w-3 mr-1" />
+                        Center
+                      </Button>
+                    </div>
+                    <div className="text-xs text-muted-foreground text-center">
+                      Zoom: {Math.round(zoomLevel * 100)}%
+                    </div>
+                  </div>
+                </div>
+
+                <div>
                   <h3 className="font-semibold mb-3">Actions</h3>
                   <div className="space-y-2">
                     <Button
@@ -729,14 +873,14 @@ export default function WorkflowDesigner() {
                       className="w-full justify-start"
                     >
                       <Download className="h-4 w-4 mr-2" />
-                      Export JSON
+                      Export Analytics
                     </Button>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-3">Statistics</h3>
-                  <div className="space-y-2">
+                  <h3 className="font-semibold mb-3">Advanced Analytics</h3>
+                  <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span>Total Nodes:</span>
                       <Badge variant="secondary">{nodes.length}</Badge>
@@ -744,6 +888,44 @@ export default function WorkflowDesigner() {
                     <div className="flex justify-between text-sm">
                       <span>Total Connections:</span>
                       <Badge variant="secondary">{edges.length}</Badge>
+                    </div>
+                    <div className="text-sm">
+                      <div className="font-medium mb-1">Node Types:</div>
+                      {Object.entries(
+                        nodes.reduce((acc, node) => {
+                          const label = node.data.label;
+                          acc[label] = (acc[label] || 0) + 1;
+                          return acc;
+                        }, {} as Record<string, number>)
+                      ).map(([type, count]) => (
+                        <div key={type} className="flex justify-between text-xs py-1">
+                          <span className="truncate">{type}:</span>
+                          <Badge variant="outline" className="text-xs">{count}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-sm">
+                      <div className="font-medium mb-1">Connection Types:</div>
+                      {Object.entries(
+                        edges.reduce((acc, edge) => {
+                          const type = edge.type || 'default';
+                          acc[type] = (acc[type] || 0) + 1;
+                          return acc;
+                        }, {} as Record<string, number>)
+                      ).map(([type, count]) => (
+                        <div key={type} className="flex justify-between text-xs py-1">
+                          <span className="capitalize">{type}:</span>
+                          <Badge variant="outline" className="text-xs">{count}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="text-sm">
+                      <div className="font-medium mb-1">Workflow Complexity:</div>
+                      <div className="text-xs text-muted-foreground">
+                        {nodes.length < 5 ? "Simple" : 
+                         nodes.length < 10 ? "Moderate" : 
+                         nodes.length < 15 ? "Complex" : "Very Complex"}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -759,6 +941,7 @@ export default function WorkflowDesigner() {
                   onNodesChange={onNodesChange}
                   onEdgesChange={onEdgesChange}
                   onConnect={onConnect}
+                  onInit={onInit}
                   nodeTypes={nodeTypes_custom}
                   edgeTypes={edgeTypes_custom}
                   connectionMode={ConnectionMode.Loose}
