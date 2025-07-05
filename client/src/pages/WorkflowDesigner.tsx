@@ -1395,6 +1395,11 @@ export default function WorkflowDesigner() {
   }, [nodes, edges, zoomLevel, workflowName, workflowDescription, saveWorkflowMutation]);
 
   const handleLoadWorkflow = useCallback((workflow: any) => {
+    // Set the loaded workflow details for future saves
+    setSelectedWorkflowId(workflow.id);
+    setWorkflowName(workflow.name);
+    setWorkflowDescription(workflow.description || '');
+    
     if (workflow.workflowData) {
       const data = workflow.workflowData;
       
@@ -1755,13 +1760,19 @@ export default function WorkflowDesigner() {
                           size="sm"
                           className="w-full justify-start"
                           onClick={() => {
-                            setSelectedWorkflowId(null);
-                            setWorkflowName('');
-                            setWorkflowDescription('');
+                            if (selectedWorkflowId && workflowName) {
+                              // If we have a loaded workflow, save directly without dialog
+                              handleSaveWorkflow();
+                            } else {
+                              // Open dialog for new workflow
+                              setSelectedWorkflowId(null);
+                              setWorkflowName('');
+                              setWorkflowDescription('');
+                            }
                           }}
                         >
                           <Save className="h-4 w-4 mr-2" />
-                          Save Workflow
+                          {selectedWorkflowId ? 'Update Workflow' : 'Save Workflow'}
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
