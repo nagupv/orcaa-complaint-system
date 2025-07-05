@@ -63,6 +63,12 @@ export default function Inbox() {
     enabled: !!user?.roles?.some((role: string) => ["admin", "supervisor", "approver"].includes(role)),
   });
 
+  // Fetch workflows for complaint workflow information
+  const { data: workflows = [], isLoading: workflowsLoading } = useQuery({
+    queryKey: ["/api/workflows"],
+    enabled: !!user?.id,
+  });
+
   const processItemAction = useMutation({
     mutationFn: async (params: { 
       item: any; 
@@ -209,15 +215,19 @@ export default function Inbox() {
   const isApprover = user?.roles?.some((role: string) => ["admin", "supervisor", "approver"].includes(role));
 
   const allItems = [
-    ...complaints.map((complaint: any) => ({
-      ...complaint,
-      type: "complaint",
-      title: `${complaint.complaintId} - ${complaint.problemType}`,
-      description: complaint.description,
-      priority: complaint.priority,
-      status: complaint.status,
-      createdAt: complaint.createdAt,
-    })),
+    ...complaints.map((complaint: any) => {
+      const workflow = workflows.find((w: any) => w.id === complaint.workflowId);
+      return {
+        ...complaint,
+        type: "complaint",
+        title: `${complaint.complaintId} - ${complaint.problemType}`,
+        description: `${complaint.description}${workflow ? ` | Workflow: ${workflow.name}` : ''}`,
+        priority: complaint.priority,
+        status: complaint.status,
+        createdAt: complaint.createdAt,
+        workflowName: workflow?.name || 'No Workflow Assigned',
+      };
+    }),
     ...leaveRequests.map((request: any) => ({
       ...request,
       type: "leave_approval",
@@ -284,7 +294,7 @@ export default function Inbox() {
     }
   };
 
-  const isLoading = complaintsLoading || leaveLoading || overtimeLoading || myLeaveLoading || myOvertimeLoading;
+  const isLoading = complaintsLoading || leaveLoading || overtimeLoading || myLeaveLoading || myOvertimeLoading || workflowsLoading;
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -637,6 +647,16 @@ export default function Inbox() {
                         <Label className="font-semibold">Problem Type</Label>
                         <p className="text-sm text-gray-600">{selectedItem.problemType}</p>
                       </div>
+                      <div>
+                        <Label className="font-semibold">Current Workflow</Label>
+                        <p className="text-sm text-gray-600">{selectedItem.workflowName || 'No Workflow Assigned'}</p>
+                      </div>
+                      {selectedItem.assignedTo && (
+                        <div>
+                          <Label className="font-semibold">Assigned To</Label>
+                          <p className="text-sm text-gray-600">{selectedItem.assignedTo}</p>
+                        </div>
+                      )}
                     </div>
                     {selectedItem.complainantEmail && (
                       <div>
