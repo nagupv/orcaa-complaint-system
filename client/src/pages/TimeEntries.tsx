@@ -449,7 +449,7 @@ export default function TimeEntries() {
       </div>
 
       {/* Analytics and Reports Section */}
-      {weeklyTimesheets && weeklyTimesheets.length > 0 && (
+      {filteredTimesheets && filteredTimesheets.length > 0 && (
         <div className="space-y-6">
           {/* Time Allocation Widgets */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -463,7 +463,7 @@ export default function TimeEntries() {
               </CardHeader>
               <CardContent>
                 {(() => {
-                  const activityTotals = weeklyTimesheets.reduce((acc: any, ts: any) => {
+                  const activityTotals = filteredTimesheets.reduce((acc: any, ts: any) => {
                     const hours = parseFloat(ts.timeInHours);
                     acc[ts.activity] = (acc[ts.activity] || 0) + hours;
                     return acc;
@@ -507,7 +507,7 @@ export default function TimeEntries() {
               </CardHeader>
               <CardContent>
                 {(() => {
-                  const workIdTotals = weeklyTimesheets.reduce((acc: any, ts: any) => {
+                  const workIdTotals = filteredTimesheets.reduce((acc: any, ts: any) => {
                     const hours = parseFloat(ts.timeInHours);
                     const workId = ts.businessWorkId || 'No Work ID';
                     acc[workId] = (acc[workId] || 0) + hours;
@@ -557,14 +557,14 @@ export default function TimeEntries() {
                 const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
                 const days = eachDayOfInterval({ start: sixMonthsAgo, end: today });
                 
-                const heatmapData = weeklyTimesheets.reduce((acc: any, ts: any) => {
+                const heatmapData = filteredTimesheets.reduce((acc: any, ts: any) => {
                   const date = ts.date;
                   const hours = parseFloat(ts.timeInHours);
                   acc[date] = (acc[date] || 0) + hours;
                   return acc;
                 }, {});
                 
-                const maxHours = Math.max(...Object.values(heatmapData));
+                const maxHours = Object.values(heatmapData).length > 0 ? Math.max(...Object.values(heatmapData) as number[]) : 1;
                 
                 const getIntensity = (hours: number) => {
                   if (hours === 0) return 0;
@@ -629,7 +629,7 @@ export default function TimeEntries() {
               </CardHeader>
               <CardContent>
                 {(() => {
-                  const dailyActivitySummary = weeklyTimesheets.reduce((acc: any, ts: any) => {
+                  const dailyActivitySummary = filteredTimesheets.reduce((acc: any, ts: any) => {
                     const date = ts.date;
                     const activity = ts.activity;
                     const hours = parseFloat(ts.timeInHours);
@@ -641,7 +641,7 @@ export default function TimeEntries() {
                     return acc;
                   }, {});
                   
-                  const allActivities = [...new Set(weeklyTimesheets.map((ts: any) => ts.activity))];
+                  const allActivities = Array.from(new Set(filteredTimesheets.map((ts: any) => ts.activity)));
                   
                   return (
                     <div className="overflow-x-auto">
@@ -688,7 +688,7 @@ export default function TimeEntries() {
               </CardHeader>
               <CardContent>
                 {(() => {
-                  const dailyWorkIdSummary = weeklyTimesheets.reduce((acc: any, ts: any) => {
+                  const dailyWorkIdSummary = filteredTimesheets.reduce((acc: any, ts: any) => {
                     const date = ts.date;
                     const workId = ts.businessWorkId || 'No Work ID';
                     const hours = parseFloat(ts.timeInHours);
@@ -700,7 +700,7 @@ export default function TimeEntries() {
                     return acc;
                   }, {});
                   
-                  const allWorkIds = [...new Set(weeklyTimesheets.map((ts: any) => ts.businessWorkId || 'No Work ID'))];
+                  const allWorkIds = Array.from(new Set(filteredTimesheets.map((ts: any) => ts.businessWorkId || 'No Work ID')));
                   
                   return (
                     <div className="overflow-x-auto">
