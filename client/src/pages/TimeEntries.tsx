@@ -584,26 +584,83 @@ export default function TimeEntries() {
                   };
                   return colors[intensity as keyof typeof colors];
                 };
+
+                // Group days by weeks for horizontal layout
+                const weeks: Date[][] = [];
+                let currentWeek: Date[] = [];
+                
+                days.forEach((day, index) => {
+                  const dayOfWeek = day.getDay();
+                  const mondayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert Sunday=0 to Monday=0
+                  
+                  if (index === 0) {
+                    // Fill in the beginning of first week if needed
+                    for (let i = 0; i < mondayIndex; i++) {
+                      currentWeek.push(new Date(0)); // placeholder for empty cells
+                    }
+                  }
+                  
+                  currentWeek.push(day);
+                  
+                  if (currentWeek.length === 7) {
+                    weeks.push(currentWeek);
+                    currentWeek = [];
+                  }
+                });
+                
+                // Add remaining days to last week
+                if (currentWeek.length > 0) {
+                  while (currentWeek.length < 7) {
+                    currentWeek.push(new Date(0)); // placeholder for empty cells
+                  }
+                  weeks.push(currentWeek);
+                }
+                
+                const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
                 
                 return (
                   <div className="overflow-x-auto">
-                    <div className="grid grid-cols-7 gap-1 w-fit">
-                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                        <div key={day} className="text-xs text-gray-500 text-center mb-1">{day}</div>
-                      ))}
-                      {days.map((day, index) => {
-                        const dateStr = format(day, 'yyyy-MM-dd');
-                        const hours = heatmapData[dateStr] || 0;
-                        const intensity = getIntensity(hours);
-                        return (
-                          <div
-                            key={index}
-                            className={`w-3 h-3 rounded-sm ${getIntensityColor(intensity)}`}
-                            title={`${format(day, 'MMM dd, yyyy')}: ${hours}h`}
-                          />
-                        );
-                      })}
+                    <div className="flex gap-2">
+                      {/* Day labels column */}
+                      <div className="flex flex-col gap-1 mr-2">
+                        <div className="h-4"></div> {/* Space for month labels */}
+                        {dayLabels.map(day => (
+                          <div key={day} className="h-3 flex items-center text-xs text-gray-500 pr-2">
+                            {day}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Weeks grid */}
+                      <div className="flex gap-1">
+                        {weeks.map((week, weekIndex) => (
+                          <div key={weekIndex} className="flex flex-col gap-1">
+                            {/* Month label at top of first week of month */}
+                            <div className="h-4 text-xs text-gray-500 text-center">
+                              {weekIndex === 0 || week[0].getDate() <= 7 ? format(week[0], 'MMM') : ''}
+                            </div>
+                            {week.map((day, dayIndex) => {
+                              if (day.getTime() === 0) {
+                                // Empty placeholder cell
+                                return <div key={dayIndex} className="w-3 h-3" />;
+                              }
+                              
+                              const dateStr = format(day, 'yyyy-MM-dd');
+                              const hours = heatmapData[dateStr] || 0;
+                              const intensity = getIntensity(hours);
+                              return (
+                                <div
+                                  key={dayIndex}
+                                  className={`w-3 h-3 rounded-sm ${getIntensityColor(intensity)} cursor-help`}
+                                  title={`${format(day, 'MMM dd, yyyy')}: ${hours}h`}
+                                />
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
                     </div>
+                    
                     <div className="mt-4 flex items-center gap-2 text-xs text-gray-500">
                       <span>Less</span>
                       {[0, 1, 2, 3, 4].map(intensity => (
