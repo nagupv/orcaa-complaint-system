@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { WorkflowTask, User } from "@shared/schema";
@@ -16,10 +17,12 @@ import { CheckCircle, Clock, AlertTriangle, User as UserIcon, Calendar, Eye, Sea
 
 interface WorkflowTaskDetailProps {
   taskId: number;
+  open: boolean;
+  onClose: () => void;
   onTaskUpdate?: () => void;
 }
 
-export default function WorkflowTaskDetail({ taskId, onTaskUpdate }: WorkflowTaskDetailProps) {
+export default function WorkflowTaskDetail({ taskId, open, onClose, onTaskUpdate }: WorkflowTaskDetailProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [observations, setObservations] = useState("");
@@ -255,25 +258,31 @@ export default function WorkflowTaskDetail({ taskId, onTaskUpdate }: WorkflowTas
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-6">
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Loading...</DialogTitle>
+          </DialogHeader>
           <div className="animate-pulse space-y-4">
             <div className="h-4 bg-gray-200 rounded w-3/4"></div>
             <div className="h-4 bg-gray-200 rounded w-1/2"></div>
             <div className="h-20 bg-gray-200 rounded"></div>
           </div>
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
     );
   }
 
   if (!task) {
     return (
-      <Card>
-        <CardContent className="p-6">
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Task Not Found</DialogTitle>
+          </DialogHeader>
           <p className="text-center text-muted-foreground">Task not found</p>
-        </CardContent>
-      </Card>
+        </DialogContent>
+      </Dialog>
     );
   }
 
@@ -281,74 +290,73 @@ export default function WorkflowTaskDetail({ taskId, onTaskUpdate }: WorkflowTas
   const completedByUser = task.completedBy ? users.find(u => u.id === task.completedBy) : null;
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            {getTaskIcon(task.taskType)}
-            <div>
-              <CardTitle className="text-lg">{task.taskName}</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                {task.taskType.replace(/_/g, " ")}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            {getStatusBadge(task.status)}
-            {getPriorityBadge(task.priority)}
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="space-y-6">
-        {/* Task Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">Assigned To</Label>
-            <div className="flex items-center gap-2">
-              <UserIcon className="h-4 w-4" />
-              <span className="text-sm">
-                {assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : task.assignedTo}
-              </span>
-              <Badge variant="outline">{task.assignedRole}</Badge>
-            </div>
-          </div>
-
-          {task.dueDate && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Due Date</Label>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <span className="text-sm">
-                  {new Date(task.dueDate).toLocaleDateString()}
-                </span>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {task.taskName} - {complaint?.complaintId}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-6">
+          {/* Task Header */}
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              {getTaskIcon(task.taskType)}
+              <div>
+                <h3 className="text-lg font-semibold">{task.taskName}</h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {task.taskType.replace(/_/g, " ")}
+                </p>
               </div>
             </div>
-          )}
-        </div>
+            <div className="flex gap-2">
+              {getStatusBadge(task.status)}
+              {getPriorityBadge(task.priority)}
+            </div>
+          </div>
 
-        <Separator />
+          <Separator />
 
-        {/* Tabbed Content */}
-        <Tabs defaultValue="complaint" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="complaint">
-              <FileText className="h-4 w-4 mr-2" />
-              Complaint Details
-            </TabsTrigger>
-            <TabsTrigger value="history">
-              <History className="h-4 w-4 mr-2" />
-              Workflow History
-            </TabsTrigger>
-            <TabsTrigger value="audit">
-              <Eye className="h-4 w-4 mr-2" />
-              Audit Trail
-            </TabsTrigger>
-            <TabsTrigger value="actions">
-              <Gavel className="h-4 w-4 mr-2" />
-              Actions
-            </TabsTrigger>
-          </TabsList>
+          {/* Task Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Assigned To</Label>
+              <div className="flex items-center gap-2">
+                <UserIcon className="h-4 w-4" />
+                <span className="text-sm">
+                  {assignedUser ? `${assignedUser.firstName} ${assignedUser.lastName}` : task.assignedTo}
+                </span>
+                <Badge variant="outline">{task.assignedRole}</Badge>
+              </div>
+            </div>
+
+            {task.dueDate && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Due Date</Label>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  <span className="text-sm">
+                    {new Date(task.dueDate).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Tabbed Content */}
+          <Tabs defaultValue="complaint" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="complaint">
+                <FileText className="h-4 w-4 mr-2" />
+                Complaint Details
+              </TabsTrigger>
+              <TabsTrigger value="history">
+                <History className="h-4 w-4 mr-2" />
+                Workflow History
+              </TabsTrigger>
+            </TabsList>
 
           {/* Complaint Details Tab */}
           <TabsContent value="complaint" className="space-y-4">
@@ -650,92 +658,7 @@ export default function WorkflowTaskDetail({ taskId, onTaskUpdate }: WorkflowTas
                 </div>
               )}
 
-              {/* Action Section - Only show if task is not completed */}
-              {task.status !== 'completed' && (
-                <div className="space-y-4">
-                  <Separator />
-                  
-                  {/* Observations Input */}
-                  <div className="space-y-2">
-                    <Label htmlFor="observations">
-                      Inspection Observations <span className="text-red-500">*</span>
-                    </Label>
-                    <Textarea
-                      id="observations"
-                      placeholder="Enter your inspection observations..."
-                      value={observations}
-                      onChange={(e) => setObservations(e.target.value)}
-                      className="min-h-[100px]"
-                    />
-                  </div>
 
-                  {/* Inspection Status */}
-                  <div className="space-y-2">
-                    <Label>
-                      Inspection Status <span className="text-red-500">*</span>
-                    </Label>
-                    <Select value={inspectionStatus} onValueChange={setInspectionStatus}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select inspection status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="approved">Approved</SelectItem>
-                        <SelectItem value="rejected">Rejected</SelectItem>
-                        <SelectItem value="forward">Forward</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Forward Fields - Only show if status is forward */}
-                  {inspectionStatus === 'forward' && (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="forwardEmail">
-                          Forward Email <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="forwardEmail"
-                          type="email"
-                          placeholder="Enter email to forward to"
-                          value={forwardEmail}
-                          onChange={(e) => setForwardEmail(e.target.value)}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="forwardReason">Forward Reason</Label>
-                        <Textarea
-                          id="forwardReason"
-                          placeholder="Reason for forwarding (optional)"
-                          value={forwardReason}
-                          onChange={(e) => setForwardReason(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={handleSubmitObservations}
-                      disabled={updateTaskMutation.isPending}
-                      className="flex-1"
-                    >
-                      {updateTaskMutation.isPending ? "Updating..." : "Submit Observations"}
-                    </Button>
-                    
-                    {inspectionStatus === 'approved' && (
-                      <Button
-                        onClick={handleCompleteTask}
-                        disabled={completeTaskMutation.isPending}
-                        variant="default"
-                      >
-                        {completeTaskMutation.isPending ? "Completing..." : "Complete Task"}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Completion Information */}
               {task.status === 'completed' && (
@@ -767,7 +690,8 @@ export default function WorkflowTaskDetail({ taskId, onTaskUpdate }: WorkflowTas
             </div>
           </TabsContent>
         </Tabs>
-      </CardContent>
-    </Card>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
