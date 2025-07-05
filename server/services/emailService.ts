@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { storage } from '../storage';
+import sgMail from '@sendgrid/mail';
 
 export interface EmailTemplate {
   subject: string;
@@ -27,10 +28,24 @@ export interface EmailData {
 export class EmailService {
   private templatePath: string;
   private template: string;
+  private isConfigured: boolean;
 
   constructor() {
     this.templatePath = path.join(process.cwd(), 'email_template_sample.html');
     this.loadTemplate();
+    this.initializeSendGrid();
+  }
+
+  private initializeSendGrid(): void {
+    const apiKey = process.env.SENDGRID_API_KEY;
+    if (apiKey) {
+      sgMail.setApiKey(apiKey);
+      this.isConfigured = true;
+      console.log('SendGrid initialized successfully');
+    } else {
+      this.isConfigured = false;
+      console.log('SendGrid API key not found. Email notifications will be logged only.');
+    }
   }
 
   private loadTemplate(): void {
@@ -162,24 +177,37 @@ export class EmailService {
     }
   }
 
-  // Method to send email (placeholder - integrate with actual email service)
+  // Method to send email using SendGrid
   public async sendEmail(emailData: EmailData, emailType: string): Promise<boolean> {
     try {
       const { subject, body } = this.generateEmail(emailData, emailType);
       
       // Log the email for debugging
-      console.log('Email would be sent:');
+      console.log('Preparing to send email:');
       console.log('To:', emailData.recipientEmail);
       console.log('Subject:', subject);
       console.log('Body preview:', body.substring(0, 200) + '...');
 
-      // Here you would integrate with your actual email service
-      // For example: SendGrid, AWS SES, Nodemailer, etc.
+      if (!this.isConfigured) {
+        console.log('SendGrid not configured. Email not sent.');
+        return false;
+      }
+
+      // Send email using SendGrid
+      const msg = {
+        to: emailData.recipientEmail,
+        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@orcaa.org', // Use environment variable or default
+        subject: subject,
+        html: body,
+      };
+
+      await sgMail.send(msg);
+      console.log('Email sent successfully via SendGrid');
       
       // Create audit trail entry
       await storage.createAuditEntry({
         action: `Email sent: ${emailType}`,
-        userId: 'system',
+        userId: null, // Use null instead of 'system' for foreign key constraint
         complaintId: parseInt(emailData.complaintId.split('-')[2]) || null,
         newValue: `Email sent to ${emailData.recipientEmail} - ${subject}`
       });
@@ -187,6 +215,15 @@ export class EmailService {
       return true;
     } catch (error) {
       console.error('Failed to send email:', error);
+      
+      // Log error in audit trail
+      await storage.createAuditEntry({
+        action: `Email send failed: ${emailType}`,
+        userId: null,
+        complaintId: parseInt(emailData.complaintId.split('-')[2]) || null,
+        newValue: `Failed to send email to ${emailData.recipientEmail} - ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+      
       return false;
     }
   }
