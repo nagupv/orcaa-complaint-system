@@ -370,18 +370,19 @@ export default function WorkflowDesigner() {
   const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(onDeleteNode));
   const [edges, setEdges, onEdgesChange] = useEdgesState(createInitialEdges(onDeleteEdge));
   const [selectedNodeType, setSelectedNodeType] = useState<string | null>(null);
+  const [selectedEdgeType, setSelectedEdgeType] = useState<string>('custom');
 
   const onConnect = useCallback(
     (params: Connection) => {
       const newEdge = {
         ...params,
-        type: 'custom',
+        type: selectedEdgeType,
         animated: true,
-        data: { onDelete: onDeleteEdge },
+        data: selectedEdgeType === 'custom' ? { onDelete: onDeleteEdge } : undefined,
       };
       setEdges((eds) => addEdge(newEdge, eds));
     },
-    [setEdges, onDeleteEdge]
+    [setEdges, onDeleteEdge, selectedEdgeType]
   );
 
   const onAddNode = useCallback((nodeType: any) => {
@@ -468,6 +469,54 @@ export default function WorkflowDesigner() {
                         </div>
                       );
                     })}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-3">Connector Types</h3>
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        onClick={() => setSelectedEdgeType('default')}
+                        variant={selectedEdgeType === 'default' ? 'default' : 'outline'}
+                        size="sm"
+                        className="text-xs"
+                      >
+                        Default
+                      </Button>
+                      <Button
+                        onClick={() => setSelectedEdgeType('straight')}
+                        variant={selectedEdgeType === 'straight' ? 'default' : 'outline'}
+                        size="sm"
+                        className="text-xs"
+                      >
+                        Straight
+                      </Button>
+                      <Button
+                        onClick={() => setSelectedEdgeType('step')}
+                        variant={selectedEdgeType === 'step' ? 'default' : 'outline'}
+                        size="sm"
+                        className="text-xs"
+                      >
+                        Step
+                      </Button>
+                      <Button
+                        onClick={() => setSelectedEdgeType('smoothstep')}
+                        variant={selectedEdgeType === 'smoothstep' ? 'default' : 'outline'}
+                        size="sm"
+                        className="text-xs"
+                      >
+                        Smooth Step
+                      </Button>
+                      <Button
+                        onClick={() => setSelectedEdgeType('custom')}
+                        variant={selectedEdgeType === 'custom' ? 'default' : 'outline'}
+                        size="sm"
+                        className="text-xs"
+                      >
+                        Custom
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
