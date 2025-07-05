@@ -615,6 +615,7 @@ export default function UserManagement() {
                   <tr className="border-b bg-gray-50">
                     <th className="text-left p-3 font-semibold">Name</th>
                     <th className="text-left p-3 font-semibold">Email</th>
+                    <th className="text-left p-3 font-semibold">Status</th>
                     <th className="text-left p-3 font-semibold">Contact Details</th>
                     <th className="text-left p-3 font-semibold">Roles</th>
                     <th className="text-left p-3 font-semibold">Notifications</th>
@@ -631,6 +632,19 @@ export default function UserManagement() {
                       </td>
                       <td className="p-3">
                         <div className="text-sm">{user.email}</div>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          {user.id.startsWith('pending_') ? (
+                            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                              Pending Activation
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                              Active
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="p-3">
                         <div className="text-sm space-y-1">

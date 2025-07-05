@@ -219,7 +219,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllUsers(): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.isActive, true));
+    // Include both active users and pending users (created via admin but not yet activated)
+    return await db.select().from(users).where(
+      or(
+        eq(users.isActive, true),
+        like(users.id, 'pending_%')
+      )
+    );
   }
 
   async updateUser(id: string, updates: Partial<User>): Promise<User> {
