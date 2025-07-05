@@ -2203,6 +2203,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to manually trigger next workflow task creation
+  app.post('/api/workflow-tasks/:id/test-next', async (req: any, res) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      const task = await storage.getWorkflowTaskById(taskId);
+      
+      if (!task) {
+        return res.status(404).json({ error: 'Workflow task not found' });
+      }
+      
+      // Create next workflow task manually for testing
+      await storage.createNextWorkflowTask(task);
+      
+      res.json({ message: 'Next workflow task creation triggered', taskId });
+    } catch (error) {
+      console.error('Error creating next workflow task:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.post('/api/workflow-tasks/:id/reject', isAuthenticated, async (req: any, res) => {
     try {
       const taskId = parseInt(req.params.id);
