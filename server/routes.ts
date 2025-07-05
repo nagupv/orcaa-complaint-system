@@ -1402,6 +1402,223 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Workflow task routes
+  app.get('/api/workflow-tasks', isAuthenticated, async (req: any, res) => {
+    try {
+      const { assignedTo, complaintId, status, taskType } = req.query;
+      const filters: any = {};
+      
+      if (assignedTo) filters.assignedTo = assignedTo;
+      if (complaintId) filters.complaintId = parseInt(complaintId);
+      if (status) filters.status = status;
+      if (taskType) filters.taskType = taskType;
+      
+      const tasks = await storage.getWorkflowTasks(filters);
+      res.json(tasks);
+    } catch (error) {
+      console.error('Error fetching workflow tasks:', error);
+      res.status(500).json({ error: 'Failed to fetch workflow tasks' });
+    }
+  });
+
+  app.post('/api/workflow-tasks', isAuthenticated, async (req: any, res) => {
+    try {
+      const task = await storage.createWorkflowTask(req.body);
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        action: 'workflow_task_created',
+        newValue: `Workflow task "${task.taskName}" created and assigned to ${task.assignedTo}`,
+        userId: req.user.claims.sub,
+        reason: 'Workflow task created'
+      });
+      
+      res.json(task);
+    } catch (error) {
+      console.error('Error creating workflow task:', error);
+      res.status(500).json({ error: 'Failed to create workflow task' });
+    }
+  });
+
+  app.put('/api/workflow-tasks/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      // Get current task for audit trail
+      const currentTask = await storage.getWorkflowTaskById(id);
+      if (!currentTask) {
+        return res.status(404).json({ error: 'Workflow task not found' });
+      }
+      
+      const updatedTask = await storage.updateWorkflowTask(id, updates);
+      
+      // Create audit entry for significant changes
+      if (updates.status || updates.observations || updates.inspectionStatus) {
+        await storage.createAuditEntry({
+          action: 'workflow_task_updated',
+          previousValue: currentTask.status,
+          newValue: updates.status || currentTask.status,
+          userId: req.user.claims.sub,
+          reason: `Workflow task updated: ${JSON.stringify(updates)}`
+        });
+      }
+      
+      res.json(updatedTask);
+    } catch (error) {
+      console.error('Error updating workflow task:', error);
+      res.status(500).json({ error: 'Failed to update workflow task' });
+    }
+  });
+
+  app.post('/api/workflow-tasks/:id/complete', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { completionNotes } = req.body;
+      const completedBy = req.user.claims.sub;
+      
+      const completedTask = await storage.completeWorkflowTask(id, completedBy, completionNotes);
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        action: 'workflow_task_completed',
+        newValue: `Workflow task "${completedTask.taskName}" completed`,
+        userId: completedBy,
+        reason: completionNotes || 'Workflow task completed'
+      });
+      
+      res.json(completedTask);
+    } catch (error) {
+      console.error('Error completing workflow task:', error);
+      res.status(500).json({ error: 'Failed to complete workflow task' });
+    }
+  });
+
+  app.get('/api/workflow-tasks/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const task = await storage.getWorkflowTaskById(id);
+      
+      if (!task) {
+        return res.status(404).json({ error: 'Workflow task not found' });
+      }
+      
+      res.json(task);
+    } catch (error) {
+      console.error('Error fetching workflow task:', error);
+      res.status(500).json({ error: 'Failed to fetch workflow task' });
+    }
+  });
+
+  // Inbox routes
+  app.get('/api/inbox', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { itemType, status, priority, isRead } = req.query;
+      
+      const filters: any = {};
+      if (itemType) filters.itemType = itemType;
+      if (status) filters.status = status;
+      if (priority) filters.priority = priority;
+      if (isRead !== undefined) filters.isRead = isRead === 'true';
+      
+      const items = await storage.getInboxItems(userId, filters);
+      res.json(items);
+    } catch (error) {
+      console.error('Error fetching inbox items:', error);
+      res.status(500).json({ error: 'Failed to fetch inbox items' });
+    }
+  });
+
+  app.post('/api/inbox', isAuthenticated, async (req: any, res) => {
+    try {
+      const item = await storage.createInboxItem(req.body);
+      res.json(item);
+    } catch (error) {
+      console.error('Error creating inbox item:', error);
+      res.status(500).json({ error: 'Failed to create inbox item' });
+    }
+  });
+
+  app.put('/api/inbox/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      const updatedItem = await storage.updateInboxItem(id, updates);
+      res.json(updatedItem);
+    } catch (error) {
+      console.error('Error updating inbox item:', error);
+      res.status(500).json({ error: 'Failed to update inbox item' });
+    }
+  });
+
+  app.post('/api/inbox/:id/mark-read', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updatedItem = await storage.markInboxItemAsRead(id);
+      res.json(updatedItem);
+    } catch (error) {
+      console.error('Error marking inbox item as read:', error);
+      res.status(500).json({ error: 'Failed to mark inbox item as read' });
+    }
+  });
+
+  app.post('/api/inbox/:id/mark-unread', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updatedItem = await storage.markInboxItemAsUnread(id);
+      res.json(updatedItem);
+    } catch (error) {
+      console.error('Error marking inbox item as unread:', error);
+      res.status(500).json({ error: 'Failed to mark inbox item as unread' });
+    }
+  });
+
+  app.get('/api/inbox/unread-count', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const count = await storage.getUnreadInboxCount(userId);
+      res.json({ count });
+    } catch (error) {
+      console.error('Error fetching unread inbox count:', error);
+      res.status(500).json({ error: 'Failed to fetch unread inbox count' });
+    }
+  });
+
+  // Create workflow tasks from complaint workflow
+  app.post('/api/complaints/:id/create-workflow-tasks', isAuthenticated, async (req: any, res) => {
+    try {
+      const complaintId = parseInt(req.params.id);
+      
+      // Get complaint to find its workflow
+      const complaint = await storage.getComplaint(complaintId);
+      if (!complaint) {
+        return res.status(404).json({ error: 'Complaint not found' });
+      }
+      
+      if (!complaint.workflowId) {
+        return res.status(400).json({ error: 'No workflow assigned to complaint' });
+      }
+      
+      const tasks = await storage.createWorkflowTasksFromWorkflow(complaintId, complaint.workflowId);
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        action: 'workflow_tasks_created',
+        newValue: `${tasks.length} workflow tasks created for complaint ${complaint.complaintId}`,
+        userId: req.user.claims.sub,
+        complaintId: complaintId,
+        reason: 'Workflow tasks created from workflow template'
+      });
+      
+      res.json(tasks);
+    } catch (error) {
+      console.error('Error creating workflow tasks:', error);
+      res.status(500).json({ error: 'Failed to create workflow tasks' });
+    }
+  });
+
   // Serve uploaded files
   app.use('/uploads', express.static('./uploads'));
 

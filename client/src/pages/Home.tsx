@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Dashboard from "@/pages/Dashboard";
-import Inbox from "@/pages/Inbox";
+import EnhancedInbox from "@/pages/EnhancedInbox";
 import TimesheetManagement from "@/pages/TimesheetManagement";
 import AuditTrail from "@/pages/AuditTrail";
 import ApplicationManagement from "@/pages/ApplicationManagement";
@@ -45,7 +45,7 @@ export default function Home() {
           </TabsContent>
 
           <TabsContent value="inbox" className="mt-6">
-            <Inbox />
+            <EnhancedInbox />
           </TabsContent>
 
           <TabsContent value="timesheet" className="mt-6">

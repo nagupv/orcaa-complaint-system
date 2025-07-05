@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import StatisticsCards from "@/components/StatisticsCards";
 import ComplaintTable from "@/components/ComplaintTable";
+import DemoWorkflowGenerator from "@/components/DemoWorkflowGenerator";
 import { Complaint } from "@shared/schema";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 
@@ -71,6 +72,9 @@ export default function Dashboard() {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900">Complaints Dashboard</h2>
       </div>
+
+      {/* Demo Workflow Generator */}
+      <DemoWorkflowGenerator />
 
       {/* Statistics Cards */}
       <StatisticsCards />

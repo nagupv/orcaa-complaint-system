@@ -11,6 +11,8 @@ import {
   leaveRequests,
   overtimeRequests,
   workflows,
+  workflowTasks,
+  inboxItems,
   type User,
   type UpsertUser,
   type Complaint,
@@ -34,6 +36,10 @@ import {
   type InsertOvertimeRequest,
   type Workflow,
   type InsertWorkflow,
+  type WorkflowTask,
+  type InsertWorkflowTask,
+  type InboxItem,
+  type InsertInboxItem,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, gte, lte, isNull, sql } from "drizzle-orm";
@@ -149,6 +155,37 @@ export interface IStorage {
   getTemplateForComplaintType(complaintType: string): Promise<Workflow | undefined>;
   setTemplateForComplaintType(workflowId: number, complaintType: string): Promise<Workflow>;
   assignWorkflowToComplaint(complaintId: number, workflowId?: number): Promise<void>;
+  
+  // Workflow task operations
+  getWorkflowTasks(filters?: {
+    assignedTo?: string;
+    complaintId?: number;
+    status?: string;
+    taskType?: string;
+  }): Promise<WorkflowTask[]>;
+  createWorkflowTask(task: InsertWorkflowTask): Promise<WorkflowTask>;
+  updateWorkflowTask(id: number, updates: Partial<WorkflowTask>): Promise<WorkflowTask>;
+  deleteWorkflowTask(id: number): Promise<void>;
+  getWorkflowTaskById(id: number): Promise<WorkflowTask | undefined>;
+  completeWorkflowTask(id: number, completedBy: string, completionNotes?: string): Promise<WorkflowTask>;
+  
+  // Inbox operations
+  getInboxItems(userId: string, filters?: {
+    itemType?: string;
+    status?: string;
+    priority?: string;
+    isRead?: boolean;
+  }): Promise<InboxItem[]>;
+  createInboxItem(item: InsertInboxItem): Promise<InboxItem>;
+  updateInboxItem(id: number, updates: Partial<InboxItem>): Promise<InboxItem>;
+  deleteInboxItem(id: number): Promise<void>;
+  getInboxItemById(id: number): Promise<InboxItem | undefined>;
+  markInboxItemAsRead(id: number): Promise<InboxItem>;
+  markInboxItemAsUnread(id: number): Promise<InboxItem>;
+  getUnreadInboxCount(userId: string): Promise<number>;
+  
+  // Workflow task creation from workflow nodes
+  createWorkflowTasksFromWorkflow(complaintId: number, workflowId: number): Promise<WorkflowTask[]>;
   
   // Helper methods
   generateComplaintId(serviceType?: string): Promise<string>;
@@ -871,6 +908,247 @@ export class DatabaseStorage implements IStorage {
         .set({ workflowId, updatedAt: new Date() })
         .where(eq(complaints.id, complaintId));
     }
+  }
+
+  // Workflow task operations
+  async getWorkflowTasks(filters?: {
+    assignedTo?: string;
+    complaintId?: number;
+    status?: string;
+    taskType?: string;
+  }): Promise<WorkflowTask[]> {
+    let query = db.select().from(workflowTasks);
+
+    if (filters?.assignedTo) {
+      query = query.where(eq(workflowTasks.assignedTo, filters.assignedTo));
+    }
+    if (filters?.complaintId) {
+      query = query.where(eq(workflowTasks.complaintId, filters.complaintId));
+    }
+    if (filters?.status) {
+      query = query.where(eq(workflowTasks.status, filters.status));
+    }
+    if (filters?.taskType) {
+      query = query.where(eq(workflowTasks.taskType, filters.taskType));
+    }
+
+    return query.orderBy(desc(workflowTasks.createdAt));
+  }
+
+  async createWorkflowTask(task: InsertWorkflowTask): Promise<WorkflowTask> {
+    const [newTask] = await db.insert(workflowTasks).values(task).returning();
+    
+    // Create inbox item for the assigned user
+    await this.createInboxItem({
+      userId: task.assignedTo,
+      itemType: 'WORKFLOW_TASK',
+      itemId: newTask.id,
+      title: `${task.taskName} - ${task.taskType}`,
+      description: `New workflow task assigned to you`,
+      priority: task.priority || 'medium',
+      status: 'unread',
+      dueDate: task.dueDate,
+      complaintId: task.complaintId,
+      workflowTaskId: newTask.id,
+    });
+
+    return newTask;
+  }
+
+  async updateWorkflowTask(id: number, updates: Partial<WorkflowTask>): Promise<WorkflowTask> {
+    const [updatedTask] = await db.update(workflowTasks)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(workflowTasks.id, id))
+      .returning();
+
+    // Update related inbox item if status changed
+    if (updates.status) {
+      await db.update(inboxItems)
+        .set({ status: updates.status === 'completed' ? 'completed' : 'in_progress' })
+        .where(eq(inboxItems.workflowTaskId, id));
+    }
+
+    return updatedTask;
+  }
+
+  async deleteWorkflowTask(id: number): Promise<void> {
+    // Delete related inbox items first
+    await db.delete(inboxItems).where(eq(inboxItems.workflowTaskId, id));
+    
+    // Delete the task
+    await db.delete(workflowTasks).where(eq(workflowTasks.id, id));
+  }
+
+  async getWorkflowTaskById(id: number): Promise<WorkflowTask | undefined> {
+    const [task] = await db.select().from(workflowTasks).where(eq(workflowTasks.id, id));
+    return task;
+  }
+
+  async completeWorkflowTask(id: number, completedBy: string, completionNotes?: string): Promise<WorkflowTask> {
+    const [completedTask] = await db.update(workflowTasks)
+      .set({ 
+        status: 'completed', 
+        completedBy, 
+        completedAt: new Date(),
+        completionNotes,
+        updatedAt: new Date()
+      })
+      .where(eq(workflowTasks.id, id))
+      .returning();
+
+    // Update related inbox item
+    await db.update(inboxItems)
+      .set({ status: 'completed' })
+      .where(eq(inboxItems.workflowTaskId, id));
+
+    return completedTask;
+  }
+
+  // Inbox operations
+  async getInboxItems(userId: string, filters?: {
+    itemType?: string;
+    status?: string;
+    priority?: string;
+    isRead?: boolean;
+  }): Promise<InboxItem[]> {
+    let query = db.select().from(inboxItems).where(eq(inboxItems.userId, userId));
+
+    if (filters?.itemType) {
+      query = query.where(eq(inboxItems.itemType, filters.itemType));
+    }
+    if (filters?.status) {
+      query = query.where(eq(inboxItems.status, filters.status));
+    }
+    if (filters?.priority) {
+      query = query.where(eq(inboxItems.priority, filters.priority));
+    }
+    if (filters?.isRead !== undefined) {
+      query = query.where(eq(inboxItems.isRead, filters.isRead));
+    }
+
+    return query.orderBy(desc(inboxItems.createdAt));
+  }
+
+  async createInboxItem(item: InsertInboxItem): Promise<InboxItem> {
+    const [newItem] = await db.insert(inboxItems).values(item).returning();
+    return newItem;
+  }
+
+  async updateInboxItem(id: number, updates: Partial<InboxItem>): Promise<InboxItem> {
+    const [updatedItem] = await db.update(inboxItems)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(inboxItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async deleteInboxItem(id: number): Promise<void> {
+    await db.delete(inboxItems).where(eq(inboxItems.id, id));
+  }
+
+  async getInboxItemById(id: number): Promise<InboxItem | undefined> {
+    const [item] = await db.select().from(inboxItems).where(eq(inboxItems.id, id));
+    return item;
+  }
+
+  async markInboxItemAsRead(id: number): Promise<InboxItem> {
+    const [updatedItem] = await db.update(inboxItems)
+      .set({ isRead: true, readAt: new Date(), updatedAt: new Date() })
+      .where(eq(inboxItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async markInboxItemAsUnread(id: number): Promise<InboxItem> {
+    const [updatedItem] = await db.update(inboxItems)
+      .set({ isRead: false, readAt: null, updatedAt: new Date() })
+      .where(eq(inboxItems.id, id))
+      .returning();
+    return updatedItem;
+  }
+
+  async getUnreadInboxCount(userId: string): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` })
+      .from(inboxItems)
+      .where(and(eq(inboxItems.userId, userId), eq(inboxItems.isRead, false)));
+    return result[0].count;
+  }
+
+  // Workflow task creation from workflow nodes
+  async createWorkflowTasksFromWorkflow(complaintId: number, workflowId: number): Promise<WorkflowTask[]> {
+    const workflow = await this.getWorkflowById(workflowId);
+    if (!workflow) {
+      throw new Error('Workflow not found');
+    }
+
+    const workflowData = workflow.workflowData as any;
+    const tasks: WorkflowTask[] = [];
+    
+    // Define task types that create workflow tasks
+    const taskTypes = [
+      'INITIAL_INSPECTION',
+      'ASSESSMENT', 
+      'ENFORCEMENT_ACTION',
+      'RESOLUTION',
+      'SAFETY_INSPECTION',
+      'REJECT_DEMOLITION'
+    ];
+
+    // Extract task nodes from workflow
+    if (workflowData.nodes) {
+      for (const node of workflowData.nodes) {
+        const nodeType = node.type?.toUpperCase().replace(/\s+/g, '_');
+        
+        if (taskTypes.includes(nodeType)) {
+          // Determine assigned role and default user
+          let assignedRole = 'field_staff';
+          
+          // Role mapping based on task type
+          switch (nodeType) {
+            case 'INITIAL_INSPECTION':
+            case 'SAFETY_INSPECTION':
+              assignedRole = 'field_staff';
+              break;
+            case 'ASSESSMENT':
+              assignedRole = 'supervisor';
+              break;
+            case 'ENFORCEMENT_ACTION':
+              assignedRole = 'admin';
+              break;
+            case 'RESOLUTION':
+              assignedRole = 'approver';
+              break;
+            case 'REJECT_DEMOLITION':
+              assignedRole = 'admin';
+              break;
+          }
+
+          // Find a user with the required role
+          const users = await this.getAllUsers();
+          const assignedUser = users.find(user => {
+            const userRoles = typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles;
+            return userRoles.includes(assignedRole);
+          });
+
+          if (assignedUser) {
+            const task = await this.createWorkflowTask({
+              complaintId,
+              workflowId,
+              taskType: nodeType,
+              taskName: node.data?.label || nodeType.replace(/_/g, ' '),
+              assignedTo: assignedUser.id,
+              assignedRole,
+              status: 'pending',
+              priority: 'medium',
+              taskData: node.data || {}
+            });
+            tasks.push(task);
+          }
+        }
+      }
+    }
+
+    return tasks;
   }
 }
 

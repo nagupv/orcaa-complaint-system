@@ -236,6 +236,58 @@ export const workflows = pgTable("workflows", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Workflow tasks table - for active workflow instances
+export const workflowTasks = pgTable("workflow_tasks", {
+  id: serial("id").primaryKey(),
+  complaintId: integer("complaint_id").notNull().references(() => complaints.id),
+  workflowId: integer("workflow_id").notNull().references(() => workflows.id),
+  taskType: varchar("task_type").notNull(), // INITIAL_INSPECTION, ASSESSMENT, ENFORCEMENT_ACTION, RESOLUTION, SAFETY_INSPECTION, REJECT_DEMOLITION
+  taskName: varchar("task_name").notNull(),
+  assignedTo: varchar("assigned_to").notNull().references(() => users.id),
+  assignedRole: varchar("assigned_role").notNull(), // Role that should handle this task
+  status: varchar("status").notNull().default("pending"), // pending, in_progress, completed, approved, rejected, forwarded
+  priority: varchar("priority").notNull().default("medium"), // low, medium, high, urgent
+  dueDate: timestamp("due_date"),
+  
+  // Task specific data
+  observations: text("observations"), // For inspection tasks
+  inspectionStatus: varchar("inspection_status"), // approved, rejected, forward
+  forwardEmail: varchar("forward_email"), // Email to forward to
+  forwardReason: text("forward_reason"), // Reason for forwarding
+  
+  // Task completion data
+  completedAt: timestamp("completed_at"),
+  completedBy: varchar("completed_by").references(() => users.id),
+  completionNotes: text("completion_notes"),
+  
+  // Additional metadata
+  taskData: jsonb("task_data"), // Store task-specific data
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Inbox items table - for centralized task management
+export const inboxItems = pgTable("inbox_items", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  itemType: varchar("item_type").notNull(), // WORKFLOW_TASK, COMPLAINT, LEAVE_REQUEST, OVERTIME_REQUEST
+  itemId: integer("item_id").notNull(), // Reference to the actual item
+  title: varchar("title").notNull(),
+  description: text("description"),
+  priority: varchar("priority").notNull().default("medium"), // low, medium, high, urgent
+  status: varchar("status").notNull().default("unread"), // unread, read, in_progress, completed
+  dueDate: timestamp("due_date"),
+  
+  // Metadata
+  complaintId: integer("complaint_id").references(() => complaints.id), // Optional complaint reference
+  workflowTaskId: integer("workflow_task_id").references(() => workflowTasks.id), // Optional workflow task reference
+  
+  isRead: boolean("is_read").default(false),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const complaintsRelations = relations(complaints, ({ one, many }) => ({
   assignedUser: one(users, {
@@ -332,6 +384,41 @@ export const workflowsRelations = relations(workflows, ({ one, many }) => ({
     references: [users.id],
   }),
   complaints: many(complaints),
+  workflowTasks: many(workflowTasks),
+}));
+
+export const workflowTasksRelations = relations(workflowTasks, ({ one }) => ({
+  complaint: one(complaints, {
+    fields: [workflowTasks.complaintId],
+    references: [complaints.id],
+  }),
+  workflow: one(workflows, {
+    fields: [workflowTasks.workflowId],
+    references: [workflows.id],
+  }),
+  assignedUser: one(users, {
+    fields: [workflowTasks.assignedTo],
+    references: [users.id],
+  }),
+  completedByUser: one(users, {
+    fields: [workflowTasks.completedBy],
+    references: [users.id],
+  }),
+}));
+
+export const inboxItemsRelations = relations(inboxItems, ({ one }) => ({
+  user: one(users, {
+    fields: [inboxItems.userId],
+    references: [users.id],
+  }),
+  complaint: one(complaints, {
+    fields: [inboxItems.complaintId],
+    references: [complaints.id],
+  }),
+  workflowTask: one(workflowTasks, {
+    fields: [inboxItems.workflowTaskId],
+    references: [workflowTasks.id],
+  }),
 }));
 
 // Zod schemas
@@ -397,6 +484,18 @@ export const insertWorkflowSchema = createInsertSchema(workflows).omit({
   updatedAt: true,
 });
 
+export const insertWorkflowTaskSchema = createInsertSchema(workflowTasks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertInboxItemSchema = createInsertSchema(inboxItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -421,3 +520,7 @@ export type OvertimeRequest = typeof overtimeRequests.$inferSelect;
 export type InsertOvertimeRequest = z.infer<typeof insertOvertimeRequestSchema>;
 export type Workflow = typeof workflows.$inferSelect;
 export type InsertWorkflow = z.infer<typeof insertWorkflowSchema>;
+export type WorkflowTask = typeof workflowTasks.$inferSelect;
+export type InsertWorkflowTask = z.infer<typeof insertWorkflowTaskSchema>;
+export type InboxItem = typeof inboxItems.$inferSelect;
+export type InsertInboxItem = z.infer<typeof insertInboxItemSchema>;
