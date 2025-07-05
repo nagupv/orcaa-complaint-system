@@ -3,19 +3,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle, XCircle, Clock, AlertCircle, FileText, Calendar, DollarSign, Bell } from "lucide-react";
+import { CheckCircle, XCircle, Clock, AlertCircle, FileText, Calendar, DollarSign, Bell, Eye, MessageSquare, Forward } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 
 export default function Inbox() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("all");
+  const [selectedItem, setSelectedItem] = useState<any>(null);
+  const [viewDetailsOpen, setViewDetailsOpen] = useState(false);
+  const [actionDialogOpen, setActionDialogOpen] = useState(false);
+  const [actionType, setActionType] = useState<"approve" | "reject" | "forward">("approve");
+  const [comments, setComments] = useState("");
+  const [forwardEmail, setForwardEmail] = useState("");
 
   // Fetch assigned complaints
   const { data: complaints = [], isLoading: complaintsLoading } = useQuery({
@@ -46,78 +57,67 @@ export default function Inbox() {
     enabled: !!user?.id,
   });
 
-  const approveLeaveRequest = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("POST", `/api/leave-requests/${id}/approve`, {});
+  // Fetch all users for forwarding
+  const { data: allUsers = [], isLoading: usersLoading } = useQuery({
+    queryKey: ["/api/users"],
+    enabled: !!user?.roles?.some((role: string) => ["admin", "supervisor", "approver"].includes(role)),
+  });
+
+  const processItemAction = useMutation({
+    mutationFn: async (params: { 
+      item: any; 
+      action: "approve" | "reject" | "forward"; 
+      comments?: string; 
+      forwardEmail?: string 
+    }) => {
+      const { item, action, comments, forwardEmail } = params;
+      
+      if (action === "forward") {
+        // Handle forwarding logic
+        const endpoint = item.type === "complaint" 
+          ? `/api/complaints/${item.id}/forward`
+          : item.type === "leave_approval" || item.type === "my_leave"
+          ? `/api/leave-requests/${item.id}/forward`
+          : `/api/overtime-requests/${item.id}/forward`;
+        
+        await apiRequest("POST", endpoint, { 
+          forwardTo: forwardEmail,
+          comments: comments || "",
+        });
+      } else {
+        // Handle approve/reject
+        let endpoint = "";
+        if (item.type === "leave_approval") {
+          endpoint = `/api/leave-requests/${item.id}/${action}`;
+        } else if (item.type === "overtime_approval") {
+          endpoint = `/api/overtime-requests/${item.id}/${action}`;
+        } else if (item.type === "complaint") {
+          endpoint = `/api/complaints/${item.id}/${action}`;
+        }
+        
+        await apiRequest("POST", endpoint, { 
+          reason: comments || "",
+        });
+      }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/leave-requests"] });
-      toast({
-        title: "Success",
-        description: "Leave request approved successfully",
-      });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to approve leave request",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const rejectLeaveRequest = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("POST", `/api/leave-requests/${id}/reject`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/leave-requests"] });
-      toast({
-        title: "Success",
-        description: "Leave request rejected",
-      });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
-      toast({
-        title: "Error",
-        description: "Failed to reject leave request",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const approveOvertimeRequest = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("POST", `/api/overtime-requests/${id}/approve`, {});
-    },
-    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/overtime-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/complaints"] });
+      
+      const actionText = variables.action === "forward" 
+        ? `forwarded to ${variables.forwardEmail}`
+        : `${variables.action}d successfully`;
+      
       toast({
         title: "Success",
-        description: "Overtime request approved successfully",
+        description: `Item ${actionText}`,
       });
+      
+      setActionDialogOpen(false);
+      setComments("");
+      setForwardEmail("");
+      setSelectedItem(null);
     },
     onError: (error) => {
       if (isUnauthorizedError(error)) {
@@ -133,42 +133,44 @@ export default function Inbox() {
       }
       toast({
         title: "Error",
-        description: "Failed to approve overtime request",
+        description: "Failed to process request",
         variant: "destructive",
       });
     },
   });
 
-  const rejectOvertimeRequest = useMutation({
-    mutationFn: async (id: number) => {
-      await apiRequest("POST", `/api/overtime-requests/${id}/reject`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/overtime-requests"] });
-      toast({
-        title: "Success",
-        description: "Overtime request rejected",
-      });
-    },
-    onError: (error) => {
-      if (isUnauthorizedError(error)) {
-        toast({
-          title: "Unauthorized",
-          description: "You are logged out. Logging in again...",
-          variant: "destructive",
-        });
-        setTimeout(() => {
-          window.location.href = "/api/login";
-        }, 500);
-        return;
-      }
+  const handleItemAction = (item: any, action: "approve" | "reject" | "forward") => {
+    setSelectedItem(item);
+    setActionType(action);
+    setActionDialogOpen(true);
+    setComments("");
+    setForwardEmail("");
+  };
+
+  const handleViewDetails = (item: any) => {
+    setSelectedItem(item);
+    setViewDetailsOpen(true);
+  };
+
+  const submitAction = () => {
+    if (!selectedItem) return;
+    
+    if (actionType === "forward" && !forwardEmail) {
       toast({
         title: "Error",
-        description: "Failed to reject overtime request",
+        description: "Please select an employee to forward to",
         variant: "destructive",
       });
-    },
-  });
+      return;
+    }
+
+    processItemAction.mutate({
+      item: selectedItem,
+      action: actionType,
+      comments,
+      forwardEmail,
+    });
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -356,40 +358,47 @@ export default function Inbox() {
                               </p>
                             </div>
                           </div>
-                          {(item.type === "leave_approval" || item.type === "overtime_approval") && item.status === "pending" && (
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  if (item.type === "leave_approval") {
-                                    approveLeaveRequest.mutate(item.id);
-                                  } else {
-                                    approveOvertimeRequest.mutate(item.id);
-                                  }
-                                }}
-                                disabled={approveLeaveRequest.isPending || approveOvertimeRequest.isPending}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  if (item.type === "leave_approval") {
-                                    rejectLeaveRequest.mutate(item.id);
-                                  } else {
-                                    rejectOvertimeRequest.mutate(item.id);
-                                  }
-                                }}
-                                disabled={rejectLeaveRequest.isPending || rejectOvertimeRequest.isPending}
-                              >
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Reject
-                              </Button>
-                            </div>
-                          )}
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewDetails(item)}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              View
+                            </Button>
+                            {(item.type === "leave_approval" || item.type === "overtime_approval" || item.type === "complaint") && item.status === "pending" && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleItemAction(item, "approve")}
+                                  disabled={processItemAction.isPending}
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleItemAction(item, "reject")}
+                                  disabled={processItemAction.isPending}
+                                >
+                                  <XCircle className="h-4 w-4 mr-1" />
+                                  Reject
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleItemAction(item, "forward")}
+                                  disabled={processItemAction.isPending}
+                                >
+                                  <Forward className="h-4 w-4 mr-1" />
+                                  Forward
+                                </Button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -399,6 +408,176 @@ export default function Inbox() {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* View Details Dialog */}
+        <Dialog open={viewDetailsOpen} onOpenChange={setViewDetailsOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Item Details</DialogTitle>
+            </DialogHeader>
+            {selectedItem && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="font-semibold">Type</Label>
+                    <p className="text-sm text-gray-600">{selectedItem.type.replace('_', ' ')}</p>
+                  </div>
+                  <div>
+                    <Label className="font-semibold">Status</Label>
+                    <Badge className={`${getStatusColor(selectedItem.status)} text-white ml-2`}>
+                      {selectedItem.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Label className="font-semibold">Created</Label>
+                    <p className="text-sm text-gray-600">
+                      {format(new Date(selectedItem.createdAt), 'PPp')}
+                    </p>
+                  </div>
+                  {selectedItem.priority && (
+                    <div>
+                      <Label className="font-semibold">Priority</Label>
+                      <Badge className={`${getPriorityColor(selectedItem.priority)} text-white ml-2`}>
+                        {selectedItem.priority}
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <Label className="font-semibold">Description</Label>
+                  <p className="text-sm text-gray-600 mt-1">{selectedItem.description}</p>
+                </div>
+
+                {/* Type-specific details */}
+                {selectedItem.type === "complaint" && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="font-semibold">Complaint ID</Label>
+                        <p className="text-sm text-gray-600">{selectedItem.complaintId}</p>
+                      </div>
+                      <div>
+                        <Label className="font-semibold">Problem Type</Label>
+                        <p className="text-sm text-gray-600">{selectedItem.problemType}</p>
+                      </div>
+                    </div>
+                    {selectedItem.complainantEmail && (
+                      <div>
+                        <Label className="font-semibold">Complainant</Label>
+                        <p className="text-sm text-gray-600">{selectedItem.complainantEmail}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {(selectedItem.type === "leave_approval" || selectedItem.type === "my_leave") && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="font-semibold">Leave Type</Label>
+                      <p className="text-sm text-gray-600">{selectedItem.leaveType}</p>
+                    </div>
+                    <div>
+                      <Label className="font-semibold">Duration</Label>
+                      <p className="text-sm text-gray-600">
+                        {selectedItem.startDate} to {selectedItem.endDate}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {(selectedItem.type === "overtime_approval" || selectedItem.type === "my_overtime") && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="font-semibold">Project</Label>
+                      <p className="text-sm text-gray-600">{selectedItem.projectName}</p>
+                    </div>
+                    <div>
+                      <Label className="font-semibold">Hours</Label>
+                      <p className="text-sm text-gray-600">{selectedItem.hours} hours</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Action Dialog */}
+        <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {actionType === "approve" ? "Approve" : actionType === "reject" ? "Reject" : "Forward"} Item
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {selectedItem && (
+                <div>
+                  <Label className="font-semibold">Item</Label>
+                  <p className="text-sm text-gray-600">{selectedItem.title}</p>
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="action-select">Action</Label>
+                <Select value={actionType} onValueChange={(value: "approve" | "reject" | "forward") => setActionType(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select action" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="approve">Approve</SelectItem>
+                    <SelectItem value="reject">Reject</SelectItem>
+                    <SelectItem value="forward">Forward</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {actionType === "forward" && (
+                <div>
+                  <Label htmlFor="forward-email">Forward to Employee</Label>
+                  <Select value={forwardEmail} onValueChange={setForwardEmail}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select employee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allUsers.map((user: any) => (
+                        <SelectItem key={user.id} value={user.email}>
+                          {user.firstName} {user.lastName} ({user.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="comments">
+                  Comments {actionType === "reject" ? "(Required for rejection)" : "(Optional)"}
+                </Label>
+                <Textarea
+                  id="comments"
+                  placeholder={`Add ${actionType === "forward" ? "forwarding notes" : "comments"}...`}
+                  value={comments}
+                  onChange={(e) => setComments(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setActionDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={submitAction}
+                  disabled={processItemAction.isPending || (actionType === "reject" && !comments.trim())}
+                >
+                  {processItemAction.isPending ? "Processing..." : actionType === "approve" ? "Approve" : actionType === "reject" ? "Reject" : "Forward"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

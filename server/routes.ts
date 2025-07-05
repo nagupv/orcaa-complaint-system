@@ -1201,6 +1201,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Forwarding endpoints
+  app.post('/api/complaints/:id/forward', isAuthenticated, async (req: any, res) => {
+    try {
+      const complaintId = parseInt(req.params.id);
+      const forwardedBy = req.user.claims.sub;
+      const { forwardTo, comments } = req.body;
+      
+      // Get the target user
+      const targetUser = await storage.getUserByEmail?.(forwardTo);
+      if (!targetUser) {
+        return res.status(404).json({ error: 'Target user not found' });
+      }
+      
+      // Update complaint assignment
+      const updatedComplaint = await storage.updateComplaint(complaintId, { 
+        assignedTo: targetUser.id 
+      });
+      
+      // Create audit entry
+      const currentUser = await storage.getUser(forwardedBy);
+      await storage.createAuditEntry({
+        complaintId,
+        action: 'complaint_forwarded',
+        newValue: `Complaint forwarded to ${targetUser.firstName} ${targetUser.lastName} (${targetUser.email})`,
+        userId: forwardedBy,
+        reason: comments || 'Complaint forwarded'
+      });
+      
+      res.json(updatedComplaint);
+    } catch (error) {
+      console.error('Error forwarding complaint:', error);
+      res.status(500).json({ error: 'Failed to forward complaint' });
+    }
+  });
+
+  app.post('/api/leave-requests/:id/forward', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const forwardedBy = req.user.claims.sub;
+      const { forwardTo, comments } = req.body;
+      
+      // Get the target user
+      const targetUser = await storage.getUserByEmail?.(forwardTo);
+      if (!targetUser) {
+        return res.status(404).json({ error: 'Target user not found' });
+      }
+      
+      // Create audit entry for forwarding
+      const currentUser = await storage.getUser(forwardedBy);
+      await storage.createAuditEntry({
+        action: 'leave_request_forwarded',
+        newValue: `Leave request forwarded to ${targetUser.firstName} ${targetUser.lastName} (${targetUser.email})`,
+        userId: forwardedBy,
+        reason: comments || 'Leave request forwarded'
+      });
+      
+      res.json({ message: 'Leave request forwarded successfully' });
+    } catch (error) {
+      console.error('Error forwarding leave request:', error);
+      res.status(500).json({ error: 'Failed to forward leave request' });
+    }
+  });
+
+  app.post('/api/overtime-requests/:id/forward', isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const forwardedBy = req.user.claims.sub;
+      const { forwardTo, comments } = req.body;
+      
+      // Get the target user
+      const targetUser = await storage.getUserByEmail?.(forwardTo);
+      if (!targetUser) {
+        return res.status(404).json({ error: 'Target user not found' });
+      }
+      
+      // Create audit entry for forwarding
+      const currentUser = await storage.getUser(forwardedBy);
+      await storage.createAuditEntry({
+        action: 'overtime_request_forwarded',
+        newValue: `Overtime request forwarded to ${targetUser.firstName} ${targetUser.lastName} (${targetUser.email})`,
+        userId: forwardedBy,
+        reason: comments || 'Overtime request forwarded'
+      });
+      
+      res.json({ message: 'Overtime request forwarded successfully' });
+    } catch (error) {
+      console.error('Error forwarding overtime request:', error);
+      res.status(500).json({ error: 'Failed to forward overtime request' });
+    }
+  });
+
   // Workflow routes
   app.get('/api/workflows', isAuthenticated, async (req, res) => {
     try {
