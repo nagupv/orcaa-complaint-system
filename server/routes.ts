@@ -810,7 +810,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update role permissions
+  // Update role permissions through Role-Action Mappings
   app.put('/api/roles/:roleName/permissions', isAuthenticated, async (req: any, res) => {
     try {
       // Check if user has admin role
@@ -833,19 +833,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Role not found" });
       }
 
-      // Update the role permissions
-      const updatedRole = await storage.updateRole(role.id, { permissions });
+      // Get all existing role-action mappings for this role
+      const existingMappings = await storage.getRoleActionMappingsByRole(roleName);
       
-      // Create audit entry for permission change
-      await storage.createAuditEntry({
-        action: 'role_permissions_updated',
-        previousValue: JSON.stringify(role.permissions || []),
-        newValue: JSON.stringify(permissions),
-        userId: req.user.claims.sub,
-        reason: `Role ${roleName} permissions updated`
-      });
+      // Track changes for audit trail
+      const changes = [];
+      
+      // Update each mapping based on the new permissions
+      for (const mapping of existingMappings) {
+        const shouldHavePermission = permissions.includes(mapping.actionId);
+        const currentlyHasPermission = mapping.hasPermission;
+        
+        if (shouldHavePermission !== currentlyHasPermission) {
+          // Update the mapping
+          await storage.updateRoleActionMapping(mapping.id, {
+            hasPermission: shouldHavePermission
+          });
+          
+          changes.push({
+            action: mapping.actionId,
+            actionName: mapping.actionName,
+            from: currentlyHasPermission,
+            to: shouldHavePermission
+          });
+        }
+      }
+      
+      // Create audit entry for permission changes
+      if (changes.length > 0) {
+        await storage.createAuditEntry({
+          action: 'role_action_mappings_updated',
+          previousValue: JSON.stringify(changes.map(c => ({ action: c.action, permission: c.from }))),
+          newValue: JSON.stringify(changes.map(c => ({ action: c.action, permission: c.to }))),
+          userId: req.user.claims.sub,
+          reason: `Role ${roleName} action permissions updated: ${changes.length} changes made`
+        });
+      }
 
-      res.json(updatedRole);
+      res.json({ 
+        success: true, 
+        message: `Updated ${changes.length} permissions for role ${roleName}`,
+        changes: changes 
+      });
     } catch (error) {
       console.error('Error updating role permissions:', error);
       res.status(500).json({ error: 'Failed to update role permissions' });

@@ -109,6 +109,8 @@ export default function RoleActionMapping() {
         description: "Role permissions updated successfully",
       });
       setEditingRole(null);
+      // Invalidate both role-action-mappings and roles queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ["/api/role-action-mappings"] });
       queryClient.invalidateQueries({ queryKey: ["/api/roles"] });
     },
     onError: () => {
