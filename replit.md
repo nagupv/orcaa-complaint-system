@@ -108,6 +108,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+- **ReactFlow Workflow Designer with Delete Functionality** (July 05, 2025): Built comprehensive ReactFlow-based workflow designer in Application Management featuring 8 complaint processing nodes (Email Notification, Complaint Planning, Field Verification, Field Work, Field Contract Work, Work Status Periodic Report, Work Completion, Work Review and Closure). Added drag-and-drop functionality, node connectors with proper handles, delete buttons for both nodes and connectors, save/export capabilities, and real-time statistics tracking.
 - **Removed User Info Box from TimeSheet Interface** (July 04, 2025): Removed redundant current user information display from TimeSheet management page to save screen space while preserving week selector functionality
 - **Removed Duplicate Week Dropdown** (July 04, 2025): Fixed duplicate week selector display in Time Entries screen by removing redundant dropdown that appeared above the timesheet content, keeping only the properly positioned one in the Time Entries card header.
 - **Authentication-Integrated User Management** (July 04, 2025): Enhanced User Management system with proper authentication integration. User creation now creates pending profiles that require Replit Auth activation. User deletion performs soft deletion by deactivating accounts and revoking system access immediately while preserving audit trail. Added real-time active user verification in authentication middleware.

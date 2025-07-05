@@ -11,6 +11,13 @@ import ReactFlow, {
   Connection,
   ConnectionMode,
   Panel,
+  Handle,
+  Position,
+  NodeProps,
+  EdgeProps,
+  getBezierPath,
+  EdgeLabelRenderer,
+  BaseEdge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +35,9 @@ import {
   Save,
   RotateCcw,
   Download,
-  Upload
+  Upload,
+  Trash2,
+  X
 } from 'lucide-react';
 
 // Define the node types with their properties
@@ -99,8 +108,8 @@ const nodeTypes = [
   }
 ];
 
-// Initial nodes positioned in a flow layout
-const initialNodes: Node[] = [
+// Helper function to create initial nodes with delete callbacks
+const createInitialNodes = (onDeleteNode: (id: string) => void): Node[] => [
   {
     id: '1',
     type: 'custom',
@@ -109,7 +118,8 @@ const initialNodes: Node[] = [
       label: 'Email Notification',
       icon: Mail,
       color: 'bg-blue-100 border-blue-300 text-blue-800',
-      description: 'Send automated email notifications'
+      description: 'Send automated email notifications',
+      onDelete: onDeleteNode
     },
   },
   {
@@ -120,7 +130,8 @@ const initialNodes: Node[] = [
       label: 'Complaint Planning',
       icon: FileText,
       color: 'bg-green-100 border-green-300 text-green-800',
-      description: 'Plan and organize complaint response'
+      description: 'Plan and organize complaint response',
+      onDelete: onDeleteNode
     },
   },
   {
@@ -131,7 +142,8 @@ const initialNodes: Node[] = [
       label: 'Field Verification',
       icon: Search,
       color: 'bg-yellow-100 border-yellow-300 text-yellow-800',
-      description: 'Verify complaint details on-site'
+      description: 'Verify complaint details on-site',
+      onDelete: onDeleteNode
     },
   },
   {
@@ -142,7 +154,8 @@ const initialNodes: Node[] = [
       label: 'Field Work',
       icon: Wrench,
       color: 'bg-orange-100 border-orange-300 text-orange-800',
-      description: 'Perform field work activities'
+      description: 'Perform field work activities',
+      onDelete: onDeleteNode
     },
   },
   {
@@ -153,7 +166,8 @@ const initialNodes: Node[] = [
       label: 'Field Contract Work',
       icon: Users,
       color: 'bg-purple-100 border-purple-300 text-purple-800',
-      description: 'Coordinate with contract workers'
+      description: 'Coordinate with contract workers',
+      onDelete: onDeleteNode
     },
   },
   {
@@ -164,7 +178,8 @@ const initialNodes: Node[] = [
       label: 'Work Status Periodic Report',
       icon: ClipboardList,
       color: 'bg-indigo-100 border-indigo-300 text-indigo-800',
-      description: 'Generate periodic status reports'
+      description: 'Generate periodic status reports',
+      onDelete: onDeleteNode
     },
   },
   {
@@ -175,7 +190,8 @@ const initialNodes: Node[] = [
       label: 'Work Completion',
       icon: CheckCircle,
       color: 'bg-emerald-100 border-emerald-300 text-emerald-800',
-      description: 'Mark work as completed'
+      description: 'Mark work as completed',
+      onDelete: onDeleteNode
     },
   },
   {
@@ -186,75 +202,150 @@ const initialNodes: Node[] = [
       label: 'Work Review and Closure',
       icon: Archive,
       color: 'bg-gray-100 border-gray-300 text-gray-800',
-      description: 'Review and close the workflow'
+      description: 'Review and close the workflow',
+      onDelete: onDeleteNode
     },
   },
 ];
 
-// Initial edges showing a sample workflow
-const initialEdges: Edge[] = [
+// Helper function to create initial edges with delete callbacks  
+const createInitialEdges = (onDeleteEdge: (id: string) => void): Edge[] => [
   {
     id: 'e1-2',
     source: '1',
     target: '2',
-    type: 'smoothstep',
+    type: 'custom',
     animated: true,
+    data: { onDelete: onDeleteEdge }
   },
   {
     id: 'e2-3',
     source: '2',
     target: '3',
-    type: 'smoothstep',
+    type: 'custom',
     animated: true,
+    data: { onDelete: onDeleteEdge }
   },
   {
     id: 'e3-4',
     source: '3',
     target: '4',
-    type: 'smoothstep',
+    type: 'custom',
     animated: true,
+    data: { onDelete: onDeleteEdge }
   },
   {
     id: 'e4-5',
     source: '4',
     target: '5',
-    type: 'smoothstep',
+    type: 'custom',
     animated: true,
+    data: { onDelete: onDeleteEdge }
   },
   {
     id: 'e5-6',
     source: '5',
     target: '6',
-    type: 'smoothstep',
+    type: 'custom',
     animated: true,
+    data: { onDelete: onDeleteEdge }
   },
   {
     id: 'e6-7',
     source: '6',
     target: '7',
-    type: 'smoothstep',
+    type: 'custom',
     animated: true,
+    data: { onDelete: onDeleteEdge }
   },
   {
     id: 'e7-8',
     source: '7',
     target: '8',
-    type: 'smoothstep',
+    type: 'custom',
     animated: true,
+    data: { onDelete: onDeleteEdge }
   },
 ];
 
-// Custom node component
-const CustomNode = ({ data }: { data: any }) => {
+// Custom node component with handles and delete button
+const CustomNode = ({ data, id }: NodeProps) => {
   const Icon = data.icon;
+  
   return (
-    <div className={`px-4 py-3 shadow-md rounded-lg border-2 ${data.color} min-w-[200px]`}>
+    <div className={`px-4 py-3 shadow-md rounded-lg border-2 ${data.color} min-w-[200px] relative group`}>
+      {/* Input Handle */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="w-3 h-3 bg-gray-400 border-2 border-white"
+        isConnectable={true}
+      />
+      
+      {/* Delete Button */}
+      <button
+        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={(e) => {
+          e.stopPropagation();
+          data.onDelete?.(id);
+        }}
+      >
+        <X className="h-3 w-3" />
+      </button>
+      
       <div className="flex items-center gap-2 mb-2">
         <Icon className="h-4 w-4" />
         <div className="font-medium text-sm">{data.label}</div>
       </div>
       <div className="text-xs opacity-80">{data.description}</div>
+      
+      {/* Output Handle */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        className="w-3 h-3 bg-gray-400 border-2 border-white"
+        isConnectable={true}
+      />
     </div>
+  );
+};
+
+// Custom edge component with delete button
+const CustomEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, data }: EdgeProps) => {
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+
+  return (
+    <>
+      <BaseEdge path={edgePath} style={style} />
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: 'absolute',
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            fontSize: 12,
+            pointerEvents: 'all',
+          }}
+          className="nodrag nopan"
+        >
+          <button
+            className="bg-red-500 text-white rounded-full p-1 opacity-0 hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              data?.onDelete?.(id);
+            }}
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      </EdgeLabelRenderer>
+    </>
   );
 };
 
@@ -262,30 +353,52 @@ const nodeTypes_custom = {
   custom: CustomNode,
 };
 
+const edgeTypes_custom = {
+  custom: CustomEdge,
+};
+
 export default function WorkflowDesigner() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const onDeleteNode = useCallback((nodeId: string) => {
+    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+    setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
+  }, []);
+
+  const onDeleteEdge = useCallback((edgeId: string) => {
+    setEdges((eds) => eds.filter((edge) => edge.id !== edgeId));
+  }, []);
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(onDeleteNode));
+  const [edges, setEdges, onEdgesChange] = useEdgesState(createInitialEdges(onDeleteEdge));
   const [selectedNodeType, setSelectedNodeType] = useState<string | null>(null);
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    [setEdges]
+    (params: Connection) => {
+      const newEdge = {
+        ...params,
+        type: 'custom',
+        animated: true,
+        data: { onDelete: onDeleteEdge },
+      };
+      setEdges((eds) => addEdge(newEdge, eds));
+    },
+    [setEdges, onDeleteEdge]
   );
 
   const onAddNode = useCallback((nodeType: any) => {
     const newNode: Node = {
-      id: `${nodes.length + 1}`,
+      id: `${Date.now()}`, // Use timestamp for unique IDs
       type: 'custom',
-      position: { x: Math.random() * 400, y: Math.random() * 400 },
+      position: { x: Math.random() * 400 + 100, y: Math.random() * 400 + 100 },
       data: {
         label: nodeType.label,
         icon: nodeType.icon,
         color: nodeType.color,
         description: nodeType.description,
+        onDelete: onDeleteNode,
       },
     };
     setNodes((nds) => [...nds, newNode]);
-  }, [nodes.length, setNodes]);
+  }, [setNodes, onDeleteNode]);
 
   const onSaveWorkflow = useCallback(() => {
     const workflowData = {
@@ -298,9 +411,9 @@ export default function WorkflowDesigner() {
   }, [nodes, edges]);
 
   const onResetWorkflow = useCallback(() => {
-    setNodes(initialNodes);
-    setEdges(initialEdges);
-  }, [setNodes, setEdges]);
+    setNodes(createInitialNodes(onDeleteNode));
+    setEdges(createInitialEdges(onDeleteEdge));
+  }, [setNodes, setEdges, onDeleteNode, onDeleteEdge]);
 
   const onExportWorkflow = useCallback(() => {
     const workflowData = {
@@ -416,6 +529,7 @@ export default function WorkflowDesigner() {
                   onEdgesChange={onEdgesChange}
                   onConnect={onConnect}
                   nodeTypes={nodeTypes_custom}
+                  edgeTypes={edgeTypes_custom}
                   connectionMode={ConnectionMode.Loose}
                   fitView
                   fitViewOptions={{ padding: 0.2 }}
