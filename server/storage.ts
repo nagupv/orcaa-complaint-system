@@ -1246,7 +1246,7 @@ export class DatabaseStorage implements IStorage {
       await this.createAuditEntry({
         complaintId: completedTask.complaintId,
         action: 'NEXT_WORKFLOW_TASK_ASSIGNMENT_FAILED',
-        userId: 'system',
+        userId: completedTask.completedBy || completedTask.assignedTo,
         reason: `Failed to create next workflow task "${nodeType}" - no users found with required roles: ${allowedRoles.join(', ')}`,
         previousValue: null,
         newValue: JSON.stringify({
@@ -1299,7 +1299,7 @@ export class DatabaseStorage implements IStorage {
     await this.createAuditEntry({
       complaintId: completedTask.complaintId,
       action: 'NEXT_WORKFLOW_TASK_CREATED',
-      userId: 'system',
+      userId: completedTask.completedBy || completedTask.assignedTo,
       reason: `Next workflow task "${nextTask.taskName}" assigned to ${assignedUser.firstName} ${assignedUser.lastName} (${assignedRole}) based on Role-Action Mapping. Required roles: ${allowedRoles.join(', ')}`,
       previousValue: null,
       newValue: JSON.stringify({
@@ -1500,7 +1500,7 @@ export class DatabaseStorage implements IStorage {
     
     await this.createAuditEntry({
       action: `Email template updated: ${updated.name}`,
-      userId: 'system',
+      userId: null,
       previousValue: `Name: ${existing.name}, Type: ${existing.templateType}`,
       newValue: `Name: ${updated.name}, Type: ${updated.templateType}`
     });
@@ -1518,7 +1518,7 @@ export class DatabaseStorage implements IStorage {
     
     await this.createAuditEntry({
       action: `Email template deleted: ${existing.name}`,
-      userId: 'system',
+      userId: null,
       previousValue: `Template ID: ${id}, Type: ${existing.templateType}`
     });
   }
