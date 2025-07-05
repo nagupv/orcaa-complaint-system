@@ -6,6 +6,7 @@ import {
   workDescriptions,
   auditTrail,
   roles,
+  roleActionMapping,
   listValues,
   timesheets,
   leaveRequests,
@@ -26,6 +27,8 @@ import {
   type InsertAuditEntry,
   type Role,
   type InsertRole,
+  type RoleActionMapping,
+  type InsertRoleActionMapping,
   type ListValue,
   type InsertListValue,
   type Timesheet,
@@ -97,6 +100,16 @@ export interface IStorage {
   updateRole(id: number, updates: Partial<Role>): Promise<Role>;
   deleteRole(id: number): Promise<void>;
   getRoleById(id: number): Promise<Role | undefined>;
+  
+  // Role-Action Mapping operations
+  getRoleActionMappings(): Promise<RoleActionMapping[]>;
+  createRoleActionMapping(mapping: InsertRoleActionMapping): Promise<RoleActionMapping>;
+  updateRoleActionMapping(id: number, updates: Partial<RoleActionMapping>): Promise<RoleActionMapping>;
+  deleteRoleActionMapping(id: number): Promise<void>;
+  getRoleActionMappingById(id: number): Promise<RoleActionMapping | undefined>;
+  getRoleActionMappingsByRole(roleName: string): Promise<RoleActionMapping[]>;
+  getRoleActionMappingsByAction(actionId: string): Promise<RoleActionMapping[]>;
+  getRolesForAction(actionId: string): Promise<string[]>;
   
   // List values operations
   getListValues(): Promise<ListValue[]>;
@@ -491,6 +504,50 @@ export class DatabaseStorage implements IStorage {
   async getRoleById(id: number): Promise<Role | undefined> {
     const [role] = await db.select().from(roles).where(eq(roles.id, id));
     return role;
+  }
+
+  // Role-Action Mapping operations
+  async getRoleActionMappings(): Promise<RoleActionMapping[]> {
+    return await db.select().from(roleActionMapping).orderBy(roleActionMapping.roleName, roleActionMapping.actionId);
+  }
+
+  async createRoleActionMapping(mapping: InsertRoleActionMapping): Promise<RoleActionMapping> {
+    const [result] = await db.insert(roleActionMapping).values(mapping).returning();
+    return result;
+  }
+
+  async updateRoleActionMapping(id: number, updates: Partial<RoleActionMapping>): Promise<RoleActionMapping> {
+    const [result] = await db
+      .update(roleActionMapping)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(roleActionMapping.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteRoleActionMapping(id: number): Promise<void> {
+    await db.delete(roleActionMapping).where(eq(roleActionMapping.id, id));
+  }
+
+  async getRoleActionMappingById(id: number): Promise<RoleActionMapping | undefined> {
+    const [result] = await db.select().from(roleActionMapping).where(eq(roleActionMapping.id, id));
+    return result;
+  }
+
+  async getRoleActionMappingsByRole(roleName: string): Promise<RoleActionMapping[]> {
+    return await db.select().from(roleActionMapping).where(eq(roleActionMapping.roleName, roleName));
+  }
+
+  async getRoleActionMappingsByAction(actionId: string): Promise<RoleActionMapping[]> {
+    return await db.select().from(roleActionMapping).where(eq(roleActionMapping.actionId, actionId));
+  }
+
+  async getRolesForAction(actionId: string): Promise<string[]> {
+    const results = await db
+      .select({ roleName: roleActionMapping.roleName })
+      .from(roleActionMapping)
+      .where(and(eq(roleActionMapping.actionId, actionId), eq(roleActionMapping.hasPermission, true)));
+    return results.map(r => r.roleName);
   }
 
   // List values operations
@@ -1083,12 +1140,12 @@ export class DatabaseStorage implements IStorage {
       return; // Task already exists
     }
 
-    // Import role action mapping utility
-    const { mapTaskTypeToActionId, getRequiredRolesForAction } = await import('../shared/roleActionMapping.js');
+    // Import database-driven role action mapping utility
+    const { mapTaskTypeToActionId, getRequiredRolesForAction } = await import('../shared/databaseRoleActionMapping.js');
     
-    // Use Role-Action Mapping to determine required roles
+    // Use Database-driven Role-Action Mapping to determine required roles
     const actionId = mapTaskTypeToActionId(nodeType);
-    const requiredRoles = actionId ? getRequiredRolesForAction(actionId) : [];
+    const requiredRoles = actionId ? await getRequiredRolesForAction(actionId) : [];
     
     // Default to field_staff if no mapping found
     const allowedRoles = requiredRoles.length > 0 ? requiredRoles : ['field_staff'];
@@ -1256,8 +1313,8 @@ export class DatabaseStorage implements IStorage {
     const workflowData = workflow.workflowData as any;
     const tasks: WorkflowTask[] = [];
     
-    // Import role action mapping utility
-    const { mapTaskTypeToActionId, getRequiredRolesForAction } = await import('../shared/roleActionMapping.js');
+    // Import database-driven role action mapping utility
+    const { mapTaskTypeToActionId, getRequiredRolesForAction } = await import('../shared/databaseRoleActionMapping.js');
     
     // Define task types that create workflow tasks
     const taskTypes = [
@@ -1289,9 +1346,9 @@ export class DatabaseStorage implements IStorage {
           const nodeType = nodeLabel?.toUpperCase().replace(/\s+/g, '_');
           
           if (taskTypes.includes(nodeType)) {
-            // Use Role-Action Mapping to determine required roles
+            // Use Database-driven Role-Action Mapping to determine required roles
             const actionId = mapTaskTypeToActionId(nodeType);
-            const requiredRoles = actionId ? getRequiredRolesForAction(actionId) : [];
+            const requiredRoles = actionId ? await getRequiredRolesForAction(actionId) : [];
             
             // Default to field_staff if no mapping found
             const allowedRoles = requiredRoles.length > 0 ? requiredRoles : ['field_staff'];

@@ -8,8 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Role } from "@shared/schema";
-import { ACTION_CATEGORIES } from "@shared/roleActionMapping";
-import { Gavel } from "lucide-react";
+// Database-driven approach - no static import needed
+import { Gavel, Users, Workflow, FileText, Clock, BarChart } from "lucide-react";
 
 export default function RoleActionMapping() {
   const { toast } = useToast();
@@ -29,27 +29,75 @@ export default function RoleActionMapping() {
     },
   });
 
+  // Fetch role-action mappings from database
+  const { data: roleActionMappings = [] } = useQuery({
+    queryKey: ["/api/role-action-mappings"],
+    queryFn: async () => {
+      const response = await fetch("/api/role-action-mappings", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch role-action mappings");
+      return response.json();
+    },
+  });
+
   // Initialize role permissions from database
   React.useEffect(() => {
     const permissions: Record<string, string[]> = {};
     roles.forEach(role => {
-      // Use actual permissions from database if available, otherwise use default permissions
-      if (role.permissions && Array.isArray(role.permissions)) {
-        permissions[role.name] = role.permissions;
-      } else {
-        // Fallback to default permissions based on action definitions
-        permissions[role.name] = [];
-        ACTION_CATEGORIES.forEach(category => {
-          category.actions.forEach(action => {
-            if (action.requiredRoles.includes(role.name)) {
-              permissions[role.name].push(action.id);
-            }
-          });
-        });
-      }
+      permissions[role.name] = [];
+      roleActionMappings.forEach((mapping: any) => {
+        if (mapping.roleName === role.name && mapping.hasPermission) {
+          permissions[role.name].push(mapping.actionId);
+        }
+      });
     });
     setRolePermissions(permissions);
-  }, [roles]);
+  }, [roles, roleActionMappings]);
+
+  // Create action categories from database mappings
+  const actionCategories = React.useMemo(() => {
+    const categoryMap = new Map();
+    
+    // Icon mapping for categories
+    const categoryIcons: Record<string, any> = {
+      'Application Management': Users,
+      'Workflow Tasks': Workflow,
+      'Complaint Management': FileText,
+      'Time Management': Clock,
+      'Reporting': BarChart
+    };
+
+    roleActionMappings.forEach((mapping: any) => {
+      if (!categoryMap.has(mapping.actionCategory)) {
+        categoryMap.set(mapping.actionCategory, {
+          name: mapping.actionCategory,
+          icon: categoryIcons[mapping.actionCategory] || Gavel,
+          actions: []
+        });
+      }
+      
+      const category = categoryMap.get(mapping.actionCategory);
+      let action = category.actions.find((a: any) => a.id === mapping.actionId);
+      
+      if (!action) {
+        action = {
+          id: mapping.actionId,
+          name: mapping.actionName,
+          description: mapping.actionDescription || '',
+          requiredRoles: []
+        };
+        category.actions.push(action);
+      }
+      
+      // Add role if it has permission and isn't already included
+      if (mapping.hasPermission && !action.requiredRoles.includes(mapping.roleName)) {
+        action.requiredRoles.push(mapping.roleName);
+      }
+    });
+
+    return Array.from(categoryMap.values());
+  }, [roleActionMappings]);
 
   const updateRolePermissions = useMutation({
     mutationFn: async ({ roleName, permissions }: { roleName: string; permissions: string[] }) => {
@@ -150,7 +198,7 @@ export default function RoleActionMapping() {
             </div>
 
             {/* Action Categories Table */}
-            {ACTION_CATEGORIES.map(category => (
+            {actionCategories.map(category => (
               <Card key={category.name}>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">

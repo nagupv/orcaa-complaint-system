@@ -852,6 +852,256 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Role-Action Mapping routes
+  app.get('/api/role-action-mappings', isAuthenticated, async (req, res) => {
+    try {
+      const mappings = await storage.getRoleActionMappings();
+      res.json(mappings);
+    } catch (error) {
+      console.error('Error fetching role-action mappings:', error);
+      res.status(500).json({ error: 'Failed to fetch role-action mappings' });
+    }
+  });
+
+  app.post('/api/role-action-mappings', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user has admin role
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (!currentUser) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      const userRoles = typeof currentUser.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser.roles;
+      if (!userRoles.includes('admin')) {
+        return res.status(403).json({ message: "Only admins can create role-action mappings" });
+      }
+
+      const mapping = await storage.createRoleActionMapping(req.body);
+      res.json(mapping);
+    } catch (error) {
+      console.error('Error creating role-action mapping:', error);
+      res.status(500).json({ error: 'Failed to create role-action mapping' });
+    }
+  });
+
+  app.put('/api/role-action-mappings/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user has admin role
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (!currentUser) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      const userRoles = typeof currentUser.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser.roles;
+      if (!userRoles.includes('admin')) {
+        return res.status(403).json({ message: "Only admins can update role-action mappings" });
+      }
+
+      const id = parseInt(req.params.id);
+      const mapping = await storage.updateRoleActionMapping(id, req.body);
+      res.json(mapping);
+    } catch (error) {
+      console.error('Error updating role-action mapping:', error);
+      res.status(500).json({ error: 'Failed to update role-action mapping' });
+    }
+  });
+
+  app.delete('/api/role-action-mappings/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user has admin role
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (!currentUser) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      const userRoles = typeof currentUser.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser.roles;
+      if (!userRoles.includes('admin')) {
+        return res.status(403).json({ message: "Only admins can delete role-action mappings" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deleteRoleActionMapping(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting role-action mapping:', error);
+      res.status(500).json({ error: 'Failed to delete role-action mapping' });
+    }
+  });
+
+  // Get roles for a specific action
+  app.get('/api/role-action-mappings/action/:actionId/roles', isAuthenticated, async (req, res) => {
+    try {
+      const actionId = req.params.actionId;
+      const roles = await storage.getRolesForAction(actionId);
+      res.json(roles);
+    } catch (error) {
+      console.error('Error fetching roles for action:', error);
+      res.status(500).json({ error: 'Failed to fetch roles for action' });
+    }
+  });
+
+  // Get mappings for a specific role
+  app.get('/api/role-action-mappings/role/:roleName', isAuthenticated, async (req, res) => {
+    try {
+      const roleName = req.params.roleName;
+      const mappings = await storage.getRoleActionMappingsByRole(roleName);
+      res.json(mappings);
+    } catch (error) {
+      console.error('Error fetching mappings for role:', error);
+      res.status(500).json({ error: 'Failed to fetch mappings for role' });
+    }
+  });
+
+  // Seed role-action mappings from static definitions
+  app.post('/api/role-action-mappings/seed', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user has admin role
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (!currentUser) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      const userRoles = typeof currentUser.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser.roles;
+      if (!userRoles.includes('admin')) {
+        return res.status(403).json({ message: "Only admins can seed role-action mappings" });
+      }
+
+      // Define the role-action mappings from the static file
+      const roleActionMappings = [
+        // Application Management
+        { actionId: "user_management", actionName: "User Management", category: "Application Management", 
+          description: "Create, edit, and delete user accounts", roleName: "admin", hasPermission: true },
+        { actionId: "user_management", actionName: "User Management", category: "Application Management", 
+          description: "Create, edit, and delete user accounts", roleName: "supervisor", hasPermission: true },
+        { actionId: "user_management", actionName: "User Management", category: "Application Management", 
+          description: "Create, edit, and delete user accounts", roleName: "approver", hasPermission: false },
+        { actionId: "user_management", actionName: "User Management", category: "Application Management", 
+          description: "Create, edit, and delete user accounts", roleName: "field_staff", hasPermission: false },
+        { actionId: "user_management", actionName: "User Management", category: "Application Management", 
+          description: "Create, edit, and delete user accounts", roleName: "contract_staff", hasPermission: false },
+        
+        { actionId: "role_management", actionName: "Role Management", category: "Application Management", 
+          description: "Manage system roles and permissions", roleName: "admin", hasPermission: true },
+        { actionId: "role_management", actionName: "Role Management", category: "Application Management", 
+          description: "Manage system roles and permissions", roleName: "supervisor", hasPermission: false },
+        { actionId: "role_management", actionName: "Role Management", category: "Application Management", 
+          description: "Manage system roles and permissions", roleName: "approver", hasPermission: false },
+        { actionId: "role_management", actionName: "Role Management", category: "Application Management", 
+          description: "Manage system roles and permissions", roleName: "field_staff", hasPermission: false },
+        { actionId: "role_management", actionName: "Role Management", category: "Application Management", 
+          description: "Manage system roles and permissions", roleName: "contract_staff", hasPermission: false },
+        
+        { actionId: "workflow_designer", actionName: "Workflow Designer", category: "Application Management", 
+          description: "Create and modify workflow templates", roleName: "admin", hasPermission: true },
+        { actionId: "workflow_designer", actionName: "Workflow Designer", category: "Application Management", 
+          description: "Create and modify workflow templates", roleName: "supervisor", hasPermission: true },
+        { actionId: "workflow_designer", actionName: "Workflow Designer", category: "Application Management", 
+          description: "Create and modify workflow templates", roleName: "approver", hasPermission: false },
+        { actionId: "workflow_designer", actionName: "Workflow Designer", category: "Application Management", 
+          description: "Create and modify workflow templates", roleName: "field_staff", hasPermission: false },
+        { actionId: "workflow_designer", actionName: "Workflow Designer", category: "Application Management", 
+          description: "Create and modify workflow templates", roleName: "contract_staff", hasPermission: false },
+        
+        { actionId: "list_values", actionName: "List Values Management", category: "Application Management", 
+          description: "Manage system configuration values", roleName: "admin", hasPermission: true },
+        { actionId: "list_values", actionName: "List Values Management", category: "Application Management", 
+          description: "Manage system configuration values", roleName: "supervisor", hasPermission: false },
+        { actionId: "list_values", actionName: "List Values Management", category: "Application Management", 
+          description: "Manage system configuration values", roleName: "approver", hasPermission: false },
+        { actionId: "list_values", actionName: "List Values Management", category: "Application Management", 
+          description: "Manage system configuration values", roleName: "field_staff", hasPermission: false },
+        { actionId: "list_values", actionName: "List Values Management", category: "Application Management", 
+          description: "Manage system configuration values", roleName: "contract_staff", hasPermission: false },
+        
+        // Workflow Tasks
+        { actionId: "initial_inspection", actionName: "Initial Inspection", category: "Workflow Tasks", 
+          description: "Perform field inspections of complaints", roleName: "admin", hasPermission: true },
+        { actionId: "initial_inspection", actionName: "Initial Inspection", category: "Workflow Tasks", 
+          description: "Perform field inspections of complaints", roleName: "supervisor", hasPermission: false },
+        { actionId: "initial_inspection", actionName: "Initial Inspection", category: "Workflow Tasks", 
+          description: "Perform field inspections of complaints", roleName: "approver", hasPermission: false },
+        { actionId: "initial_inspection", actionName: "Initial Inspection", category: "Workflow Tasks", 
+          description: "Perform field inspections of complaints", roleName: "field_staff", hasPermission: false },
+        { actionId: "initial_inspection", actionName: "Initial Inspection", category: "Workflow Tasks", 
+          description: "Perform field inspections of complaints", roleName: "contract_staff", hasPermission: false },
+        
+        { actionId: "safety_inspection", actionName: "Safety Inspection", category: "Workflow Tasks", 
+          description: "Conduct safety-related inspections", roleName: "admin", hasPermission: false },
+        { actionId: "safety_inspection", actionName: "Safety Inspection", category: "Workflow Tasks", 
+          description: "Conduct safety-related inspections", roleName: "supervisor", hasPermission: false },
+        { actionId: "safety_inspection", actionName: "Safety Inspection", category: "Workflow Tasks", 
+          description: "Conduct safety-related inspections", roleName: "approver", hasPermission: false },
+        { actionId: "safety_inspection", actionName: "Safety Inspection", category: "Workflow Tasks", 
+          description: "Conduct safety-related inspections", roleName: "field_staff", hasPermission: true },
+        { actionId: "safety_inspection", actionName: "Safety Inspection", category: "Workflow Tasks", 
+          description: "Conduct safety-related inspections", roleName: "contract_staff", hasPermission: false },
+        
+        { actionId: "assessment", actionName: "Assessment", category: "Workflow Tasks", 
+          description: "Review and assess complaint validity", roleName: "admin", hasPermission: false },
+        { actionId: "assessment", actionName: "Assessment", category: "Workflow Tasks", 
+          description: "Review and assess complaint validity", roleName: "supervisor", hasPermission: true },
+        { actionId: "assessment", actionName: "Assessment", category: "Workflow Tasks", 
+          description: "Review and assess complaint validity", roleName: "approver", hasPermission: false },
+        { actionId: "assessment", actionName: "Assessment", category: "Workflow Tasks", 
+          description: "Review and assess complaint validity", roleName: "field_staff", hasPermission: false },
+        { actionId: "assessment", actionName: "Assessment", category: "Workflow Tasks", 
+          description: "Review and assess complaint validity", roleName: "contract_staff", hasPermission: false },
+        
+        { actionId: "enforcement_action", actionName: "Enforcement Action", category: "Workflow Tasks", 
+          description: "Take enforcement actions on violations", roleName: "admin", hasPermission: true },
+        { actionId: "enforcement_action", actionName: "Enforcement Action", category: "Workflow Tasks", 
+          description: "Take enforcement actions on violations", roleName: "supervisor", hasPermission: true },
+        { actionId: "enforcement_action", actionName: "Enforcement Action", category: "Workflow Tasks", 
+          description: "Take enforcement actions on violations", roleName: "approver", hasPermission: false },
+        { actionId: "enforcement_action", actionName: "Enforcement Action", category: "Workflow Tasks", 
+          description: "Take enforcement actions on violations", roleName: "field_staff", hasPermission: false },
+        { actionId: "enforcement_action", actionName: "Enforcement Action", category: "Workflow Tasks", 
+          description: "Take enforcement actions on violations", roleName: "contract_staff", hasPermission: false },
+        
+        { actionId: "resolution", actionName: "Resolution", category: "Workflow Tasks", 
+          description: "Close and resolve complaints", roleName: "admin", hasPermission: false },
+        { actionId: "resolution", actionName: "Resolution", category: "Workflow Tasks", 
+          description: "Close and resolve complaints", roleName: "supervisor", hasPermission: false },
+        { actionId: "resolution", actionName: "Resolution", category: "Workflow Tasks", 
+          description: "Close and resolve complaints", roleName: "approver", hasPermission: true },
+        { actionId: "resolution", actionName: "Resolution", category: "Workflow Tasks", 
+          description: "Close and resolve complaints", roleName: "field_staff", hasPermission: true },
+        { actionId: "resolution", actionName: "Resolution", category: "Workflow Tasks", 
+          description: "Close and resolve complaints", roleName: "contract_staff", hasPermission: false },
+        
+        { actionId: "reject_demolition", actionName: "Reject Demolition", category: "Workflow Tasks", 
+          description: "Reject demolition permit applications", roleName: "admin", hasPermission: true },
+        { actionId: "reject_demolition", actionName: "Reject Demolition", category: "Workflow Tasks", 
+          description: "Reject demolition permit applications", roleName: "supervisor", hasPermission: true },
+        { actionId: "reject_demolition", actionName: "Reject Demolition", category: "Workflow Tasks", 
+          description: "Reject demolition permit applications", roleName: "approver", hasPermission: false },
+        { actionId: "reject_demolition", actionName: "Reject Demolition", category: "Workflow Tasks", 
+          description: "Reject demolition permit applications", roleName: "field_staff", hasPermission: false },
+        { actionId: "reject_demolition", actionName: "Reject Demolition", category: "Workflow Tasks", 
+          description: "Reject demolition permit applications", roleName: "contract_staff", hasPermission: false },
+      ];
+
+      // Create all mappings
+      const createdMappings = [];
+      for (const mapping of roleActionMappings) {
+        const created = await storage.createRoleActionMapping(mapping);
+        createdMappings.push(created);
+      }
+
+      // Create audit entry
+      await storage.createAuditEntry({
+        action: 'role_action_mappings_seeded',
+        userId: req.user.claims.sub,
+        reason: `Seeded ${createdMappings.length} role-action mappings from static definitions`
+      });
+
+      res.json({ 
+        success: true, 
+        message: `Successfully seeded ${createdMappings.length} role-action mappings`,
+        mappings: createdMappings 
+      });
+    } catch (error) {
+      console.error('Error seeding role-action mappings:', error);
+      res.status(500).json({ error: 'Failed to seed role-action mappings' });
+    }
+  });
+
   // List Values routes
   app.get('/api/list-values', isAuthenticated, async (req, res) => {
     try {

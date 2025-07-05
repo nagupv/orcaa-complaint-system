@@ -159,6 +159,21 @@ export const roles = pgTable("roles", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Role-Action Mapping table for dynamic workflow task assignment
+export const roleActionMapping = pgTable("role_action_mapping", {
+  id: serial("id").primaryKey(),
+  roleName: varchar("role_name").notNull().references(() => roles.name),
+  actionId: varchar("action_id").notNull(), // e.g., "initial_inspection", "assessment"
+  actionName: varchar("action_name").notNull(), // e.g., "Initial Inspection", "Assessment"
+  actionDescription: text("action_description"), // Description of the action
+  actionCategory: varchar("action_category").notNull(), // e.g., "Workflow Tasks", "Application Management"
+  hasPermission: boolean("has_permission").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_role_action").on(table.roleName, table.actionId),
+]);
+
 // List values table for managing configuration values
 export const listValues = pgTable("list_values", {
   id: serial("id").primaryKey(),
@@ -496,6 +511,12 @@ export const insertInboxItemSchema = createInsertSchema(inboxItems).omit({
   updatedAt: true,
 });
 
+export const insertRoleActionMappingSchema = createInsertSchema(roleActionMapping).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -524,3 +545,5 @@ export type WorkflowTask = typeof workflowTasks.$inferSelect;
 export type InsertWorkflowTask = z.infer<typeof insertWorkflowTaskSchema>;
 export type InboxItem = typeof inboxItems.$inferSelect;
 export type InsertInboxItem = z.infer<typeof insertInboxItemSchema>;
+export type RoleActionMapping = typeof roleActionMapping.$inferSelect;
+export type InsertRoleActionMapping = z.infer<typeof insertRoleActionMappingSchema>;
