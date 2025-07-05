@@ -447,6 +447,298 @@ export default function TimeEntries() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Analytics and Reports Section */}
+      {weeklyTimesheets && weeklyTimesheets.length > 0 && (
+        <div className="space-y-6">
+          {/* Time Allocation Widgets */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Activity Allocation Widget */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Time by Activity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const activityTotals = weeklyTimesheets.reduce((acc: any, ts: any) => {
+                    const hours = parseFloat(ts.timeInHours);
+                    acc[ts.activity] = (acc[ts.activity] || 0) + hours;
+                    return acc;
+                  }, {});
+                  
+                  const totalHours = Object.values(activityTotals).reduce((sum: number, hours: any) => sum + hours, 0);
+                  const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-red-500', 'bg-indigo-500', 'bg-pink-500'];
+                  
+                  return (
+                    <div className="space-y-3">
+                      {Object.entries(activityTotals).map(([activity, hours]: [string, any], index) => {
+                        const percentage = ((hours / totalHours) * 100).toFixed(1);
+                        return (
+                          <div key={activity} className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span className="font-medium">{activity}</span>
+                              <span className="text-gray-600">{hours}h ({percentage}%)</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${colors[index % colors.length]}`}
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            {/* Work ID Allocation Widget */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5" />
+                  Time by Work ID
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const workIdTotals = weeklyTimesheets.reduce((acc: any, ts: any) => {
+                    const hours = parseFloat(ts.timeInHours);
+                    const workId = ts.businessWorkId || 'No Work ID';
+                    acc[workId] = (acc[workId] || 0) + hours;
+                    return acc;
+                  }, {});
+                  
+                  const totalHours = Object.values(workIdTotals).reduce((sum: number, hours: any) => sum + hours, 0);
+                  const colors = ['bg-cyan-500', 'bg-orange-500', 'bg-teal-500', 'bg-rose-500', 'bg-violet-500', 'bg-amber-500', 'bg-emerald-500'];
+                  
+                  return (
+                    <div className="space-y-3">
+                      {Object.entries(workIdTotals).map(([workId, hours]: [string, any], index) => {
+                        const percentage = ((hours / totalHours) * 100).toFixed(1);
+                        return (
+                          <div key={workId} className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span className="font-medium">{workId}</span>
+                              <span className="text-gray-600">{hours}h ({percentage}%)</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${colors[index % colors.length]}`}
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* GitHub-style Heatmap */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Time Tracking Heatmap (Last 6 Months)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const today = new Date();
+                const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 6, today.getDate());
+                const days = eachDayOfInterval({ start: sixMonthsAgo, end: today });
+                
+                const heatmapData = weeklyTimesheets.reduce((acc: any, ts: any) => {
+                  const date = ts.date;
+                  const hours = parseFloat(ts.timeInHours);
+                  acc[date] = (acc[date] || 0) + hours;
+                  return acc;
+                }, {});
+                
+                const maxHours = Math.max(...Object.values(heatmapData));
+                
+                const getIntensity = (hours: number) => {
+                  if (hours === 0) return 0;
+                  if (hours <= maxHours * 0.25) return 1;
+                  if (hours <= maxHours * 0.5) return 2;
+                  if (hours <= maxHours * 0.75) return 3;
+                  return 4;
+                };
+                
+                const getIntensityColor = (intensity: number) => {
+                  const colors = {
+                    0: 'bg-gray-100',
+                    1: 'bg-green-200',
+                    2: 'bg-green-300',
+                    3: 'bg-green-500',
+                    4: 'bg-green-700'
+                  };
+                  return colors[intensity as keyof typeof colors];
+                };
+                
+                return (
+                  <div className="overflow-x-auto">
+                    <div className="grid grid-cols-7 gap-1 w-fit">
+                      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                        <div key={day} className="text-xs text-gray-500 text-center mb-1">{day}</div>
+                      ))}
+                      {days.map((day, index) => {
+                        const dateStr = format(day, 'yyyy-MM-dd');
+                        const hours = heatmapData[dateStr] || 0;
+                        const intensity = getIntensity(hours);
+                        return (
+                          <div
+                            key={index}
+                            className={`w-3 h-3 rounded-sm ${getIntensityColor(intensity)}`}
+                            title={`${format(day, 'MMM dd, yyyy')}: ${hours}h`}
+                          />
+                        );
+                      })}
+                    </div>
+                    <div className="mt-4 flex items-center gap-2 text-xs text-gray-500">
+                      <span>Less</span>
+                      {[0, 1, 2, 3, 4].map(intensity => (
+                        <div key={intensity} className={`w-3 h-3 rounded-sm ${getIntensityColor(intensity)}`} />
+                      ))}
+                      <span>More</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* Summary Tables */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Daily Activity Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Daily Activity Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const dailyActivitySummary = weeklyTimesheets.reduce((acc: any, ts: any) => {
+                    const date = ts.date;
+                    const activity = ts.activity;
+                    const hours = parseFloat(ts.timeInHours);
+                    
+                    if (!acc[date]) acc[date] = {};
+                    if (!acc[date][activity]) acc[date][activity] = 0;
+                    acc[date][activity] += hours;
+                    
+                    return acc;
+                  }, {});
+                  
+                  const allActivities = [...new Set(weeklyTimesheets.map((ts: any) => ts.activity))];
+                  
+                  return (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            {allActivities.map(activity => (
+                              <TableHead key={activity}>{activity}</TableHead>
+                            ))}
+                            <TableHead className="font-semibold">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {Object.entries(dailyActivitySummary).sort().map(([date, activities]) => {
+                            const dayTotal = Object.values(activities as any).reduce((sum: number, hours: any) => sum + hours, 0);
+                            return (
+                              <TableRow key={date}>
+                                <TableCell className="font-medium">{format(parseISO(date), 'MMM dd')}</TableCell>
+                                {allActivities.map(activity => (
+                                  <TableCell key={activity}>
+                                    {(activities as any)[activity] ? `${(activities as any)[activity]}h` : '-'}
+                                  </TableCell>
+                                ))}
+                                <TableCell className="font-semibold">{dayTotal}h</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            {/* Daily Work ID Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5" />
+                  Daily Work ID Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const dailyWorkIdSummary = weeklyTimesheets.reduce((acc: any, ts: any) => {
+                    const date = ts.date;
+                    const workId = ts.businessWorkId || 'No Work ID';
+                    const hours = parseFloat(ts.timeInHours);
+                    
+                    if (!acc[date]) acc[date] = {};
+                    if (!acc[date][workId]) acc[date][workId] = 0;
+                    acc[date][workId] += hours;
+                    
+                    return acc;
+                  }, {});
+                  
+                  const allWorkIds = [...new Set(weeklyTimesheets.map((ts: any) => ts.businessWorkId || 'No Work ID'))];
+                  
+                  return (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            {allWorkIds.map(workId => (
+                              <TableHead key={workId}>{workId}</TableHead>
+                            ))}
+                            <TableHead className="font-semibold">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {Object.entries(dailyWorkIdSummary).sort().map(([date, workIds]) => {
+                            const dayTotal = Object.values(workIds as any).reduce((sum: number, hours: any) => sum + hours, 0);
+                            return (
+                              <TableRow key={date}>
+                                <TableCell className="font-medium">{format(parseISO(date), 'MMM dd')}</TableCell>
+                                {allWorkIds.map(workId => (
+                                  <TableCell key={workId}>
+                                    {(workIds as any)[workId] ? `${(workIds as any)[workId]}h` : '-'}
+                                  </TableCell>
+                                ))}
+                                <TableCell className="font-semibold">{dayTotal}h</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

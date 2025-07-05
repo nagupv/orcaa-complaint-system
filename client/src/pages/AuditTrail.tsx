@@ -15,6 +15,8 @@ export default function AuditTrail() {
     actionType: "",
     dateFrom: "",
     dateTo: "",
+    userId: "",
+    reason: "",
   });
 
   const getActionIcon = (action: string) => {
@@ -55,7 +57,8 @@ export default function AuditTrail() {
     }
   };
 
-  const formatTimestamp = (timestamp: string) => {
+  const formatTimestamp = (timestamp: string | Date | null) => {
+    if (!timestamp) return "N/A";
     return new Date(timestamp).toLocaleString();
   };
 
@@ -112,6 +115,8 @@ export default function AuditTrail() {
       actionType: "",
       dateFrom: "",
       dateTo: "",
+      userId: "",
+      reason: "",
     });
   };
 
@@ -127,12 +132,12 @@ export default function AuditTrail() {
           <CardTitle>Filter Audit Entries</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div>
               <Label htmlFor="complaintId">Complaint ID</Label>
               <Input
                 id="complaintId"
-                placeholder="AQ-2024-001"
+                placeholder="AQ-2025-001"
                 value={filters.complaintId}
                 onChange={(e) => handleFilterChange("complaintId", e.target.value)}
               />
@@ -151,11 +156,45 @@ export default function AuditTrail() {
                   <SelectItem value="assigned">Assigned</SelectItem>
                   <SelectItem value="updated">Updated</SelectItem>
                   <SelectItem value="work_description_added">Work Description Added</SelectItem>
+                  <SelectItem value="workflow_assigned">Workflow Assigned</SelectItem>
+                  <SelectItem value="task_created">Task Created</SelectItem>
+                  <SelectItem value="task_completed">Task Completed</SelectItem>
+                  <SelectItem value="user_created">User Created</SelectItem>
+                  <SelectItem value="user_updated">User Updated</SelectItem>
+                  <SelectItem value="user_deleted">User Deleted</SelectItem>
+                  <SelectItem value="role_created">Role Created</SelectItem>
+                  <SelectItem value="role_updated">Role Updated</SelectItem>
+                  <SelectItem value="role_deleted">Role Deleted</SelectItem>
+                  <SelectItem value="workflow_created">Workflow Created</SelectItem>
+                  <SelectItem value="workflow_updated">Workflow Updated</SelectItem>
+                  <SelectItem value="workflow_deleted">Workflow Deleted</SelectItem>
                   <SelectItem value="closed">Closed</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            
+
+            <div>
+              <Label htmlFor="userId">User ID</Label>
+              <Input
+                id="userId"
+                placeholder="User ID or Email"
+                value={filters.userId}
+                onChange={(e) => handleFilterChange("userId", e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="reason">Reason</Label>
+              <Input
+                id="reason"
+                placeholder="Search by reason"
+                value={filters.reason}
+                onChange={(e) => handleFilterChange("reason", e.target.value)}
+              />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <Label htmlFor="dateFrom">Date From</Label>
               <Input
@@ -163,6 +202,16 @@ export default function AuditTrail() {
                 type="date"
                 value={filters.dateFrom}
                 onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="dateTo">Date To</Label>
+              <Input
+                id="dateTo"
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => handleFilterChange("dateTo", e.target.value)}
               />
             </div>
           </div>
