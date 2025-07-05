@@ -87,13 +87,13 @@ export default function Header() {
               
               {/* Time Management Dropdown */}
               <div className="relative group">
-                <Link href="/time-management" className="text-gray-700 hover:text-orcaa-blue font-medium flex items-center gap-1">
+                <Link href="/time-management" className="dropdown-trigger text-gray-700 hover:text-orcaa-blue font-medium flex items-center gap-1">
                   Time Management
                   <ChevronDown className="h-4 w-4" />
                 </Link>
                 
-                {/* Dropdown Menu */}
-                <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                {/* Dropdown Menu with improved hover behavior */}
+                <div className="dropdown-menu absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible z-50">
                   <div className="py-1">
                     <Link href="/time-management#timesheets" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       Time Entries
@@ -113,13 +113,13 @@ export default function Header() {
               
               {/* Application Management Dropdown */}
               <div className="relative group">
-                <Link href="/application-management" className="text-gray-700 hover:text-orcaa-blue font-medium flex items-center gap-1">
+                <Link href="/application-management" className="dropdown-trigger text-gray-700 hover:text-orcaa-blue font-medium flex items-center gap-1">
                   Application Management
                   <ChevronDown className="h-4 w-4" />
                 </Link>
                 
-                {/* Dropdown Menu */}
-                <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                {/* Dropdown Menu with improved hover behavior */}
+                <div className="dropdown-menu absolute left-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible z-50">
                   <div className="py-1">
                     <Link href="/application-management#users" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       User Management

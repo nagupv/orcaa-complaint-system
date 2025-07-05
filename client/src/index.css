@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Improved dropdown hover behavior */
+.dropdown-menu {
+  transition: opacity 200ms ease-in-out, visibility 200ms ease-in-out;
+}
+
+.dropdown-trigger:hover + .dropdown-menu,
+.dropdown-menu:hover {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.group:hover .dropdown-menu {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(20, 14.3%, 4.1%);
