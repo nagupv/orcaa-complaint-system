@@ -716,10 +716,18 @@ export default function WorkflowDesigner() {
     // TODO: Implement actual save to backend
   }, [nodes, edges]);
 
-  const onResetWorkflow = useCallback(() => {
-    setNodes(createInitialNodes(onDeleteNode));
-    setEdges(createInitialEdges(onDeleteEdge));
-  }, [setNodes, setEdges, onDeleteNode, onDeleteEdge]);
+  const onClearDesigner = useCallback(() => {
+    setNodes([]);
+    setEdges([]);
+    setZoomLevel(1);
+    if (reactFlowInstance) {
+      reactFlowInstance.zoomTo(1);
+    }
+    toast({
+      title: "Designer Cleared",
+      description: "All nodes and edges have been removed from the designer.",
+    });
+  }, [setNodes, setEdges, reactFlowInstance, toast]);
 
   const onExportWorkflow = useCallback(() => {
     const workflowData = {
@@ -906,14 +914,13 @@ export default function WorkflowDesigner() {
                       return (
                         <div
                           key={nodeType.id}
-                          className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover:shadow-sm ${nodeType.color}`}
+                          className={`p-2 rounded border cursor-pointer transition-all hover:shadow-sm ${nodeType.color}`}
                           onClick={() => onAddNode(nodeType)}
                         >
-                          <div className="flex items-center gap-2 mb-1">
-                            <Icon className="h-4 w-4" />
-                            <span className="text-sm font-medium">{nodeType.label}</span>
+                          <div className="flex items-center gap-1">
+                            <Icon className="h-3 w-3" />
+                            <span className="text-xs font-medium">{nodeType.label}</span>
                           </div>
-                          <p className="text-xs opacity-80">{nodeType.description}</p>
                         </div>
                       );
                     })}
@@ -1143,13 +1150,13 @@ export default function WorkflowDesigner() {
                     </Dialog>
 
                     <Button
-                      onClick={onResetWorkflow}
-                      variant="outline"
+                      onClick={onClearDesigner}
+                      variant="destructive"
                       size="sm"
                       className="w-full justify-start"
                     >
-                      <RotateCcw className="h-4 w-4 mr-2" />
-                      Reset to Default
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Clear Designer
                     </Button>
                     <Button
                       onClick={onExportWorkflow}
