@@ -1477,12 +1477,12 @@ export default function WorkflowDesigner() {
 
                   <div>
                     <h3 className="font-semibold mb-3">Connector Types</h3>
-                    <div className="grid grid-cols-2 gap-2 w-max">
+                    <div className="space-y-2">
                       <Button
                         onClick={() => setSelectedEdgeType('default')}
                         variant={selectedEdgeType === 'default' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs justify-start w-32"
+                        className="text-xs justify-start w-full"
                       >
                         🏹 Default
                       </Button>
@@ -1490,7 +1490,7 @@ export default function WorkflowDesigner() {
                         onClick={() => setSelectedEdgeType('bidirectional')}
                         variant={selectedEdgeType === 'bidirectional' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs justify-start w-32"
+                        className="text-xs justify-start w-full"
                       >
                         ↔️ Bidirectional
                       </Button>
@@ -1498,7 +1498,7 @@ export default function WorkflowDesigner() {
                         onClick={() => setSelectedEdgeType('conditional')}
                         variant={selectedEdgeType === 'conditional' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs justify-start w-32"
+                        className="text-xs justify-start w-full"
                       >
                         🔀 Conditional
                       </Button>
@@ -1506,7 +1506,7 @@ export default function WorkflowDesigner() {
                         onClick={() => setSelectedEdgeType('selfConnecting')}
                         variant={selectedEdgeType === 'selfConnecting' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs justify-start w-32"
+                        className="text-xs justify-start w-full"
                       >
                         🔄 Self Loop
                       </Button>
