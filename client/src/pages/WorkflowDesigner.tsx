@@ -23,7 +23,7 @@ import 'reactflow/dist/style.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -52,7 +52,8 @@ import {
   ZoomOut,
   Move,
   RotateCw,
-  FolderOpen
+  FolderOpen,
+  Settings
 } from 'lucide-react';
 
 // Define the node types with their properties
@@ -326,45 +327,312 @@ const createInitialEdges = (onDeleteEdge: (id: string) => void): Edge[] => [
   },
 ];
 
-// Custom node component with handles and delete button
+// Custom node component with handles, delete button, and configuration
 const CustomNode = ({ data, id }: NodeProps) => {
   const Icon = data.icon;
+  const [showConfig, setShowConfig] = useState(false);
+  const [nodeConfig, setNodeConfig] = useState(data.config || {});
+  
+  const handleConfigSave = useCallback((config: any) => {
+    setNodeConfig(config);
+    data.onConfigUpdate?.(id, config);
+    setShowConfig(false);
+  }, [id, data]);
+  
+  const isConfigurable = data.label === 'Email Notification' || data.label === 'SMS Notification' || data.label === 'WhatsApp Notification';
   
   return (
-    <div className={`px-4 py-3 shadow-md rounded-lg border-2 ${data.color} min-w-[200px] relative group`}>
-      {/* Input Handle */}
-      <Handle
-        type="target"
-        position={Position.Top}
-        className="w-3 h-3 bg-gray-400 border-2 border-white"
-        isConnectable={true}
-      />
-      
-      {/* Delete Button */}
-      <button
-        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={(e) => {
-          e.stopPropagation();
-          data.onDelete?.(id);
-        }}
-      >
-        <X className="h-3 w-3" />
-      </button>
-      
-      <div className="flex items-center gap-2 mb-2">
-        <Icon className="h-4 w-4" />
-        <div className="font-medium text-sm">{data.label}</div>
+    <>
+      <div className={`px-4 py-3 shadow-md rounded-lg border-2 ${data.color} min-w-[200px] relative group`}>
+        {/* Input Handle */}
+        <Handle
+          type="target"
+          position={Position.Top}
+          className="w-3 h-3 bg-gray-400 border-2 border-white"
+          isConnectable={true}
+        />
+        
+        {/* Delete Button */}
+        <button
+          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            data.onDelete?.(id);
+          }}
+        >
+          <X className="h-3 w-3" />
+        </button>
+        
+        {/* Config Button */}
+        {isConfigurable && (
+          <button
+            className="absolute -top-2 -left-2 bg-blue-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowConfig(true);
+            }}
+          >
+            <Settings className="h-3 w-3" />
+          </button>
+        )}
+        
+        <div className="flex items-center gap-2 mb-2">
+          <Icon className="h-4 w-4" />
+          <div className="font-medium text-sm">{data.label}</div>
+        </div>
+        <div className="text-xs opacity-80">{data.description}</div>
+        
+        {/* Show configuration status */}
+        {isConfigurable && Object.keys(nodeConfig).length > 0 && (
+          <div className="text-xs text-blue-600 mt-1">✓ Configured</div>
+        )}
+        
+        {/* Output Handle */}
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="w-3 h-3 bg-gray-400 border-2 border-white"
+          isConnectable={true}
+        />
       </div>
-      <div className="text-xs opacity-80">{data.description}</div>
       
-      {/* Output Handle */}
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="w-3 h-3 bg-gray-400 border-2 border-white"
-        isConnectable={true}
-      />
+      {/* Configuration Dialog */}
+      {showConfig && (
+        <NodeConfigDialog
+          nodeId={id}
+          nodeLabel={data.label}
+          currentConfig={nodeConfig}
+          onSave={handleConfigSave}
+          onClose={() => setShowConfig(false)}
+        />
+      )}
+    </>
+  );
+};
+
+// Node Configuration Dialog Component
+const NodeConfigDialog = ({ nodeId, nodeLabel, currentConfig, onSave, onClose }: {
+  nodeId: string;
+  nodeLabel: string;
+  currentConfig: any;
+  onSave: (config: any) => void;
+  onClose: () => void;
+}) => {
+  const [config, setConfig] = useState(currentConfig);
+
+  const handleSave = () => {
+    onSave(config);
+  };
+
+  const renderEmailConfig = () => (
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="emailAccount">Email Account *</Label>
+        <Input
+          id="emailAccount"
+          placeholder="e.g., complaints@orcaa.org"
+          value={config.emailAccount || ''}
+          onChange={(e) => setConfig({ ...config, emailAccount: e.target.value })}
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="emailSubject">Email Subject Template *</Label>
+        <Input
+          id="emailSubject"
+          placeholder="e.g., Complaint {{complaintId}} - {{status}}"
+          value={config.emailSubject || ''}
+          onChange={(e) => setConfig({ ...config, emailSubject: e.target.value })}
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="emailTemplate">Email Body Template *</Label>
+        <textarea
+          id="emailTemplate"
+          className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          placeholder="Dear {{recipientName}},&#10;&#10;This is regarding complaint {{complaintId}}.&#10;&#10;Current Status: {{status}}&#10;Description: {{description}}&#10;&#10;Thank you,&#10;ORCAA Team"
+          value={config.emailTemplate || ''}
+          onChange={(e) => setConfig({ ...config, emailTemplate: e.target.value })}
+        />
+        <div className="text-xs text-muted-foreground mt-1">
+          Available variables: complaintId, status, description, recipientName, recipientEmail, date
+        </div>
+      </div>
+      
+      <div>
+        <Label htmlFor="recipientType">Recipient Type *</Label>
+        <select
+          id="recipientType"
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          value={config.recipientType || ''}
+          onChange={(e) => setConfig({ ...config, recipientType: e.target.value })}
+        >
+          <option value="">Select recipient type</option>
+          <option value="complainant">Complainant</option>
+          <option value="assigned_staff">Assigned Staff</option>
+          <option value="supervisor">Supervisor</option>
+          <option value="custom">Custom Email</option>
+        </select>
+      </div>
+      
+      {config.recipientType === 'custom' && (
+        <div>
+          <Label htmlFor="customEmail">Custom Email Address *</Label>
+          <Input
+            id="customEmail"
+            placeholder="recipient@example.com"
+            value={config.customEmail || ''}
+            onChange={(e) => setConfig({ ...config, customEmail: e.target.value })}
+          />
+        </div>
+      )}
+      
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="sendCopy"
+          checked={config.sendCopy || false}
+          onChange={(e) => setConfig({ ...config, sendCopy: e.target.checked })}
+          className="h-4 w-4 rounded border border-input"
+        />
+        <Label htmlFor="sendCopy">Send copy to complaint assignee</Label>
+      </div>
     </div>
+  );
+
+  const renderSMSConfig = () => (
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="smsTemplate">SMS Message Template *</Label>
+        <textarea
+          id="smsTemplate"
+          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          placeholder="ORCAA Alert: Complaint {{complaintId}} status updated to {{status}}. Details: {{description}}"
+          value={config.smsTemplate || ''}
+          onChange={(e) => setConfig({ ...config, smsTemplate: e.target.value })}
+        />
+        <div className="text-xs text-muted-foreground mt-1">
+          Available variables: complaintId, status, description, date. Max 160 characters.
+        </div>
+      </div>
+      
+      <div>
+        <Label htmlFor="smsRecipientType">Recipient Type *</Label>
+        <select
+          id="smsRecipientType"
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          value={config.recipientType || ''}
+          onChange={(e) => setConfig({ ...config, recipientType: e.target.value })}
+        >
+          <option value="">Select recipient type</option>
+          <option value="complainant">Complainant</option>
+          <option value="assigned_staff">Assigned Staff</option>
+          <option value="supervisor">Supervisor</option>
+          <option value="custom">Custom Phone Number</option>
+        </select>
+      </div>
+      
+      {config.recipientType === 'custom' && (
+        <div>
+          <Label htmlFor="customPhone">Custom Phone Number *</Label>
+          <Input
+            id="customPhone"
+            placeholder="+1234567890"
+            value={config.customPhone || ''}
+            onChange={(e) => setConfig({ ...config, customPhone: e.target.value })}
+          />
+        </div>
+      )}
+    </div>
+  );
+
+  const renderWhatsAppConfig = () => (
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="whatsappTemplate">WhatsApp Message Template *</Label>
+        <textarea
+          id="whatsappTemplate"
+          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          placeholder="🏢 *ORCAA Notification*&#10;&#10;Complaint ID: {{complaintId}}&#10;Status: {{status}}&#10;Description: {{description}}&#10;&#10;For more info, contact ORCAA."
+          value={config.whatsappTemplate || ''}
+          onChange={(e) => setConfig({ ...config, whatsappTemplate: e.target.value })}
+        />
+        <div className="text-xs text-muted-foreground mt-1">
+          Available variables: complaintId, status, description, date
+        </div>
+      </div>
+      
+      <div>
+        <Label htmlFor="whatsappRecipientType">Recipient Type *</Label>
+        <select
+          id="whatsappRecipientType"
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          value={config.recipientType || ''}
+          onChange={(e) => setConfig({ ...config, recipientType: e.target.value })}
+        >
+          <option value="">Select recipient type</option>
+          <option value="complainant">Complainant</option>
+          <option value="assigned_staff">Assigned Staff</option>
+          <option value="supervisor">Supervisor</option>
+          <option value="custom">Custom WhatsApp Number</option>
+        </select>
+      </div>
+      
+      {config.recipientType === 'custom' && (
+        <div>
+          <Label htmlFor="customWhatsApp">Custom WhatsApp Number *</Label>
+          <Input
+            id="customWhatsApp"
+            placeholder="whatsapp:+1234567890"
+            value={config.customWhatsApp || ''}
+            onChange={(e) => setConfig({ ...config, customWhatsApp: e.target.value })}
+          />
+        </div>
+      )}
+    </div>
+  );
+
+  const isConfigValid = () => {
+    if (nodeLabel === 'Email Notification') {
+      return config.emailAccount && config.emailSubject && config.emailTemplate && config.recipientType;
+    } else if (nodeLabel === 'SMS Notification') {
+      return config.smsTemplate && config.recipientType;
+    } else if (nodeLabel === 'WhatsApp Notification') {
+      return config.whatsappTemplate && config.recipientType;
+    }
+    return false;
+  };
+
+  return (
+    <Dialog open={true} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Configure {nodeLabel}</DialogTitle>
+          <DialogDescription>
+            Set up the notification configuration for this workflow step.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="py-4">
+          {nodeLabel === 'Email Notification' && renderEmailConfig()}
+          {nodeLabel === 'SMS Notification' && renderSMSConfig()}
+          {nodeLabel === 'WhatsApp Notification' && renderWhatsAppConfig()}
+        </div>
+        
+        <div className="flex justify-end space-x-2">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleSave}
+            disabled={!isConfigValid()}
+          >
+            Save Configuration
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -594,6 +862,16 @@ export default function WorkflowDesigner() {
     setEdges((eds) => eds.filter((edge) => edge.id !== edgeId));
   }, []);
 
+  const onConfigUpdate = useCallback((nodeId: string, config: any) => {
+    setNodes((nds) => 
+      nds.map((node) => 
+        node.id === nodeId 
+          ? { ...node, data: { ...node.data, config } }
+          : node
+      )
+    );
+  }, []);
+
   const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(onDeleteNode));
   const [edges, setEdges, onEdgesChange] = useEdgesState(createInitialEdges(onDeleteEdge));
   const [selectedNodeType, setSelectedNodeType] = useState<string | null>(null);
@@ -701,10 +979,12 @@ export default function WorkflowDesigner() {
         color: nodeType.color,
         description: nodeType.description,
         onDelete: onDeleteNode,
+        onConfigUpdate: onConfigUpdate,
+        config: {}
       },
     };
     setNodes((nds) => [...nds, newNode]);
-  }, [setNodes, onDeleteNode]);
+  }, [setNodes, onDeleteNode, onConfigUpdate]);
 
   const onSaveWorkflow = useCallback(() => {
     const workflowData = {
@@ -851,7 +1131,8 @@ export default function WorkflowDesigner() {
           data: {
             ...node.data,
             icon: iconMap[node.data.label] || FileText, // Fallback to FileText if icon not found
-            onDelete: onDeleteNode
+            onDelete: onDeleteNode,
+            onConfigUpdate: onConfigUpdate
           }
         })));
       }
