@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Menu, X, Phone, Mail, LogOut } from "lucide-react";
+import { Menu, X, Phone, Mail, LogOut, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -84,15 +84,72 @@ export default function Header() {
               <Link href="/inbox" className="text-gray-700 hover:text-orcaa-blue font-medium">
                 Inbox
               </Link>
-              <Link href="/time-management" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                Time Management
-              </Link>
+              
+              {/* Time Management Dropdown */}
+              <div className="relative group">
+                <Link href="/time-management" className="text-gray-700 hover:text-orcaa-blue font-medium flex items-center gap-1">
+                  Time Management
+                  <ChevronDown className="h-4 w-4" />
+                </Link>
+                
+                {/* Dropdown Menu */}
+                <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="py-1">
+                    <Link href="/time-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                      Time Entries
+                    </Link>
+                    <Link href="/time-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                      Leave Requests
+                    </Link>
+                    <Link href="/time-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                      Overtime Requests
+                    </Link>
+                  </div>
+                </div>
+              </div>
               <Link href="/audit-trail" className="text-gray-700 hover:text-orcaa-blue font-medium">
                 Audit Trail
               </Link>
-              <Link href="/application-management" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                Application Management
-              </Link>
+              
+              {/* Application Management Dropdown */}
+              <div className="relative group">
+                <Link href="/application-management" className="text-gray-700 hover:text-orcaa-blue font-medium flex items-center gap-1">
+                  Application Management
+                  <ChevronDown className="h-4 w-4" />
+                </Link>
+                
+                {/* Dropdown Menu */}
+                <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="py-1">
+                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                      User Management
+                    </Link>
+                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                      Role Management
+                    </Link>
+                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                      List Values
+                    </Link>
+                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                      Workflow Designer
+                    </Link>
+                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                      Workflow Templates
+                    </Link>
+                    <div className="border-t border-gray-200 my-1"></div>
+                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                      User & Role Mapping
+                    </Link>
+                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                      Role-Action Mapping
+                    </Link>
+                    <div className="border-t border-gray-200 my-1"></div>
+                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                      User Role Report
+                    </Link>
+                  </div>
+                </div>
+              </div>
               <a href="https://orcaa.org" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-orcaa-blue font-medium">
                 ORCAA Website
               </a>
@@ -159,15 +216,60 @@ export default function Header() {
               <Link href="/inbox" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
                 Inbox
               </Link>
-              <Link href="/time-management" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
-                Time Management
-              </Link>
+              
+              {/* Time Management Mobile Section */}
+              <div className="border-t border-gray-200 pt-3 mt-3">
+                <Link href="/time-management" className="text-gray-700 hover:text-orcaa-blue font-medium py-2 flex items-center gap-2">
+                  <span className="font-semibold">Time Management</span>
+                </Link>
+                <div className="ml-4 mt-2 space-y-2">
+                  <Link href="/time-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                    Time Entries
+                  </Link>
+                  <Link href="/time-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                    Leave Requests
+                  </Link>
+                  <Link href="/time-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                    Overtime Requests
+                  </Link>
+                </div>
+              </div>
               <Link href="/audit-trail" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
                 Audit Trail
               </Link>
-              <Link href="/application-management" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
-                Application Management
-              </Link>
+              
+              {/* Application Management Mobile Section */}
+              <div className="border-t border-gray-200 pt-3 mt-3">
+                <Link href="/application-management" className="text-gray-700 hover:text-orcaa-blue font-medium py-2 flex items-center gap-2">
+                  <span className="font-semibold">Application Management</span>
+                </Link>
+                <div className="ml-4 mt-2 space-y-2">
+                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                    User Management
+                  </Link>
+                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                    Role Management
+                  </Link>
+                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                    List Values
+                  </Link>
+                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                    Workflow Designer
+                  </Link>
+                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                    Workflow Templates
+                  </Link>
+                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                    User & Role Mapping
+                  </Link>
+                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                    Role-Action Mapping
+                  </Link>
+                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                    User Role Report
+                  </Link>
+                </div>
+              </div>
               <a href="https://orcaa.org" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
                 ORCAA Website
               </a>
