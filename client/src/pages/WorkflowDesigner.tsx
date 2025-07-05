@@ -821,11 +821,28 @@ export default function WorkflowDesigner() {
   const handleLoadWorkflow = useCallback((workflow: any) => {
     if (workflow.workflowData) {
       const data = workflow.workflowData;
+      
+      // Icon mapping to restore icon components
+      const iconMap: { [key: string]: any } = {
+        'Email Notification': Mail,
+        'SMS Notification': MessageSquare,
+        'WhatsApp Notification': Phone,
+        'Complaint Planning': FileText,
+        'Field Verification': Search,
+        'Field Work': Wrench,
+        'Field Contract Work': Users,
+        'Work Status Periodic Report': ClipboardList,
+        'Advanced Analytics & Reporting': BarChart3,
+        'Work Completion': CheckCircle,
+        'Work Review and Closure': Archive,
+      };
+      
       if (data.nodes) {
         setNodes(data.nodes.map((node: any) => ({
           ...node,
           data: {
             ...node.data,
+            icon: iconMap[node.data.label] || FileText, // Fallback to FileText if icon not found
             onDelete: onDeleteNode
           }
         })));
