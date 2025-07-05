@@ -82,7 +82,9 @@ export default function Dashboard() {
   });
 
   const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    // Convert "all" values to empty strings for backend compatibility
+    const processedValue = value.startsWith("all") ? "" : value;
+    setFilters(prev => ({ ...prev, [key]: processedValue }));
   };
 
   const applyFilters = () => {
@@ -143,7 +145,7 @@ export default function Dashboard() {
                 ) : (
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={monthlyStats || []}>
+                      <BarChart data={Array.isArray(monthlyStats) ? monthlyStats : []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" />
                         <YAxis />
@@ -169,7 +171,7 @@ export default function Dashboard() {
                 ) : (
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={yearlyStats || []}>
+                      <LineChart data={Array.isArray(yearlyStats) ? yearlyStats : []}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="month" />
                         <YAxis />
@@ -235,12 +237,12 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
             <div>
               <Label htmlFor="complaintType">Complaint Type</Label>
-              <Select value={filters.complaintType} onValueChange={(value) => handleFilterChange("complaintType", value)}>
+              <Select value={filters.complaintType || "all"} onValueChange={(value) => handleFilterChange("complaintType", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="Air Quality">Air Quality</SelectItem>
                   <SelectItem value="Demolition Notice">Demolition Notice</SelectItem>
                 </SelectContent>
@@ -249,12 +251,12 @@ export default function Dashboard() {
             
             <div>
               <Label htmlFor="status">Status</Label>
-              <Select value={filters.status} onValueChange={(value) => handleFilterChange("status", value)}>
+              <Select value={filters.status || "all"} onValueChange={(value) => handleFilterChange("status", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Status</SelectItem>
+                  <SelectItem value="all">All Status</SelectItem>
                   {filterOptions.statuses.map((status: string) => (
                     <SelectItem key={status} value={status}>
                       {status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')}
@@ -266,12 +268,12 @@ export default function Dashboard() {
 
             <div>
               <Label htmlFor="priority">Priority</Label>
-              <Select value={filters.priority} onValueChange={(value) => handleFilterChange("priority", value)}>
+              <Select value={filters.priority || "all"} onValueChange={(value) => handleFilterChange("priority", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Priorities" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Priorities</SelectItem>
+                  <SelectItem value="all">All Priorities</SelectItem>
                   <SelectItem value="low">Low</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="high">High</SelectItem>
@@ -282,12 +284,12 @@ export default function Dashboard() {
 
             <div>
               <Label htmlFor="problemType">Problem Type</Label>
-              <Select value={filters.problemType} onValueChange={(value) => handleFilterChange("problemType", value)}>
+              <Select value={filters.problemType || "all"} onValueChange={(value) => handleFilterChange("problemType", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   {filterOptions.problemTypes.map((type: string) => (
                     <SelectItem key={type} value={type}>
                       {type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ')}
@@ -299,12 +301,12 @@ export default function Dashboard() {
 
             <div>
               <Label htmlFor="city">City</Label>
-              <Select value={filters.city} onValueChange={(value) => handleFilterChange("city", value)}>
+              <Select value={filters.city || "all"} onValueChange={(value) => handleFilterChange("city", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Cities" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Cities</SelectItem>
+                  <SelectItem value="all">All Cities</SelectItem>
                   {filterOptions.cities.map((city: string) => (
                     <SelectItem key={city} value={city}>
                       {city}
@@ -316,12 +318,12 @@ export default function Dashboard() {
 
             <div>
               <Label htmlFor="county">County</Label>
-              <Select value={filters.county} onValueChange={(value) => handleFilterChange("county", value)}>
+              <Select value={filters.county || "all"} onValueChange={(value) => handleFilterChange("county", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Counties" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Counties</SelectItem>
+                  <SelectItem value="all">All Counties</SelectItem>
                   {filterOptions.counties.map((county: string) => (
                     <SelectItem key={county} value={county}>
                       {county}
@@ -333,15 +335,15 @@ export default function Dashboard() {
 
             <div>
               <Label htmlFor="assignedTo">Assigned To</Label>
-              <Select value={filters.assignedTo} onValueChange={(value) => handleFilterChange("assignedTo", value)}>
+              <Select value={filters.assignedTo || "all"} onValueChange={(value) => handleFilterChange("assignedTo", value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All Users" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Users</SelectItem>
-                  {filterOptions.assignedUsers.map((user: string) => (
-                    <SelectItem key={user} value={user}>
-                      {user}
+                  <SelectItem value="all">All Users</SelectItem>
+                  {filterOptions.assignedUsers.map((user: any) => (
+                    <SelectItem key={user.id || user.name} value={user.name}>
+                      {user.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
