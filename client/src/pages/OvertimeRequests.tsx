@@ -20,9 +20,12 @@ import type { OvertimeRequest, InsertOvertimeRequest } from "@shared/schema";
 
 const overtimeRequestFormSchema = z.object({
   date: z.string().min(1, "Date is required"),
-  hours: z.coerce.number().min(0.1, "Hours must be at least 0.1").max(12, "Overtime hours cannot exceed 12"),
-  projectDescription: z.string().min(1, "Project description is required"),
-  justification: z.string().min(1, "Justification is required"),
+  startTime: z.string().min(1, "Start time is required"),
+  endTime: z.string().min(1, "End time is required"),
+  totalHours: z.string().min(1, "Total hours is required"),
+  reason: z.string().min(1, "Reason is required"),
+  businessWorkId: z.string().optional(),
+  comments: z.string().optional(),
 });
 
 type OvertimeRequestFormData = z.infer<typeof overtimeRequestFormSchema>;
@@ -50,9 +53,12 @@ export default function OvertimeRequests() {
     resolver: zodResolver(overtimeRequestFormSchema),
     defaultValues: {
       date: "",
-      hours: 1,
-      projectDescription: "",
-      justification: "",
+      startTime: "",
+      endTime: "",
+      totalHours: "",
+      reason: "",
+      businessWorkId: "",
+      comments: "",
     },
   });
 
@@ -67,9 +73,12 @@ export default function OvertimeRequests() {
       const overtimeRequestData: InsertOvertimeRequest = {
         userId: user?.id || "",
         date: data.date,
-        hours: data.hours,
-        projectDescription: data.projectDescription,
-        justification: data.justification,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        totalHours: data.totalHours,
+        reason: data.reason,
+        businessWorkId: data.businessWorkId,
+        comments: data.comments,
         status: "pending",
       };
       return apiRequest("POST", "/api/overtime-requests", overtimeRequestData);
@@ -113,7 +122,7 @@ export default function OvertimeRequests() {
   const userOvertimeRequests = overtimeRequests.filter((req: OvertimeRequest) => req.userId === user?.id);
   const totalOvertimeHours = userOvertimeRequests
     .filter((req: OvertimeRequest) => req.status === 'approved')
-    .reduce((sum: number, req: OvertimeRequest) => sum + req.hours, 0);
+    .reduce((sum: number, req: OvertimeRequest) => sum + Number(req.totalHours), 0);
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -313,18 +322,18 @@ export default function OvertimeRequests() {
                     .map((request: OvertimeRequest) => (
                       <TableRow key={request.id}>
                         <TableCell>
-                          {format(parseISO(request.date), "MMM d, yyyy")}
+                          {format(new Date(request.date), "MMM d, yyyy")}
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary">
-                            {request.hours}h
+                            {request.totalHours}h
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <span title={request.projectDescription} className="cursor-help">
-                            {request.projectDescription.length > 40 
-                              ? `${request.projectDescription.substring(0, 40)}...` 
-                              : request.projectDescription}
+                          <span title={request.reason} className="cursor-help">
+                            {request.reason && request.reason.length > 40 
+                              ? `${request.reason.substring(0, 40)}...` 
+                              : request.reason}
                           </span>
                         </TableCell>
                         <TableCell>
@@ -333,13 +342,13 @@ export default function OvertimeRequests() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {format(parseISO(request.createdAt), "MMM d, yyyy")}
+                          {request.createdAt ? format(parseISO(request.createdAt.toString()), "MMM d, yyyy") : '-'}
                         </TableCell>
                         <TableCell>
-                          <span title={request.justification} className="cursor-help">
-                            {request.justification.length > 50 
-                              ? `${request.justification.substring(0, 50)}...` 
-                              : request.justification}
+                          <span title={request.comments || ''} className="cursor-help">
+                            {request.comments && request.comments.length > 50 
+                              ? `${request.comments.substring(0, 50)}...` 
+                              : request.comments || '-'}
                           </span>
                         </TableCell>
                       </TableRow>
