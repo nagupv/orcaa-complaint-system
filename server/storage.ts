@@ -1208,9 +1208,9 @@ export class DatabaseStorage implements IStorage {
     }
 
     // Map node type to action ID and get required roles using role-action mapping
-    const { mapTaskTypeToActionId, getRequiredRolesForAction } = require('../shared/roleActionMapping');
+    const { mapTaskTypeToActionId, getRequiredRolesForAction } = await import('../shared/roleActionMapping.js');
     const actionId = mapTaskTypeToActionId(nodeType);
-    const requiredRoles = getRequiredRolesForAction(actionId);
+    const requiredRoles = actionId ? getRequiredRolesForAction(actionId) : [];
     
     // Default to field_staff if no mapping found
     const allowedRoles = requiredRoles.length > 0 ? requiredRoles : ['field_staff'];
@@ -1277,7 +1277,7 @@ export class DatabaseStorage implements IStorage {
         ...nextNode.data,
         nodeId: nextNode.id,
         workflowSequence: (currentTaskData?.workflowSequence || 0) + 1,
-        actionId: actionId, // Store action ID for future reference
+        actionId: actionId || 'unknown', // Store action ID for future reference
         requiredRoles: allowedRoles // Store required roles for audit trail
       }
     });
@@ -1332,9 +1332,9 @@ export class DatabaseStorage implements IStorage {
       await this.createAuditEntry({
         complaintId,
         action: 'WORKFLOW_COMPLETED',
-        actionBy: completedBy,
-        description: `Workflow completed - complaint status updated to ${completionStatus}. ${reason}`,
-        oldValue: 'in_progress',
+        userId: completedBy,
+        reason: `Workflow completed - complaint status updated to ${completionStatus}. ${reason}`,
+        previousValue: 'in_progress',
         newValue: completionStatus
       });
 
