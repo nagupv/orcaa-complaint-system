@@ -15,9 +15,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Plus, Edit, Trash2, FileText, Send, Copy } from "lucide-react";
+import { Mail, Plus, Edit, Trash2, FileText, Send, Copy, Save, X } from "lucide-react";
 import { insertEmailTemplateSchema, type EmailTemplate, type InsertEmailTemplate } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import RichTextEditor from "@/components/RichTextEditor";
 
 const formSchema = insertEmailTemplateSchema.omit({ 
   createdBy: true, 
@@ -69,6 +70,11 @@ export default function EmailTemplateConfig() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [inlineEditingId, setInlineEditingId] = useState<number | null>(null);
+  const [inlineEditContent, setInlineEditContent] = useState<{
+    subject: string;
+    body: string;
+  }>({ subject: "", body: "" });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -189,6 +195,56 @@ export default function EmailTemplateConfig() {
       isActive: template.isActive
     });
     setIsCreateOpen(true);
+  };
+
+  const startInlineEdit = (template: EmailTemplate) => {
+    setInlineEditingId(template.id);
+    setInlineEditContent({
+      subject: template.subject,
+      body: template.body
+    });
+  };
+
+  const cancelInlineEdit = () => {
+    setInlineEditingId(null);
+    setInlineEditContent({ subject: "", body: "" });
+  };
+
+  // Inline save mutation
+  const inlineSaveMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: number; updates: Partial<EmailTemplate> }) => {
+      const response = await apiRequest('PUT', `/api/email-templates/${id}`, updates);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/email-templates'] });
+      setInlineEditingId(null);
+      setInlineEditContent({ subject: "", body: "" });
+      toast({
+        title: "Success",
+        description: "Template updated successfully"
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update template",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const saveInlineEdit = async () => {
+    if (inlineEditingId) {
+      inlineSaveMutation.mutate({
+        id: inlineEditingId,
+        updates: {
+          subject: inlineEditContent.subject,
+          body: inlineEditContent.body,
+          updatedAt: new Date()
+        }
+      });
+    }
   };
 
   const handleDelete = (id: number) => {
@@ -393,14 +449,17 @@ export default function EmailTemplateConfig() {
                         <FormItem>
                           <FormLabel>Email Body *</FormLabel>
                           <FormControl>
-                            <Textarea 
-                              placeholder="Dear {{contactName}},&#10;&#10;We have received your air quality complaint {{complaintId}}..."
+                            <RichTextEditor
+                              content={field.value || ""}
+                              onChange={field.onChange}
+                              placeholder="Dear {{contactName}},
+
+We have received your air quality complaint {{complaintId}}..."
                               className="min-h-[300px]"
-                              {...field}
                             />
                           </FormControl>
                           <FormDescription>
-                            Use variables like {`{{complaintId}}`} and {`{{contactName}}`} for dynamic content
+                            Use variables like {`{{complaintId}}`} and {`{{contactName}}`} for dynamic content. Format your text with bold, italic, lists, and more.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -528,43 +587,110 @@ export default function EmailTemplateConfig() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <div>
-                  <Label className="text-xs font-medium text-muted-foreground">Type</Label>
-                  <p className="text-sm">
-                    {template.templateType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-xs font-medium text-muted-foreground">Subject</Label>
-                  <p className="text-sm truncate">{template.subject}</p>
-                </div>
-                {template.description && (
+              {inlineEditingId === template.id ? (
+                <div className="space-y-4">
                   <div>
-                    <Label className="text-xs font-medium text-muted-foreground">Description</Label>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {template.description}
+                    <Label className="text-xs font-medium text-muted-foreground">Subject</Label>
+                    <Input
+                      value={inlineEditContent.subject}
+                      onChange={(e) => setInlineEditContent(prev => ({ ...prev, subject: e.target.value }))}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Email Body</Label>
+                    <RichTextEditor
+                      content={inlineEditContent.body}
+                      onChange={(content) => setInlineEditContent(prev => ({ ...prev, body: content }))}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={saveInlineEdit}
+                      disabled={inlineSaveMutation.isPending}
+                      size="sm"
+                      className="flex-1"
+                    >
+                      {inlineSaveMutation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      onClick={cancelInlineEdit}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Type</Label>
+                    <p className="text-sm">
+                      {template.templateType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                     </p>
                   </div>
-                )}
-                {template.variables && template.variables.length > 0 && (
                   <div>
-                    <Label className="text-xs font-medium text-muted-foreground">Variables</Label>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {template.variables.slice(0, 3).map(variable => (
-                        <Badge key={variable} variant="outline" className="text-xs">
-                          {variable}
-                        </Badge>
-                      ))}
-                      {template.variables.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{template.variables.length - 3} more
-                        </Badge>
-                      )}
+                    <Label className="text-xs font-medium text-muted-foreground">Subject</Label>
+                    <p className="text-sm truncate">{template.subject}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Email Body</Label>
+                    <div className="text-sm text-muted-foreground line-clamp-3 prose prose-sm max-w-none">
+                      <div dangerouslySetInnerHTML={{ __html: template.body }} />
                     </div>
                   </div>
-                )}
-              </div>
+                  {template.description && (
+                    <div>
+                      <Label className="text-xs font-medium text-muted-foreground">Description</Label>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {template.description}
+                      </p>
+                    </div>
+                  )}
+                  {template.variables && template.variables.length > 0 && (
+                    <div>
+                      <Label className="text-xs font-medium text-muted-foreground">Variables</Label>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {template.variables.slice(0, 3).map(variable => (
+                          <Badge key={variable} variant="outline" className="text-xs">
+                            {variable}
+                          </Badge>
+                        ))}
+                        {template.variables.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{template.variables.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div className="pt-2">
+                    <Button
+                      onClick={() => startInlineEdit(template)}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Quick Edit
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
