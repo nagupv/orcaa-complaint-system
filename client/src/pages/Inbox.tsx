@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { CheckCircle, XCircle, Clock, AlertCircle, FileText, Calendar, DollarSign, Bell, Eye, MessageSquare, Forward } from "lucide-react";
+import { CheckCircle, XCircle, Clock, AlertCircle, FileText, Calendar, DollarSign, Bell, Eye, MessageSquare, Forward, GitBranch } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -309,7 +309,7 @@ export default function Inbox() {
   const filteredItems = activeTab === "all" ? allItems : allItems.filter(item => {
     switch (activeTab) {
       case "complaints":
-        return item.type === "complaint";
+        return item.type === "complaint" || item.type === "workflow_task";
       case "approvals":
         return item.type === "leave_approval" || item.type === "overtime_approval";
       case "requests":
@@ -323,6 +323,8 @@ export default function Inbox() {
     switch (type) {
       case "complaint":
         return <FileText className="h-4 w-4" />;
+      case "workflow_task":
+        return <GitBranch className="h-4 w-4" />;
       case "leave_approval":
       case "my_leave":
         return <Calendar className="h-4 w-4" />;
