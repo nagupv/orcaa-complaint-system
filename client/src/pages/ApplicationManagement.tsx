@@ -7,6 +7,7 @@ import UserRoleMapping from "./UserRoleMapping";
 import UserRoleReport from "./UserRoleReport";
 import ListValueManagement from "./ListValueManagement";
 import WorkflowDesigner from "./WorkflowDesigner";
+import WorkflowTemplates from "./WorkflowTemplates";
 
 export default function ApplicationManagement() {
   const [activeTab, setActiveTab] = useState("users");
@@ -38,6 +39,9 @@ export default function ApplicationManagement() {
                 <TabsTrigger value="workflow" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
                   Workflow Designer
                 </TabsTrigger>
+                <TabsTrigger value="templates" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
+                  Workflow Templates
+                </TabsTrigger>
                 <TabsTrigger value="mapping" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
                   User & Role Mapping
                 </TabsTrigger>
@@ -60,6 +64,10 @@ export default function ApplicationManagement() {
 
               <TabsContent value="workflow" className="mt-6">
                 <WorkflowDesigner />
+              </TabsContent>
+
+              <TabsContent value="templates" className="mt-6">
+                <WorkflowTemplates />
               </TabsContent>
 
               <TabsContent value="mapping" className="mt-6">
