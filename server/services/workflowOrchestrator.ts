@@ -285,6 +285,18 @@ export class WorkflowOrchestrator {
           }
         }
         break;
+      case 'role_based':
+        // Send to users with specific action permission
+        const actionId = config.actionId || 'initial_inspection';
+        const usersWithPermission = await this.getUsersWithActionPermission(actionId);
+        
+        if (usersWithPermission.length > 0) {
+          // Send to all users with permission (for now, send to first user as primary recipient)
+          const primaryUser = usersWithPermission[0];
+          recipientEmail = primaryUser.email;
+          recipientName = `${primaryUser.firstName || ''} ${primaryUser.lastName || ''}`.trim();
+        }
+        break;
       case 'custom':
         recipientEmail = config.customEmail || '';
         recipientName = config.customName || 'Recipient';
@@ -329,6 +341,69 @@ export class WorkflowOrchestrator {
       subject: config.emailSubject || `ORCAA Complaint Notification - ${complaint.complaintId}`,
       timestamp: new Date().toISOString()
     };
+  }
+
+  /**
+   * Get users with specific action permission
+   */
+  private async getUsersWithActionPermission(actionId: string): Promise<any[]> {
+    try {
+      // Get roles that have permission for this action
+      const rolesWithPermission = await storage.getRolesForAction(actionId);
+      
+      if (rolesWithPermission.length === 0) {
+        console.log(`No roles found with permission for action: ${actionId}`);
+        return [];
+      }
+      
+      // Get all users with these roles
+      const allUsers = await storage.getAllUsers();
+      const usersWithPermission = allUsers.filter(user => {
+        if (!user.roles || !Array.isArray(user.roles)) return false;
+        return user.roles.some(role => rolesWithPermission.includes(role));
+      });
+      
+      console.log(`Found ${usersWithPermission.length} users with permission for action: ${actionId}`);
+      return usersWithPermission;
+    } catch (error) {
+      console.error('Error getting users with action permission:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Send email to a single recipient
+   */
+  private async sendSingleEmail(emailData: any, config: any): Promise<boolean> {
+    try {
+      const subject = this.substituteVariables(
+        config.emailSubject || `ORCAA Complaint Notification - ${emailData.complaintId}`,
+        emailData
+      );
+      
+      const emailBody = this.substituteVariables(
+        config.emailTemplate || `Your complaint ${emailData.complaintId} has been received and is being processed.`,
+        emailData
+      );
+
+      console.log(`Preparing to send email:`);
+      console.log(`To: ${emailData.recipientEmail}`);
+      console.log(`Subject: ${subject}`);
+      console.log(`Body preview: ${emailBody.substring(0, 100)}...`);
+
+      const success = await emailService.sendEmail(emailData.recipientEmail, subject, emailBody, emailData.recipientName);
+      
+      if (success) {
+        console.log('Email sent successfully via SendGrid');
+      } else {
+        console.log('Failed to send email via SendGrid');
+      }
+      
+      return success;
+    } catch (error) {
+      console.error('Error sending single email:', error);
+      return false;
+    }
   }
 
   /**
