@@ -11,6 +11,9 @@ import Home from "@/pages/Home";
 import Dashboard from "@/pages/Dashboard";
 import EnhancedInbox from "@/pages/EnhancedInbox";
 import TimesheetManagement from "@/pages/TimesheetManagement";
+import TimeEntries from "@/pages/TimeEntries";
+import LeaveRequests from "@/pages/LeaveRequests";
+import OvertimeRequests from "@/pages/OvertimeRequests";
 import AuditTrail from "@/pages/AuditTrail";
 import ApplicationManagement from "@/pages/ApplicationManagement";
 import ServiceSelection from "@/pages/ServiceSelection";
@@ -36,6 +39,9 @@ function Router() {
           <Route path="/dashboard" component={Dashboard} />
           <Route path="/inbox" component={EnhancedInbox} />
           <Route path="/time-management" component={TimesheetManagement} />
+          <Route path="/time-entries" component={TimeEntries} />
+          <Route path="/leave-requests" component={LeaveRequests} />
+          <Route path="/overtime-requests" component={OvertimeRequests} />
           <Route path="/audit-trail" component={AuditTrail} />
           <Route path="/application-management" component={ApplicationManagement} />
         </>

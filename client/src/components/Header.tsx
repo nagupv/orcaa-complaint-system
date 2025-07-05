@@ -95,13 +95,13 @@ export default function Header() {
                 {/* Dropdown Menu with improved hover behavior */}
                 <div className="dropdown-menu absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible z-50">
                   <div className="py-1">
-                    <Link href="/time-management#timesheets" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/time-entries" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       Time Entries
                     </Link>
-                    <Link href="/time-management#leave" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/leave-requests" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       Leave Requests
                     </Link>
-                    <Link href="/time-management#overtime" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/overtime-requests" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       Overtime Requests
                     </Link>
                   </div>
@@ -223,13 +223,13 @@ export default function Header() {
                   <span className="font-semibold">Time Management</span>
                 </Link>
                 <div className="ml-4 mt-2 space-y-2">
-                  <Link href="/time-management#timesheets" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/time-entries" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     Time Entries
                   </Link>
-                  <Link href="/time-management#leave" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/leave-requests" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     Leave Requests
                   </Link>
-                  <Link href="/time-management#overtime" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/overtime-requests" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     Overtime Requests
                   </Link>
                 </div>
