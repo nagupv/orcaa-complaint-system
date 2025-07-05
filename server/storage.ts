@@ -1068,6 +1068,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async completeWorkflowTask(id: number, completedBy: string, completionNotes?: string, taskStatus: string = 'completed'): Promise<WorkflowTask> {
+    console.log(`[DEBUG] completeWorkflowTask called with taskStatus: ${taskStatus} for task ID: ${id}`);
+    
     const [completedTask] = await db.update(workflowTasks)
       .set({ 
         status: taskStatus, 
@@ -1078,6 +1080,8 @@ export class DatabaseStorage implements IStorage {
       })
       .where(eq(workflowTasks.id, id))
       .returning();
+
+    console.log(`[DEBUG] Task updated with status: ${completedTask.status}`);
 
     // Update related inbox item
     await db.update(inboxItems)
@@ -1335,8 +1339,11 @@ export class DatabaseStorage implements IStorage {
     const taskType = completedTask.taskType?.toLowerCase() || '';
     const taskStatus = completedTask.status?.toLowerCase() || '';
     
+    console.log(`[DEBUG] determineCompletionStatus - Edge: ${edgeLabel}, TaskType: ${taskType}, TaskStatus: ${taskStatus}`);
+    
     // First check if the task itself was rejected
     if (taskStatus === 'rejected') {
+      console.log(`[DEBUG] Task rejected - returning 'closed' status`);
       return 'closed'; // Use 'closed' for rejected tasks
     }
     
