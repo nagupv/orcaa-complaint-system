@@ -134,6 +134,9 @@ export default function Header() {
                     <Link href="/workflow-templates" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       Workflow Templates
                     </Link>
+                    <Link href="/application-management#email-templates" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                      Email Templates
+                    </Link>
                     <div className="border-t border-gray-200 my-1"></div>
                     <Link href="/user-role-mapping" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       User & Role Mapping
@@ -253,6 +256,9 @@ export default function Header() {
                   </Link>
                   <Link href="/workflow-templates" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     Workflow Templates
+                  </Link>
+                  <Link href="/application-management#email-templates" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                    Email Templates
                   </Link>
                   <Link href="/user-role-mapping" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     User & Role Mapping
