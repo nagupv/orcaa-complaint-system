@@ -289,21 +289,27 @@ export default function Inbox() {
       createdAt: request.createdAt,
     })),
     // Add workflow tasks as actionable items - only show current pending tasks per complaint
-    ...workflowTasks
-      .filter((task: any) => task.assignedTo === user?.id && task.status === 'pending')
-      .reduce((uniqueTasks: any[], task: any) => {
-        // Only keep the latest task per complaint
+    ...(() => {
+      const userTasks = workflowTasks.filter((task: any) => task.assignedTo === user?.id && task.status === 'pending');
+      console.log('User tasks before filtering:', userTasks.map((t: any) => ({id: t.id, complaintId: t.complaintId, status: t.status})));
+      
+      const uniqueTasks = userTasks.reduce((uniqueTasks: any[], task: any) => {
+        // Only keep the HIGHEST ID (most recent) task per complaint for this user
         const existingTaskIndex = uniqueTasks.findIndex(t => t.complaintId === task.complaintId);
         if (existingTaskIndex === -1) {
           uniqueTasks.push(task);
         } else {
-          // Keep the more recent task
-          if (new Date(task.createdAt) > new Date(uniqueTasks[existingTaskIndex].createdAt)) {
+          // Keep the task with the higher ID (more recent)
+          if (task.id > uniqueTasks[existingTaskIndex].id) {
             uniqueTasks[existingTaskIndex] = task;
           }
         }
         return uniqueTasks;
-      }, [])
+      }, []);
+      
+      console.log('Unique tasks after filtering:', uniqueTasks.map((t: any) => ({id: t.id, complaintId: t.complaintId, status: t.status})));
+      return uniqueTasks;
+    })()
       .map((task: any) => {
         const complaint = complaints.find((c: any) => c.id === task.complaintId);
         const workflow = workflows.find((w: any) => w.id === task.workflowId);
