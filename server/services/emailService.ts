@@ -79,22 +79,22 @@ export class EmailService {
     // Set subject based on email type
     switch (emailType) {
       case 'complaint_received':
-        subject = `ORCAA Complaint Received - ${data.complaintId}`;
+        subject = `New Air Quality Complaint ${data.complaintId} - ORCAA`;
         break;
       case 'status_update':
-        subject = `ORCAA Complaint Update - ${data.complaintId} - ${data.status}`;
+        subject = `Complaint Update ${data.complaintId} - ${data.status} - ORCAA`;
         break;
       case 'action_required':
-        subject = `ORCAA Action Required - ${data.complaintId}`;
+        subject = `Action Required ${data.complaintId} - ORCAA`;
         break;
       case 'complaint_resolved':
-        subject = `ORCAA Complaint Resolved - ${data.complaintId}`;
+        subject = `Complaint Resolved ${data.complaintId} - ORCAA`;
         break;
       case 'assignment_notification':
-        subject = `ORCAA Task Assignment - ${data.complaintId}`;
+        subject = `Task Assignment ${data.complaintId} - ORCAA`;
         break;
       default:
-        subject = `ORCAA Complaint Notification - ${data.complaintId}`;
+        subject = `Complaint Notification ${data.complaintId} - ORCAA`;
     }
 
     // Replace template variables
@@ -196,7 +196,10 @@ export class EmailService {
       // Send email using SendGrid
       const msg = {
         to: emailData.recipientEmail,
-        from: process.env.SENDGRID_FROM_EMAIL || 'venkat.naga@uzvis.com', // Use verified sender email
+        from: {
+          email: process.env.SENDGRID_FROM_EMAIL || 'venkat.naga@uzvis.com',
+          name: 'ORCAA Complaint Management System'
+        },
         subject: subject,
         html: body,
       };
