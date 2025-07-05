@@ -218,15 +218,20 @@ export default function Inbox() {
     ...complaints.map((complaint: any) => {
       const workflow = workflows.find((w: any) => w.id === complaint.workflowId);
       const description = complaint.description || 'No description provided';
+      // Handle problemTypes array or use status as fallback
+      const problemTypeText = complaint.problemTypes && Array.isArray(complaint.problemTypes) 
+        ? complaint.problemTypes.join(', ') 
+        : complaint.status || 'Unknown';
       return {
         ...complaint,
         type: "complaint",
-        title: `${complaint.complaintId} - ${complaint.problemType}`,
+        title: `${complaint.complaintId} - ${problemTypeText}`,
         description: `${description}${workflow ? ` | Workflow: ${workflow.name}` : ''}`,
         priority: complaint.priority,
         status: complaint.status,
         createdAt: complaint.createdAt,
         workflowName: workflow?.name || 'No Workflow Assigned',
+        problemType: problemTypeText, // For the detail view
       };
     }),
     ...leaveRequests.map((request: any) => ({
