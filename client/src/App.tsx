@@ -8,6 +8,11 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Landing from "@/pages/Landing";
 import Home from "@/pages/Home";
+import Dashboard from "@/pages/Dashboard";
+import EnhancedInbox from "@/pages/EnhancedInbox";
+import TimesheetManagement from "@/pages/TimesheetManagement";
+import AuditTrail from "@/pages/AuditTrail";
+import ApplicationManagement from "@/pages/ApplicationManagement";
 import ServiceSelection from "@/pages/ServiceSelection";
 import ComplaintForm from "@/pages/ComplaintForm";
 import DemolitionForm from "@/pages/DemolitionForm";
@@ -26,7 +31,14 @@ function Router() {
           <Route path="/submit/demolition_notice" component={DemolitionForm} />
         </>
       ) : (
-        <Route path="/" component={Home} />
+        <>
+          <Route path="/" component={Home} />
+          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/inbox" component={EnhancedInbox} />
+          <Route path="/time-management" component={TimesheetManagement} />
+          <Route path="/audit-trail" component={AuditTrail} />
+          <Route path="/application-management" component={ApplicationManagement} />
+        </>
       )}
       <Route component={NotFound} />
     </Switch>
