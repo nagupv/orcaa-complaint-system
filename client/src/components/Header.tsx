@@ -109,10 +109,6 @@ export default function Header() {
                 Audit Trail
               </Link>
               
-              <Link href="/enhanced-search" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                Enhanced Search
-              </Link>
-              
               {/* Application Management Dropdown - No Action on Main Link */}
               <div className="relative group">
                 <span className="dropdown-trigger text-gray-700 hover:text-orcaa-blue font-medium flex items-center gap-1 cursor-pointer">
