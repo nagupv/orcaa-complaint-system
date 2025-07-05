@@ -1007,7 +1007,144 @@ export class DatabaseStorage implements IStorage {
       .set({ status: 'completed' })
       .where(eq(inboxItems.workflowTaskId, id));
 
+    // **CREATE NEXT TASK IN WORKFLOW SEQUENCE**
+    try {
+      await this.createNextWorkflowTask(completedTask);
+    } catch (error) {
+      console.error('Error creating next workflow task:', error);
+      // Don't fail the completion if next task creation fails
+    }
+
     return completedTask;
+  }
+
+  // Create the next task in the workflow sequence
+  async createNextWorkflowTask(completedTask: WorkflowTask): Promise<void> {
+    const workflow = await this.getWorkflowById(completedTask.workflowId);
+    if (!workflow) {
+      return;
+    }
+
+    const workflowData = workflow.workflowData as any;
+    if (!workflowData.nodes || !workflowData.edges) {
+      return;
+    }
+
+    // Find the current task node in the workflow
+    const currentTaskData = completedTask.taskData as any;
+    const currentNodeId = currentTaskData?.nodeId;
+    
+    if (!currentNodeId) {
+      return;
+    }
+
+    // Find the next task edge from the current node
+    const nextEdge = workflowData.edges.find((edge: any) => edge.source === currentNodeId);
+    if (!nextEdge) {
+      return; // No next task (end of workflow)
+    }
+
+    // Find the next task node
+    const nextNode = workflowData.nodes.find((node: any) => node.id === nextEdge.target);
+    if (!nextNode) {
+      return;
+    }
+
+    // Check if it's an end node
+    if (nextNode.type === 'end') {
+      return; // Workflow completed
+    }
+
+    // Define task types that create workflow tasks
+    const taskTypes = [
+      'INITIAL_INSPECTION',
+      'ASSESSMENT', 
+      'ENFORCEMENT_ACTION',
+      'RESOLUTION',
+      'SAFETY_INSPECTION',
+      'REJECT_DEMOLITION'
+    ];
+
+    const nodeType = nextNode.type?.toUpperCase().replace(/\s+/g, '_');
+    
+    if (!taskTypes.includes(nodeType)) {
+      return; // Not a task node
+    }
+
+    // Check if this task already exists
+    const existingTasks = await this.getWorkflowTasks({
+      complaintId: completedTask.complaintId,
+      taskType: nodeType
+    });
+    
+    if (existingTasks.length > 0) {
+      return; // Task already exists
+    }
+
+    // Determine assigned role and default user
+    let assignedRole = 'field_staff';
+    
+    switch (nodeType) {
+      case 'INITIAL_INSPECTION':
+      case 'SAFETY_INSPECTION':
+        assignedRole = 'field_staff';
+        break;
+      case 'ASSESSMENT':
+        assignedRole = 'supervisor';
+        break;
+      case 'ENFORCEMENT_ACTION':
+        assignedRole = 'admin';
+        break;
+      case 'RESOLUTION':
+        assignedRole = 'approver';
+        break;
+      case 'REJECT_DEMOLITION':
+        assignedRole = 'admin';
+        break;
+    }
+
+    // Find a user with the required role
+    const users = await this.getAllUsers();
+    const assignedUser = users.find(user => {
+      const userRoles = typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles;
+      return userRoles.includes(assignedRole);
+    });
+
+    if (!assignedUser) {
+      return;
+    }
+
+    // Create the next task
+    const nextTask = await this.createWorkflowTask({
+      complaintId: completedTask.complaintId,
+      workflowId: completedTask.workflowId,
+      taskType: nodeType,
+      taskName: nextNode.data?.label || nodeType.replace(/_/g, ' '),
+      assignedTo: assignedUser.id,
+      assignedRole,
+      status: 'pending',
+      priority: 'medium',
+      taskData: {
+        ...nextNode.data,
+        nodeId: nextNode.id,
+        workflowSequence: (currentTaskData?.workflowSequence || 0) + 1
+      }
+    });
+
+    // Create inbox item for the new task
+    await this.createInboxItem({
+      userId: assignedUser.id,
+      itemType: 'WORKFLOW_TASK',
+      itemId: nextTask.id,
+      title: `New Task: ${nextTask.taskName}`,
+      description: `${nextTask.taskType.replace(/_/g, ' ')} for complaint`,
+      priority: nextTask.priority,
+      workflowTaskId: nextTask.id,
+      complaintId: nextTask.complaintId,
+      isRead: false
+    });
+
+    console.log(`Created next workflow task: ${nextTask.taskName} for complaint ${completedTask.complaintId}`);
   }
 
   // Inbox operations
@@ -1100,55 +1237,72 @@ export class DatabaseStorage implements IStorage {
       'REJECT_DEMOLITION'
     ];
 
-    // Extract task nodes from workflow
-    if (workflowData.nodes) {
-      for (const node of workflowData.nodes) {
-        const nodeType = node.type?.toUpperCase().replace(/\s+/g, '_');
+    // **SEQUENTIAL WORKFLOW LOGIC** - Only create the first task initially
+    // Other tasks will be created when previous tasks are completed
+    if (workflowData.nodes && workflowData.edges) {
+      // Find the start node
+      const startNode = workflowData.nodes.find((node: any) => node.type === 'start');
+      if (!startNode) {
+        throw new Error('Workflow must have a start node');
+      }
+
+      // Find the first task after start
+      const firstTaskEdge = workflowData.edges.find((edge: any) => edge.source === startNode.id);
+      if (firstTaskEdge) {
+        const firstTaskNode = workflowData.nodes.find((node: any) => node.id === firstTaskEdge.target);
         
-        if (taskTypes.includes(nodeType)) {
-          // Determine assigned role and default user
-          let assignedRole = 'field_staff';
+        if (firstTaskNode) {
+          const nodeType = firstTaskNode.type?.toUpperCase().replace(/\s+/g, '_');
           
-          // Role mapping based on task type
-          switch (nodeType) {
-            case 'INITIAL_INSPECTION':
-            case 'SAFETY_INSPECTION':
-              assignedRole = 'field_staff';
-              break;
-            case 'ASSESSMENT':
-              assignedRole = 'supervisor';
-              break;
-            case 'ENFORCEMENT_ACTION':
-              assignedRole = 'admin';
-              break;
-            case 'RESOLUTION':
-              assignedRole = 'approver';
-              break;
-            case 'REJECT_DEMOLITION':
-              assignedRole = 'admin';
-              break;
-          }
+          if (taskTypes.includes(nodeType)) {
+            // Determine assigned role and default user
+            let assignedRole = 'field_staff';
+            
+            // Role mapping based on task type
+            switch (nodeType) {
+              case 'INITIAL_INSPECTION':
+              case 'SAFETY_INSPECTION':
+                assignedRole = 'field_staff';
+                break;
+              case 'ASSESSMENT':
+                assignedRole = 'supervisor';
+                break;
+              case 'ENFORCEMENT_ACTION':
+                assignedRole = 'admin';
+                break;
+              case 'RESOLUTION':
+                assignedRole = 'approver';
+                break;
+              case 'REJECT_DEMOLITION':
+                assignedRole = 'admin';
+                break;
+            }
 
-          // Find a user with the required role
-          const users = await this.getAllUsers();
-          const assignedUser = users.find(user => {
-            const userRoles = typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles;
-            return userRoles.includes(assignedRole);
-          });
-
-          if (assignedUser) {
-            const task = await this.createWorkflowTask({
-              complaintId,
-              workflowId,
-              taskType: nodeType,
-              taskName: node.data?.label || nodeType.replace(/_/g, ' '),
-              assignedTo: assignedUser.id,
-              assignedRole,
-              status: 'pending',
-              priority: 'medium',
-              taskData: node.data || {}
+            // Find a user with the required role
+            const users = await this.getAllUsers();
+            const assignedUser = users.find(user => {
+              const userRoles = typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles;
+              return userRoles.includes(assignedRole);
             });
-            tasks.push(task);
+
+            if (assignedUser) {
+              const task = await this.createWorkflowTask({
+                complaintId,
+                workflowId,
+                taskType: nodeType,
+                taskName: firstTaskNode.data?.label || nodeType.replace(/_/g, ' '),
+                assignedTo: assignedUser.id,
+                assignedRole,
+                status: 'pending',
+                priority: 'medium',
+                taskData: {
+                  ...firstTaskNode.data,
+                  nodeId: firstTaskNode.id,
+                  workflowSequence: 1
+                }
+              });
+              tasks.push(task);
+            }
           }
         }
       }
