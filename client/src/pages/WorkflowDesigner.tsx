@@ -23,6 +23,13 @@ import 'reactflow/dist/style.css';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Mail, 
   FileText, 
@@ -44,7 +51,8 @@ import {
   ZoomIn,
   ZoomOut,
   Move,
-  RotateCw
+  RotateCw,
+  FolderOpen
 } from 'lucide-react';
 
 // Define the node types with their properties
@@ -592,6 +600,71 @@ export default function WorkflowDesigner() {
   const [selectedEdgeType, setSelectedEdgeType] = useState<string>('default');
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  
+  // Workflow save/load state
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+  const [loadDialogOpen, setLoadDialogOpen] = useState(false);
+  const [workflowName, setWorkflowName] = useState('');
+  const [workflowDescription, setWorkflowDescription] = useState('');
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState<number | null>(null);
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Fetch workflows
+  const { data: workflows = [], isLoading: workflowsLoading } = useQuery<any[]>({
+    queryKey: ['/api/workflows'],
+  });
+
+  // Save workflow mutation
+  const saveWorkflowMutation = useMutation({
+    mutationFn: async (data: { name: string; description: string; workflowData: any }) => {
+      if (selectedWorkflowId) {
+        return apiRequest('PUT', `/api/workflows/${selectedWorkflowId}`, data);
+      } else {
+        return apiRequest('POST', '/api/workflows', data);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/workflows'] });
+      setSaveDialogOpen(false);
+      setWorkflowName('');
+      setWorkflowDescription('');
+      setSelectedWorkflowId(null);
+      toast({
+        title: selectedWorkflowId ? "Workflow Updated" : "Workflow Saved",
+        description: selectedWorkflowId ? "Workflow has been updated successfully." : "Workflow has been saved successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to save workflow. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete workflow mutation
+  const deleteWorkflowMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest('DELETE', `/api/workflows/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/workflows'] });
+      toast({
+        title: "Workflow Deleted",
+        description: "Workflow has been deleted successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete workflow. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -716,6 +789,80 @@ export default function WorkflowDesigner() {
     setReactFlowInstance(rfi);
     setZoomLevel(rfi.getZoom());
   }, []);
+
+  // Workflow handlers
+  const handleSaveWorkflow = useCallback(() => {
+    const workflowData = {
+      nodes,
+      edges,
+      zoomLevel,
+      analytics: {
+        totalNodes: nodes.length,
+        totalConnections: edges.length,
+        nodeTypes: nodes.reduce((acc, node) => {
+          const label = node.data.label;
+          acc[label] = (acc[label] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>),
+        connectionTypes: edges.reduce((acc, edge) => {
+          acc[edge.type || 'default'] = (acc[edge.type || 'default'] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      }
+    };
+
+    saveWorkflowMutation.mutate({
+      name: workflowName,
+      description: workflowDescription,
+      workflowData
+    });
+  }, [nodes, edges, zoomLevel, workflowName, workflowDescription, saveWorkflowMutation]);
+
+  const handleLoadWorkflow = useCallback((workflow: any) => {
+    if (workflow.workflowData) {
+      const data = workflow.workflowData;
+      if (data.nodes) {
+        setNodes(data.nodes.map((node: any) => ({
+          ...node,
+          data: {
+            ...node.data,
+            onDelete: onDeleteNode
+          }
+        })));
+      }
+      if (data.edges) {
+        setEdges(data.edges.map((edge: any) => ({
+          ...edge,
+          data: {
+            ...edge.data,
+            onDelete: onDeleteEdge
+          }
+        })));
+      }
+      if (data.zoomLevel && reactFlowInstance) {
+        reactFlowInstance.zoomTo(data.zoomLevel);
+        setZoomLevel(data.zoomLevel);
+      }
+    }
+    setLoadDialogOpen(false);
+    toast({
+      title: "Workflow Loaded",
+      description: `"${workflow.name}" has been loaded successfully.`,
+    });
+  }, [setNodes, setEdges, reactFlowInstance, onDeleteNode, onDeleteEdge, toast]);
+
+  const handleEditWorkflow = useCallback((workflow: any) => {
+    setSelectedWorkflowId(workflow.id);
+    setWorkflowName(workflow.name);
+    setWorkflowDescription(workflow.description || '');
+    setSaveDialogOpen(true);
+  }, []);
+
+  const handleDeleteWorkflow = useCallback((id: number) => {
+    if (confirm('Are you sure you want to delete this workflow?')) {
+      deleteWorkflowMutation.mutate(id);
+    }
+  }, [deleteWorkflowMutation]);
 
   return (
     <div className="space-y-6">
@@ -849,14 +996,135 @@ export default function WorkflowDesigner() {
                 <div>
                   <h3 className="font-semibold mb-3">Actions</h3>
                   <div className="space-y-2">
-                    <Button
-                      onClick={onSaveWorkflow}
-                      size="sm"
-                      className="w-full justify-start"
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      Save Workflow
-                    </Button>
+                    <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={() => {
+                            setSelectedWorkflowId(null);
+                            setWorkflowName('');
+                            setWorkflowDescription('');
+                          }}
+                        >
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Workflow
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>{selectedWorkflowId ? 'Update' : 'Save'} Workflow</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="name">Name *</Label>
+                            <Input
+                              id="name"
+                              value={workflowName}
+                              onChange={(e) => setWorkflowName(e.target.value)}
+                              placeholder="Enter workflow name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="description">Description</Label>
+                            <Textarea
+                              id="description"
+                              value={workflowDescription}
+                              onChange={(e) => setWorkflowDescription(e.target.value)}
+                              placeholder="Enter workflow description (optional)"
+                              rows={3}
+                            />
+                          </div>
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setSaveDialogOpen(false);
+                                setSelectedWorkflowId(null);
+                                setWorkflowName('');
+                                setWorkflowDescription('');
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={handleSaveWorkflow}
+                              disabled={!workflowName.trim() || saveWorkflowMutation.isPending}
+                            >
+                              {saveWorkflowMutation.isPending ? 'Saving...' : (selectedWorkflowId ? 'Update' : 'Save')}
+                            </Button>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Dialog open={loadDialogOpen} onOpenChange={setLoadDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start"
+                        >
+                          <FolderOpen className="h-4 w-4 mr-2" />
+                          Load Workflow
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Load Workflow</DialogTitle>
+                        </DialogHeader>
+                        <div className="max-h-96 overflow-y-auto">
+                          {workflowsLoading ? (
+                            <div className="text-center py-4">Loading workflows...</div>
+                          ) : workflows.length === 0 ? (
+                            <div className="text-center py-4 text-muted-foreground">No saved workflows found</div>
+                          ) : (
+                            <div className="space-y-2">
+                              {workflows.map((workflow: any) => (
+                                <div key={workflow.id} className="border rounded p-3">
+                                  <div className="flex justify-between items-start">
+                                    <div className="flex-1">
+                                      <h4 className="font-medium">{workflow.name}</h4>
+                                      {workflow.description && (
+                                        <p className="text-sm text-muted-foreground mt-1">{workflow.description}</p>
+                                      )}
+                                      <p className="text-xs text-muted-foreground mt-2">
+                                        Created: {new Date(workflow.createdAt).toLocaleDateString()}
+                                      </p>
+                                    </div>
+                                    <div className="flex space-x-1">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleLoadWorkflow(workflow)}
+                                      >
+                                        Load
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleEditWorkflow(workflow)}
+                                      >
+                                        Edit
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => handleDeleteWorkflow(workflow.id)}
+                                        disabled={deleteWorkflowMutation.isPending}
+                                      >
+                                        Delete
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+
                     <Button
                       onClick={onResetWorkflow}
                       variant="outline"

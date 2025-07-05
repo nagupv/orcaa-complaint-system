@@ -1201,6 +1201,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Workflow routes
+  app.get('/api/workflows', isAuthenticated, async (req, res) => {
+    try {
+      const workflows = await storage.getWorkflows();
+      res.json(workflows);
+    } catch (error) {
+      console.error("Error fetching workflows:", error);
+      res.status(500).json({ message: "Failed to fetch workflows" });
+    }
+  });
+
+  app.post('/api/workflows', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const workflowData = {
+        ...req.body,
+        createdBy: userId,
+      };
+      const workflow = await storage.createWorkflow(workflowData);
+      res.json(workflow);
+    } catch (error) {
+      console.error("Error creating workflow:", error);
+      res.status(500).json({ message: "Failed to create workflow" });
+    }
+  });
+
+  app.put('/api/workflows/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const workflow = await storage.updateWorkflow(id, req.body);
+      res.json(workflow);
+    } catch (error) {
+      console.error("Error updating workflow:", error);
+      res.status(500).json({ message: "Failed to update workflow" });
+    }
+  });
+
+  app.delete('/api/workflows/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteWorkflow(id);
+      res.json({ message: "Workflow deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting workflow:", error);
+      res.status(500).json({ message: "Failed to delete workflow" });
+    }
+  });
+
+  app.get('/api/workflows/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const workflow = await storage.getWorkflowById(id);
+      if (!workflow) {
+        return res.status(404).json({ message: "Workflow not found" });
+      }
+      res.json(workflow);
+    } catch (error) {
+      console.error("Error fetching workflow:", error);
+      res.status(500).json({ message: "Failed to fetch workflow" });
+    }
+  });
+
   // Serve uploaded files
   app.use('/uploads', express.static('./uploads'));
 

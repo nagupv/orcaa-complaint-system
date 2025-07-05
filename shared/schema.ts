@@ -221,6 +221,17 @@ export const overtimeRequests = pgTable("overtime_requests", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Workflow storage table
+export const workflows = pgTable("workflows", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  workflowData: jsonb("workflow_data").notNull(), // stores nodes, edges, and metadata
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const complaintsRelations = relations(complaints, ({ one, many }) => ({
   assignedUser: one(users, {
@@ -307,6 +318,13 @@ export const overtimeRequestsRelations = relations(overtimeRequests, ({ one }) =
   }),
 }));
 
+export const workflowsRelations = relations(workflows, ({ one }) => ({
+  creator: one(users, {
+    fields: [workflows.createdBy],
+    references: [users.id],
+  }),
+}));
+
 // Zod schemas
 export const insertComplaintSchema = createInsertSchema(complaints).omit({
   id: true,
@@ -364,6 +382,12 @@ export const insertOvertimeRequestSchema = createInsertSchema(overtimeRequests).
   updatedAt: true,
 });
 
+export const insertWorkflowSchema = createInsertSchema(workflows).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -386,3 +410,5 @@ export type LeaveRequest = typeof leaveRequests.$inferSelect;
 export type InsertLeaveRequest = z.infer<typeof insertLeaveRequestSchema>;
 export type OvertimeRequest = typeof overtimeRequests.$inferSelect;
 export type InsertOvertimeRequest = z.infer<typeof insertOvertimeRequestSchema>;
+export type Workflow = typeof workflows.$inferSelect;
+export type InsertWorkflow = z.infer<typeof insertWorkflowSchema>;
