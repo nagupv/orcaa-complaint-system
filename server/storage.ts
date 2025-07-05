@@ -1556,23 +1556,24 @@ export class DatabaseStorage implements IStorage {
     // **SEQUENTIAL WORKFLOW LOGIC** - Only create the first task initially
     // Other tasks will be created when previous tasks are completed
     if (workflowData.nodes && workflowData.edges) {
-      // Find the start node
-      const startNode = workflowData.nodes.find((node: any) => node.type === 'start');
-      if (!startNode) {
-        throw new Error('Workflow must have a start node');
-      }
-
-      // Find the first task after start
-      const firstTaskEdge = workflowData.edges.find((edge: any) => edge.source === startNode.id);
-      if (firstTaskEdge) {
-        const firstTaskNode = workflowData.nodes.find((node: any) => node.id === firstTaskEdge.target);
+      // Find all task nodes (type: "task" or type: "decision")
+      const taskNodes = workflowData.nodes.filter((node: any) => 
+        node.type === 'task' || node.type === 'decision'
+      );
+      
+      // Find the first task node directly
+      const firstTaskNode = workflowData.nodes.find((node: any) => 
+        node.type === 'task' || node.type === 'decision'
+      );
+      
+      if (firstTaskNode) {
+        // Convert node label to task type format
+        const nodeLabel = firstTaskNode.data?.label || firstTaskNode.type;
+        const nodeType = nodeLabel?.toUpperCase().replace(/\s+/g, '_');
         
-        if (firstTaskNode) {
-          // Convert node label to task type format
-          const nodeLabel = firstTaskNode.data?.label || firstTaskNode.type;
-          const nodeType = nodeLabel?.toUpperCase().replace(/\s+/g, '_');
-          
-          if (taskTypes.includes(nodeType)) {
+        console.log(`Creating first workflow task: ${nodeType} (${nodeLabel})`);
+        
+        if (taskTypes.includes(nodeType) || firstTaskNode.type === 'task' || firstTaskNode.type === 'decision') {
             // Use Database-driven Role-Action Mapping to determine required roles
             const actionId = mapTaskTypeToActionId(nodeType);
             const requiredRoles = actionId ? await getRequiredRolesForAction(actionId) : [];
