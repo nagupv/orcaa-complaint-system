@@ -73,13 +73,7 @@ export default function ApplicationManagement() {
     } else {
       const activeItem = menuItems.find(item => item.id === activeSection);
       const Component = activeItem?.component;
-      return Component ? <Component /> : null;
-    }
-  };
-
-  return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      return Component ? <Component /> : (
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-orcaa-blue">
@@ -90,63 +84,45 @@ export default function ApplicationManagement() {
             </p>
           </CardHeader>
           <CardContent>
-            {/* Hover Navigation Menu */}
-            <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 pb-4">
-              {menuItems.map((item) => (
-                <div key={item.id} className="relative group">
-                  <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      setActiveSection(item.id);
-                      window.history.replaceState(null, '', `/application-management#${item.id}`);
-                    }}
-                    className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-1 hover:no-underline ${
-                      activeSection === item.id
-                        ? "bg-orcaa-blue text-white"
-                        : "text-orcaa-blue hover:bg-orcaa-blue hover:text-white border border-orcaa-blue"
-                    }`}
-                  >
-                    {item.label}
-                    {item.submenu && <ChevronDown className="h-4 w-4" />}
-                  </a>
-                  
-                  {/* Dropdown for Mappings */}
-                  {item.submenu && (
-                    <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                      <div className="py-1">
-                        {item.submenu.map((subItem) => (
-                          <a
-                            key={subItem.id}
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setActiveSection("mappings");
-                              setActiveMappingSection(subItem.id);
-                              window.history.replaceState(null, '', `/application-management#${subItem.id}`);
-                            }}
-                            className={`block w-full text-left px-4 py-2 text-sm transition-colors hover:no-underline ${
-                              activeSection === "mappings" && activeMappingSection === subItem.id
-                                ? "bg-orcaa-blue text-white"
-                                : "text-orcaa-blue hover:bg-orcaa-blue hover:text-white"
-                            }`}
-                          >
-                            {subItem.label}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Content Area */}
-            <div className="mt-6">
-              {renderContent()}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="p-4 border rounded-lg hover:bg-gray-50">
+                <h3 className="font-semibold text-orcaa-blue mb-2">User Management</h3>
+                <p className="text-sm text-gray-600">Create, update, and manage user accounts</p>
+              </div>
+              <div className="p-4 border rounded-lg hover:bg-gray-50">
+                <h3 className="font-semibold text-orcaa-blue mb-2">Role Management</h3>
+                <p className="text-sm text-gray-600">Define and manage user roles</p>
+              </div>
+              <div className="p-4 border rounded-lg hover:bg-gray-50">
+                <h3 className="font-semibold text-orcaa-blue mb-2">List Values</h3>
+                <p className="text-sm text-gray-600">Configure system list values</p>
+              </div>
+              <div className="p-4 border rounded-lg hover:bg-gray-50">
+                <h3 className="font-semibold text-orcaa-blue mb-2">Workflow Designer</h3>
+                <p className="text-sm text-gray-600">Design and configure workflows</p>
+              </div>
+              <div className="p-4 border rounded-lg hover:bg-gray-50">
+                <h3 className="font-semibold text-orcaa-blue mb-2">Workflow Templates</h3>
+                <p className="text-sm text-gray-600">Manage workflow templates</p>
+              </div>
+              <div className="p-4 border rounded-lg hover:bg-gray-50">
+                <h3 className="font-semibold text-orcaa-blue mb-2">User Role Report</h3>
+                <p className="text-sm text-gray-600">View user role assignments</p>
+              </div>
             </div>
           </CardContent>
         </Card>
+      );
+    }
+  };
+
+  return (
+    <div className="bg-gray-50 min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Content Area - Navigation handled by header dropdown */}
+        <div>
+          {renderContent()}
+        </div>
       </div>
     </div>
   );
