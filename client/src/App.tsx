@@ -28,6 +28,7 @@ import ServiceSelection from "@/pages/ServiceSelection";
 import ComplaintForm from "@/pages/ComplaintForm";
 import DemolitionForm from "@/pages/DemolitionForm";
 import ComplaintSearch from "@/pages/ComplaintSearch";
+import EnhancedComplaintSearch from "@/pages/EnhancedComplaintSearch";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -62,6 +63,7 @@ function Router() {
           <Route path="/user-role-mapping" component={UserRoleMapping} />
           <Route path="/role-action-mapping" component={RoleActionMapping} />
           <Route path="/user-role-report" component={UserRoleReport} />
+          <Route path="/enhanced-search" component={EnhancedComplaintSearch} />
         </>
       )}
       <Route component={NotFound} />

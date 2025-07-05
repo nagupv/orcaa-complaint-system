@@ -221,6 +221,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Advanced search endpoint for enhanced complaint search
+  app.get('/api/complaints/search', isAuthenticated, async (req, res) => {
+    try {
+      const filters = {
+        textSearch: req.query.textSearch as string,
+        complaintType: req.query.complaintType as string,
+        status: req.query.status as string,
+        priority: req.query.priority as string,
+        problemType: req.query.problemType as string,
+        city: req.query.city as string,
+        county: req.query.county as string,
+        assignedTo: req.query.assignedTo as string,
+        dateFrom: req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined,
+        dateTo: req.query.dateTo ? new Date(req.query.dateTo as string) : undefined
+      };
+
+      const complaints = await storage.searchComplaints(filters);
+      res.json(complaints);
+    } catch (error) {
+      console.error('Error searching complaints:', error);
+      res.status(500).json({ error: 'Failed to search complaints' });
+    }
+  });
+
+  // Analytics endpoint for comprehensive dashboard analytics
+  app.get('/api/complaints/analytics', isAuthenticated, async (req, res) => {
+    try {
+      const filters = {
+        textSearch: req.query.textSearch as string,
+        complaintType: req.query.complaintType as string,
+        status: req.query.status as string,
+        priority: req.query.priority as string,
+        problemType: req.query.problemType as string,
+        city: req.query.city as string,
+        county: req.query.county as string,
+        assignedTo: req.query.assignedTo as string,
+        dateFrom: req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined,
+        dateTo: req.query.dateTo ? new Date(req.query.dateTo as string) : undefined
+      };
+
+      const analytics = await storage.getComplaintsAnalytics(filters);
+      res.json(analytics);
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      res.status(500).json({ error: 'Failed to fetch analytics' });
+    }
+  });
+
+  // Filter options endpoint for dropdown population
+  app.get('/api/complaints/filter-options', isAuthenticated, async (req, res) => {
+    try {
+      const options = await storage.getComplaintFilterOptions();
+      res.json(options);
+    } catch (error) {
+      console.error('Error fetching filter options:', error);
+      res.status(500).json({ error: 'Failed to fetch filter options' });
+    }
+  });
+
   app.get('/api/complaints/:id', isAuthenticated, async (req, res) => {
     try {
       const complaintId = parseInt(req.params.id);

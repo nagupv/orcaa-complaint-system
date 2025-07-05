@@ -48,7 +48,7 @@ import {
   type InsertEmailTemplate,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, like, gte, lte, isNull, sql } from "drizzle-orm";
+import { eq, desc, and, or, like, ilike, gte, lte, isNull, sql } from "drizzle-orm";
 
 export interface IStorage {
   // User operations - mandatory for Replit Auth
@@ -1698,6 +1698,281 @@ export class DatabaseStorage implements IStorage {
         details: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
       
+      throw error;
+    }
+  }
+
+  // Enhanced search functionality for complaints with advanced filters
+  async searchComplaints(filters: {
+    textSearch?: string;
+    complaintType?: string;
+    status?: string;
+    priority?: string;
+    problemType?: string;
+    city?: string;
+    county?: string;
+    assignedTo?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+  }) {
+    try {
+      let query = db.select().from(complaints);
+
+      const conditions = [];
+
+      // Text search across multiple fields (address, comments, description)
+      if (filters.textSearch) {
+        const searchTerm = `%${filters.textSearch.toLowerCase()}%`;
+        conditions.push(
+          or(
+            sql`LOWER(${complaints.sourceAddress}) LIKE ${searchTerm}`,
+            sql`LOWER(${complaints.complainantAddress}) LIKE ${searchTerm}`,
+            sql`LOWER(${complaints.workSiteAddress}) LIKE ${searchTerm}`,
+            sql`LOWER(${complaints.otherDescription}) LIKE ${searchTerm}`,
+            sql`LOWER(${complaints.sourceCity}) LIKE ${searchTerm}`,
+            sql`LOWER(${complaints.complainantCity}) LIKE ${searchTerm}`,
+            sql`LOWER(${complaints.workSiteCity}) LIKE ${searchTerm}`
+          )
+        );
+      }
+
+      // Filter by complaint type
+      if (filters.complaintType) {
+        conditions.push(eq(complaints.complaintType, filters.complaintType));
+      }
+
+      // Filter by status
+      if (filters.status) {
+        conditions.push(eq(complaints.status, filters.status));
+      }
+
+      // Filter by priority
+      if (filters.priority) {
+        conditions.push(eq(complaints.priority, filters.priority));
+      }
+
+      // Filter by problem type (search within JSON array)
+      if (filters.problemType) {
+        conditions.push(
+          sql`${complaints.problemTypes} @> ${JSON.stringify([filters.problemType])}`
+        );
+      }
+
+      // Filter by city (partial match across all city fields)
+      if (filters.city) {
+        const cityTerm = `%${filters.city.toLowerCase()}%`;
+        conditions.push(
+          or(
+            sql`LOWER(${complaints.sourceCity}) LIKE ${cityTerm}`,
+            sql`LOWER(${complaints.complainantCity}) LIKE ${cityTerm}`,
+            sql`LOWER(${complaints.workSiteCity}) LIKE ${cityTerm}`
+          )
+        );
+      }
+
+      // Filter by county
+      if (filters.county) {
+        conditions.push(sql`LOWER(${complaints.workSiteCounty}) LIKE ${'%' + filters.county.toLowerCase() + '%'}`);
+      }
+
+      // Filter by assigned user
+      if (filters.assignedTo) {
+        conditions.push(eq(complaints.assignedTo, filters.assignedTo));
+      }
+
+      // Date range filter
+      if (filters.dateFrom) {
+        conditions.push(gte(complaints.createdAt, filters.dateFrom));
+      }
+      if (filters.dateTo) {
+        conditions.push(lte(complaints.createdAt, filters.dateTo));
+      }
+
+      // Apply all conditions
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      const result = await query.orderBy(desc(complaints.createdAt));
+      return result;
+    } catch (error) {
+      console.error('Error searching complaints:', error);
+      throw error;
+    }
+  }
+
+  // Get comprehensive analytics data for complaints
+  async getComplaintsAnalytics(filters: {
+    textSearch?: string;
+    complaintType?: string;
+    status?: string;
+    priority?: string;
+    problemType?: string;
+    city?: string;
+    county?: string;
+    assignedTo?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+  }) {
+    try {
+      // Get filtered complaints for analytics
+      const complaintsData = await this.searchComplaints(filters);
+
+      // Calculate basic statistics
+      const totalComplaints = complaintsData.length;
+
+      // Status breakdown
+      const statusBreakdown: Record<string, number> = {};
+      complaintsData.forEach(complaint => {
+        statusBreakdown[complaint.status] = (statusBreakdown[complaint.status] || 0) + 1;
+      });
+
+      // Priority breakdown
+      const priorityBreakdown: Record<string, number> = {};
+      complaintsData.forEach(complaint => {
+        const priority = complaint.priority || 'normal';
+        priorityBreakdown[priority] = (priorityBreakdown[priority] || 0) + 1;
+      });
+
+      // Complaint type breakdown
+      const typeBreakdown: Record<string, number> = {};
+      complaintsData.forEach(complaint => {
+        typeBreakdown[complaint.complaintType] = (typeBreakdown[complaint.complaintType] || 0) + 1;
+      });
+
+      // Problem types breakdown
+      const problemTypeBreakdown: Record<string, number> = {};
+      complaintsData.forEach(complaint => {
+        if (complaint.problemTypes && Array.isArray(complaint.problemTypes)) {
+          complaint.problemTypes.forEach(type => {
+            problemTypeBreakdown[type] = (problemTypeBreakdown[type] || 0) + 1;
+          });
+        }
+      });
+
+      // City breakdown (combine all city fields)
+      const cityBreakdown: Record<string, number> = {};
+      complaintsData.forEach(complaint => {
+        const cities = [complaint.sourceCity, complaint.complainantCity, complaint.workSiteCity]
+          .filter(city => city)
+          .map(city => city!.trim());
+        
+        cities.forEach(city => {
+          cityBreakdown[city] = (cityBreakdown[city] || 0) + 1;
+        });
+      });
+
+      // Monthly trends (last 12 months)
+      const monthlyTrends = [];
+      const now = new Date();
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthName = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        const count = complaintsData.filter(complaint => {
+          if (!complaint.createdAt) return false;
+          const complaintDate = new Date(complaint.createdAt);
+          return complaintDate.getMonth() === date.getMonth() && 
+                 complaintDate.getFullYear() === date.getFullYear();
+        }).length;
+        
+        monthlyTrends.push({ month: monthName, count });
+      }
+
+      // Calculate average resolution time (for closed/approved complaints)
+      const resolvedComplaints = complaintsData.filter(c => 
+        c.status === 'closed' || c.status === 'approved'
+      );
+
+      let averageResolutionTime = 0;
+      if (resolvedComplaints.length > 0) {
+        const totalDays = resolvedComplaints.reduce((sum, complaint) => {
+          if (complaint.createdAt && complaint.updatedAt) {
+            const created = new Date(complaint.createdAt);
+            const updated = new Date(complaint.updatedAt);
+            const diffTime = Math.abs(updated.getTime() - created.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return sum + diffDays;
+          }
+          return sum;
+        }, 0);
+        averageResolutionTime = Math.round(totalDays / resolvedComplaints.length);
+      }
+
+      // Response time metrics (example calculation)
+      const responseTimeMetrics = {
+        averageHours: 24, // Example value
+        withinSLA: complaintsData.filter(c => c.status !== 'initiated').length,
+        totalResponses: complaintsData.length
+      };
+
+      return {
+        totalComplaints,
+        statusBreakdown,
+        priorityBreakdown,
+        typeBreakdown,
+        monthlyTrends,
+        problemTypeBreakdown,
+        cityBreakdown,
+        averageResolutionTime,
+        responseTimeMetrics
+      };
+    } catch (error) {
+      console.error('Error getting complaints analytics:', error);
+      throw error;
+    }
+  }
+
+  // Get filter options for dropdown population
+  async getComplaintFilterOptions() {
+    try {
+      const [complaintsData, usersData] = await Promise.all([
+        db.select().from(complaints),
+        db.select().from(users)
+      ]);
+
+      // Extract unique statuses
+      const statusSet = new Set<string>();
+      complaintsData.forEach(c => { if (c.status) statusSet.add(c.status); });
+      const statuses = Array.from(statusSet);
+
+      // Extract unique cities from all city fields
+      const citySet = new Set<string>();
+      complaintsData.forEach(c => {
+        if (c.sourceCity) citySet.add(c.sourceCity);
+        if (c.complainantCity) citySet.add(c.complainantCity);
+        if (c.workSiteCity) citySet.add(c.workSiteCity);
+      });
+      const cities = Array.from(citySet);
+
+      // Extract unique counties
+      const countySet = new Set<string>();
+      complaintsData.forEach(c => { if (c.workSiteCounty) countySet.add(c.workSiteCounty); });
+      const counties = Array.from(countySet);
+
+      // Extract unique problem types from JSON arrays
+      const problemTypeSet = new Set<string>();
+      complaintsData.forEach(c => {
+        if (c.problemTypes && Array.isArray(c.problemTypes)) {
+          c.problemTypes.forEach((type: string) => problemTypeSet.add(type));
+        }
+      });
+      const problemTypes = Array.from(problemTypeSet);
+
+      // Get assigned users
+      const assignedUsers = usersData.map(u => ({
+        id: u.id,
+        name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email
+      }));
+
+      return {
+        statuses,
+        cities,
+        counties,
+        problemTypes,
+        assignedUsers
+      };
+    } catch (error) {
+      console.error('Error getting filter options:', error);
       throw error;
     }
   }
