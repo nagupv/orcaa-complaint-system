@@ -53,11 +53,119 @@ import {
   Move,
   RotateCw,
   FolderOpen,
-  Settings
+  Settings,
+  Play,
+  Square,
+  GitBranch,
+  Shield,
+  Eye,
+  Gavel,
+  Building,
+  AlertTriangle
 } from 'lucide-react';
 
 // Define the node types with their properties
 const nodeTypes = [
+  // Core workflow nodes
+  {
+    id: 'start',
+    type: 'custom',
+    label: 'Start',
+    icon: Play,
+    color: 'bg-green-100 border-green-400 text-green-800',
+    description: 'Start point of the workflow'
+  },
+  {
+    id: 'end',
+    type: 'custom',
+    label: 'End',
+    icon: Square,
+    color: 'bg-red-100 border-red-400 text-red-800',
+    description: 'End point of the workflow'
+  },
+  {
+    id: 'task',
+    type: 'custom',
+    label: 'Task',
+    icon: CheckCircle,
+    color: 'bg-blue-100 border-blue-300 text-blue-800',
+    description: 'General task or activity'
+  },
+  {
+    id: 'decision',
+    type: 'custom',
+    label: 'Decision',
+    icon: GitBranch,
+    color: 'bg-yellow-100 border-yellow-300 text-yellow-800',
+    description: 'Decision point with multiple outcomes'
+  },
+  // Specific task nodes for Air Quality workflows
+  {
+    id: 'initial-inspection',
+    type: 'custom',
+    label: 'Initial Inspection',
+    icon: Eye,
+    color: 'bg-indigo-100 border-indigo-300 text-indigo-800',
+    description: 'Conduct initial field inspection'
+  },
+  {
+    id: 'assessment',
+    type: 'custom',
+    label: 'Assessment',
+    icon: Search,
+    color: 'bg-purple-100 border-purple-300 text-purple-800',
+    description: 'Assess findings and determine next steps'
+  },
+  {
+    id: 'enforcement',
+    type: 'custom',
+    label: 'Enforcement Action',
+    icon: Gavel,
+    color: 'bg-orange-100 border-orange-400 text-orange-800',
+    description: 'Take enforcement action for violations'
+  },
+  {
+    id: 'resolution',
+    type: 'custom',
+    label: 'Resolution',
+    icon: CheckCircle,
+    color: 'bg-emerald-100 border-emerald-300 text-emerald-800',
+    description: 'Resolve the complaint or issue'
+  },
+  // Specific task nodes for Demolition workflows
+  {
+    id: 'permit-verification',
+    type: 'custom',
+    label: 'Permit Verification',
+    icon: Shield,
+    color: 'bg-teal-100 border-teal-300 text-teal-800',
+    description: 'Verify demolition permits and documentation'
+  },
+  {
+    id: 'safety-inspection',
+    type: 'custom',
+    label: 'Safety Inspection',
+    icon: AlertTriangle,
+    color: 'bg-amber-100 border-amber-400 text-amber-800',
+    description: 'Conduct safety inspection for demolition'
+  },
+  {
+    id: 'approve-demolition',
+    type: 'custom',
+    label: 'Approve Demolition',
+    icon: CheckCircle,
+    color: 'bg-green-100 border-green-400 text-green-800',
+    description: 'Approve the demolition request'
+  },
+  {
+    id: 'reject-demolition',
+    type: 'custom',
+    label: 'Reject Demolition',
+    icon: X,
+    color: 'bg-red-100 border-red-400 text-red-800',
+    description: 'Reject the demolition request'
+  },
+  // Notification nodes
   {
     id: 'email-notification',
     type: 'custom',
@@ -1153,9 +1261,26 @@ export default function WorkflowDesigner() {
       
       // Icon mapping to restore icon components
       const iconMap: { [key: string]: any } = {
+        // Core workflow nodes
+        'Start': Play,
+        'End': Square,
+        'Task': CheckCircle,
+        'Decision': GitBranch,
+        // Specific task nodes for Air Quality workflows
+        'Initial Inspection': Eye,
+        'Assessment': Search,
+        'Enforcement Action': Gavel,
+        'Resolution': CheckCircle,
+        // Specific task nodes for Demolition workflows
+        'Permit Verification': Shield,
+        'Safety Inspection': AlertTriangle,
+        'Approve Demolition': CheckCircle,
+        'Reject Demolition': X,
+        // Notification nodes
         'Email Notification': Mail,
         'SMS Notification': MessageSquare,
         'WhatsApp Notification': Phone,
+        // Legacy nodes
         'Complaint Planning': FileText,
         'Field Verification': Search,
         'Field Work': Wrench,
@@ -1227,45 +1352,45 @@ export default function WorkflowDesigner() {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Node Palette */}
             <div className="lg:col-span-1">
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-3">Available Nodes</h3>
-                  <div className="space-y-2">
-                    {nodeTypes.map((nodeType) => {
-                      const Icon = nodeType.icon;
-                      return (
-                        <div
-                          key={nodeType.id}
-                          className={`p-2 rounded border cursor-pointer transition-all hover:shadow-sm ${nodeType.color}`}
-                          onClick={() => onAddNode(nodeType)}
-                        >
-                          <div className="flex items-center gap-1">
-                            <Icon className="h-3 w-3" />
-                            <span className="text-xs font-medium">{nodeType.label}</span>
+              <div className="h-[600px] overflow-x-auto overflow-y-hidden">
+                <div className="flex flex-col space-y-4 w-max min-w-full">
+                  <div>
+                    <h3 className="font-semibold mb-3">Available Nodes</h3>
+                    <div className="grid grid-cols-2 gap-2 w-max">
+                      {nodeTypes.map((nodeType) => {
+                        const Icon = nodeType.icon;
+                        return (
+                          <div
+                            key={nodeType.id}
+                            className={`p-2 rounded border cursor-pointer transition-all hover:shadow-sm ${nodeType.color} w-32`}
+                            onClick={() => onAddNode(nodeType)}
+                          >
+                            <div className="flex items-center gap-1">
+                              <Icon className="h-3 w-3 flex-shrink-0" />
+                              <span className="text-xs font-medium truncate">{nodeType.label}</span>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <h3 className="font-semibold mb-3">Connector Types</h3>
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-1 gap-2">
+                  <div>
+                    <h3 className="font-semibold mb-3">Connector Types</h3>
+                    <div className="grid grid-cols-2 gap-2 w-max">
                       <Button
                         onClick={() => setSelectedEdgeType('default')}
                         variant={selectedEdgeType === 'default' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs justify-start"
+                        className="text-xs justify-start w-32"
                       >
-                        🏹 Default with Arrows
+                        🏹 Default
                       </Button>
                       <Button
                         onClick={() => setSelectedEdgeType('bidirectional')}
                         variant={selectedEdgeType === 'bidirectional' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs justify-start"
+                        className="text-xs justify-start w-32"
                       >
                         ↔️ Bidirectional
                       </Button>
@@ -1273,7 +1398,7 @@ export default function WorkflowDesigner() {
                         onClick={() => setSelectedEdgeType('conditional')}
                         variant={selectedEdgeType === 'conditional' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs justify-start"
+                        className="text-xs justify-start w-32"
                       >
                         🔀 Conditional
                       </Button>
@@ -1281,15 +1406,65 @@ export default function WorkflowDesigner() {
                         onClick={() => setSelectedEdgeType('selfConnecting')}
                         variant={selectedEdgeType === 'selfConnecting' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs justify-start"
+                        className="text-xs justify-start w-32"
                       >
-                        🔄 Self Connecting
+                        🔄 Self Loop
                       </Button>
                     </div>
                     <div className="text-xs text-muted-foreground mt-2">
                       Selected: <strong>{selectedEdgeType}</strong>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Workflow Canvas */}
+            <div className="lg:col-span-3">
+              <div className="space-y-4">
+                <div className="border rounded-lg bg-gray-50 dark:bg-gray-900" style={{ height: '600px' }}>
+                  <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    onInit={onInit}
+                    nodeTypes={nodeTypes_custom}
+                    edgeTypes={edgeTypes_custom}
+                    connectionMode={ConnectionMode.Loose}
+                    fitView
+                    fitViewOptions={{ padding: 0.2 }}
+                  >
+                    <Background color="#aaa" gap={16} />
+                    <Controls />
+                    <MiniMap />
+                    <Panel position="top-right">
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-lg">
+                        <div className="text-xs text-muted-foreground">
+                          Drag nodes to reposition • Click and drag between handles to connect
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          Selected connector: <strong>{selectedEdgeType}</strong>
+                        </div>
+                      </div>
+                    </Panel>
+                    <svg>
+                      <defs>
+                        <marker
+                          id="arrow"
+                          viewBox="0 0 10 10"
+                          refX="9"
+                          refY="3"
+                          markerWidth="6"
+                          markerHeight="6"
+                          orient="auto"
+                        >
+                          <path d="m0,0 l0,6 l9,3 l-9,3 l0,6" style={{ fill: '#b1b1b7' }} />
+                        </marker>
+                      </defs>
+                    </svg>
+                  </ReactFlow>
                 </div>
 
                 <div>
@@ -1543,54 +1718,6 @@ export default function WorkflowDesigner() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Workflow Canvas */}
-            <div className="lg:col-span-3">
-              <div className="border rounded-lg bg-gray-50 dark:bg-gray-900" style={{ height: '600px' }}>
-                <ReactFlow
-                  nodes={nodes}
-                  edges={edges}
-                  onNodesChange={onNodesChange}
-                  onEdgesChange={onEdgesChange}
-                  onConnect={onConnect}
-                  onInit={onInit}
-                  nodeTypes={nodeTypes_custom}
-                  edgeTypes={edgeTypes_custom}
-                  connectionMode={ConnectionMode.Loose}
-                  fitView
-                  fitViewOptions={{ padding: 0.2 }}
-                >
-                  <Background color="#aaa" gap={16} />
-                  <Controls />
-                  <MiniMap />
-                  <Panel position="top-right">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-lg">
-                      <div className="text-xs text-muted-foreground">
-                        Drag nodes to reposition • Click and drag between handles to connect
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Selected connector: <strong>{selectedEdgeType}</strong>
-                      </div>
-                    </div>
-                  </Panel>
-                  <svg>
-                    <defs>
-                      <marker
-                        id="arrow"
-                        viewBox="0 0 10 10"
-                        refX="9"
-                        refY="3"
-                        markerWidth="6"
-                        markerHeight="6"
-                        orient="auto"
-                      >
-                        <path d="m0,0 l0,6 l9,3 l-9,3 l0,6" style={{ fill: '#b1b1b7' }} />
-                      </marker>
-                    </defs>
-                  </svg>
-                </ReactFlow>
               </div>
             </div>
           </div>
