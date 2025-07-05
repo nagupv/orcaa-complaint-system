@@ -1065,7 +1065,9 @@ export class DatabaseStorage implements IStorage {
       'REJECT_DEMOLITION'
     ];
 
-    const nodeType = nextNode.type?.toUpperCase().replace(/\s+/g, '_');
+    // Convert node label to task type format
+    const nodeLabel = nextNode.data?.label || nextNode.type;
+    const nodeType = nodeLabel?.toUpperCase().replace(/\s+/g, '_');
     
     if (!taskTypes.includes(nodeType)) {
       return; // Not a task node
@@ -1135,7 +1137,7 @@ export class DatabaseStorage implements IStorage {
     await this.createInboxItem({
       userId: assignedUser.id,
       itemType: 'WORKFLOW_TASK',
-      itemId: nextTask.id,
+      itemId: nextTask.id, // Set the required itemId field
       title: `New Task: ${nextTask.taskName}`,
       description: `${nextTask.taskType.replace(/_/g, ' ')} for complaint`,
       priority: nextTask.priority,
@@ -1252,7 +1254,9 @@ export class DatabaseStorage implements IStorage {
         const firstTaskNode = workflowData.nodes.find((node: any) => node.id === firstTaskEdge.target);
         
         if (firstTaskNode) {
-          const nodeType = firstTaskNode.type?.toUpperCase().replace(/\s+/g, '_');
+          // Convert node label to task type format
+          const nodeLabel = firstTaskNode.data?.label || firstTaskNode.type;
+          const nodeType = nodeLabel?.toUpperCase().replace(/\s+/g, '_');
           
           if (taskTypes.includes(nodeType)) {
             // Determine assigned role and default user

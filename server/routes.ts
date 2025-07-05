@@ -87,6 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             await storage.createInboxItem({
               userId: task.assignedTo,
               itemType: 'WORKFLOW_TASK',
+              itemId: task.id, // Set the required itemId field
               title: `New Task: ${task.taskName}`,
               description: `${task.taskType.replace(/_/g, ' ')} for complaint ${complaint.complaintId}`,
               priority: task.priority,
@@ -1764,7 +1765,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'No workflow assigned to complaint' });
       }
       
+      console.log(`Creating workflow tasks for complaint ${complaint.complaintId} with workflow ${complaint.workflowId}`);
       const tasks = await storage.createWorkflowTasksFromWorkflow(complaintId, complaint.workflowId);
+      console.log(`Created ${tasks.length} workflow tasks`);
+      
+      // Create inbox items for each task
+      for (const task of tasks) {
+        await storage.createInboxItem({
+          userId: task.assignedTo,
+          itemType: 'WORKFLOW_TASK',
+          itemId: task.id, // Set the required itemId field
+          title: `New Task: ${task.taskName}`,
+          description: `${task.taskType.replace(/_/g, ' ')} for complaint ${complaint.complaintId}`,
+          priority: task.priority,
+          workflowTaskId: task.id,
+          complaintId: complaint.id,
+          isRead: false
+        });
+      }
       
       // Create audit entry
       await storage.createAuditEntry({
