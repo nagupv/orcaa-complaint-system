@@ -32,12 +32,22 @@ export default function Landing() {
             ORCAA provides environmental services including air quality complaint management and demolition notifications. 
             Our jurisdiction includes Clallam, Grays Harbor, Jefferson, Mason, Pacific, and Thurston Counties.
           </p>
-          <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8 gap-4">
+          <div className="mt-5 max-w-2xl mx-auto sm:flex sm:justify-center md:mt-8 gap-4">
             <div className="rounded-md shadow">
               <Link href="/services">
                 <Button className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-orcaa-blue hover:bg-orcaa-blue-light md:py-4 md:text-lg md:px-10">
                   Submit Request
                   <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+            </div>
+            <div className="rounded-md shadow">
+              <Link href="/search">
+                <Button 
+                  variant="outline"
+                  className="w-full flex items-center justify-center px-8 py-3 border border-gray-300 text-base font-medium rounded-md text-orcaa-blue bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
+                >
+                  Search Complaints
                 </Button>
               </Link>
             </div>

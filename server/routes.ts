@@ -2311,6 +2311,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public complaint search (no authentication required)
+  app.get('/api/complaints/public-search/:complaintId', async (req, res) => {
+    try {
+      const { complaintId } = req.params;
+      
+      if (!complaintId || !complaintId.trim()) {
+        return res.status(400).json({ error: 'Complaint ID is required' });
+      }
+
+      const complaint = await storage.getComplaintByComplaintId(complaintId.trim().toUpperCase());
+      
+      if (!complaint) {
+        return res.status(404).json({ error: 'Complaint not found' });
+      }
+
+      // Return only public-safe information (no sensitive internal data)
+      const publicComplaint = {
+        id: complaint.id,
+        complaintId: complaint.complaintId,
+        complaintType: complaint.complaintType,
+        status: complaint.status,
+        priority: complaint.priority,
+        problemTypes: complaint.problemTypes,
+        complaintDescription: complaint.complaintDescription,
+        complainantFirstName: complaint.complainantFirstName,
+        complainantLastName: complaint.complainantLastName,
+        complainantPhone: complaint.complainantPhone,
+        complainantEmail: complaint.complainantEmail,
+        incidentAddress: complaint.incidentAddress,
+        incidentCity: complaint.incidentCity,
+        incidentState: complaint.incidentState,
+        incidentZipCode: complaint.incidentZipCode,
+        incidentDate: complaint.incidentDate,
+        createdAt: complaint.createdAt,
+        updatedAt: complaint.updatedAt
+      };
+
+      res.json(publicComplaint);
+    } catch (error) {
+      console.error('Error searching complaint:', error);
+      res.status(500).json({ error: 'Failed to search complaint' });
+    }
+  });
+
   // Email template routes
   app.get('/api/email-templates', isAuthenticated, async (req: any, res) => {
     try {

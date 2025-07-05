@@ -27,6 +27,7 @@ import UserRoleReport from "@/pages/UserRoleReport";
 import ServiceSelection from "@/pages/ServiceSelection";
 import ComplaintForm from "@/pages/ComplaintForm";
 import DemolitionForm from "@/pages/DemolitionForm";
+import ComplaintSearch from "@/pages/ComplaintSearch";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -38,6 +39,7 @@ function Router() {
         <>
           <Route path="/" component={Landing} />
           <Route path="/services" component={ServiceSelection} />
+          <Route path="/search" component={ComplaintSearch} />
           <Route path="/submit/air_quality" component={ComplaintForm} />
           <Route path="/submit/demolition_notice" component={DemolitionForm} />
         </>
