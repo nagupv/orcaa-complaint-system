@@ -2142,16 +2142,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: 'Not authorized to reject this task' });
       }
       
-      // Update task status to rejected
-      const rejectedTask = await storage.updateWorkflowTask(taskId, { 
-        status: 'rejected',
-        completedBy: rejectedBy,
-        completedAt: new Date(),
-        completionNotes: reason
-      });
-      
-      // Update related inbox item
-      // Note: We could also create a new task or escalate based on workflow rules
+      // Complete the workflow task as rejected (which will handle workflow progression)
+      const rejectedTask = await storage.completeWorkflowTask(taskId, rejectedBy, reason);
       
       // Create audit entry
       await storage.createAuditEntry({

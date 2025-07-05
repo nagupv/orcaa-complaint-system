@@ -1124,9 +1124,34 @@ export class DatabaseStorage implements IStorage {
       return; // No next task (end of workflow)
     }
 
-    // For decision nodes, create tasks for all possible paths
-    // For now, we'll create the first path and enhance this later for user choice
-    const nextEdge = outgoingEdges[0];
+    // For decision nodes, choose the appropriate path based on completion notes
+    let nextEdge = outgoingEdges[0]; // Default to first edge
+    
+    // For Assessment (decision) nodes, determine path based on completion notes
+    if (completedTask.taskType.toLowerCase() === 'assessment') {
+      const completionNotes = completedTask.completionNotes?.toLowerCase() || '';
+      
+      if (completionNotes.includes('no violation') || 
+          completionNotes.includes('rejected') || 
+          completionNotes.includes('dismissed')) {
+        // Find the "No Violation" path
+        const noViolationEdge = outgoingEdges.find((edge: any) => 
+          edge.label?.toLowerCase().includes('no violation')
+        );
+        if (noViolationEdge) {
+          nextEdge = noViolationEdge;
+        }
+      } else {
+        // Find the "Violation Found" path or default path
+        const violationEdge = outgoingEdges.find((edge: any) => 
+          edge.label?.toLowerCase().includes('violation found') || 
+          !edge.label?.toLowerCase().includes('no violation')
+        );
+        if (violationEdge) {
+          nextEdge = violationEdge;
+        }
+      }
+    }
     
     // Find the next task node
     const nextNode = workflowData.nodes.find((node: any) => node.id === nextEdge.target);
