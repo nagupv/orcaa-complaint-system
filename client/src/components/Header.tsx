@@ -148,9 +148,6 @@ export default function Header() {
                   </div>
                 </div>
               </div>
-              <a href="https://orcaa.org" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                ORCAA Website
-              </a>
             </nav>
 
             {/* User Authentication Section */}
@@ -268,9 +265,6 @@ export default function Header() {
                   </Link>
                 </div>
               </div>
-              <a href="https://orcaa.org" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
-                ORCAA Website
-              </a>
             </nav>
           </div>
         )}
