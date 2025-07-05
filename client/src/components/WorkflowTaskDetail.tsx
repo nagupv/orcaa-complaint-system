@@ -38,6 +38,32 @@ export default function WorkflowTaskDetail({ taskId, onTaskUpdate }: WorkflowTas
     },
   });
 
+  // Fetch complaint details
+  const { data: complaint } = useQuery({
+    queryKey: ["/api/complaints", task?.complaintId],
+    queryFn: async () => {
+      const response = await fetch(`/api/complaints/${task?.complaintId}`, {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch complaint");
+      return response.json();
+    },
+    enabled: !!task?.complaintId,
+  });
+
+  // Fetch complaint attachments
+  const { data: attachments = [] } = useQuery({
+    queryKey: ["/api/complaints", task?.complaintId, "attachments"],
+    queryFn: async () => {
+      const response = await fetch(`/api/complaints/${task?.complaintId}/attachments`, {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch attachments");
+      return response.json();
+    },
+    enabled: !!task?.complaintId,
+  });
+
   // Fetch users for assignment
   const { data: users = [] } = useQuery({
     queryKey: ["/api/users"],
@@ -273,6 +299,111 @@ export default function WorkflowTaskDetail({ taskId, onTaskUpdate }: WorkflowTas
             </div>
           )}
         </div>
+
+        {/* Complaint/Notification Details Section */}
+        {complaint && (
+          <>
+            <Separator />
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Complaint Details - {complaint.complaintId}
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Problem Type</Label>
+                    <p className="text-sm font-medium">{complaint.problemType}</p>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Priority</Label>
+                    <div className="mt-1">
+                      {getPriorityBadge(complaint.priority)}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                    <div className="mt-1">
+                      <Badge variant="outline">{complaint.status}</Badge>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Reported Date</Label>
+                    <p className="text-sm">{new Date(complaint.createdAt).toLocaleString()}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Contact Information</Label>
+                    <div className="space-y-1">
+                      <p className="text-sm">{complaint.contactName}</p>
+                      <p className="text-sm text-muted-foreground">{complaint.contactEmail}</p>
+                      <p className="text-sm text-muted-foreground">{complaint.contactPhone}</p>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Location</Label>
+                    <div className="space-y-1">
+                      <p className="text-sm">{complaint.address}</p>
+                      <p className="text-sm text-muted-foreground">{complaint.city}, {complaint.state} {complaint.zipCode}</p>
+                      {complaint.latitude && complaint.longitude && (
+                        <p className="text-xs text-muted-foreground">
+                          Coordinates: {complaint.latitude}, {complaint.longitude}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Description</Label>
+                <div className="mt-2 p-3 bg-muted rounded-md">
+                  <p className="text-sm whitespace-pre-wrap">{complaint.description}</p>
+                </div>
+              </div>
+              
+              {complaint.specificLocation && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Specific Location Details</Label>
+                  <div className="mt-2 p-3 bg-muted rounded-md">
+                    <p className="text-sm whitespace-pre-wrap">{complaint.specificLocation}</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Attachments */}
+              {attachments && attachments.length > 0 && (
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Attachments ({attachments.length})</Label>
+                  <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {attachments.map((attachment: any) => (
+                      <div key={attachment.id} className="flex items-center gap-2 p-2 border rounded-md">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{attachment.fileName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Uploaded {new Date(attachment.uploadedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Button size="sm" variant="outline" asChild>
+                          <a href={`/uploads/${attachment.filePath}`} target="_blank" rel="noopener noreferrer">
+                            View
+                          </a>
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
 
         {/* Current Observations */}
         {task.observations && (

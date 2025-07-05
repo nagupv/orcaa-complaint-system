@@ -54,6 +54,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         reason: 'Initial complaint submission'
       });
 
+      // **AUTOMATIC WORKFLOW INITIATION** - Get workflow template for complaint type
+      let workflowAssigned = false;
+      try {
+        // Determine complaint type based on problem type or service type
+        let complaintType = 'AIR_QUALITY'; // Default
+        if (complaint.problemType?.toLowerCase().includes('demolition') || 
+            complaint.problemType?.toLowerCase().includes('asbestos')) {
+          complaintType = 'DEMOLITION_NOTICE';
+        }
+
+        // Find and assign appropriate workflow template
+        const template = await storage.getTemplateForComplaintType(complaintType);
+        if (template) {
+          // Assign workflow to complaint
+          await storage.assignWorkflowToComplaint(complaint.id, template.id);
+          
+          // Create workflow tasks from template
+          const tasks = await storage.createWorkflowTasksFromWorkflow(complaint.id, template.id);
+          
+          // Create audit entry for automatic workflow assignment
+          await storage.createAuditEntry({
+            complaintId: complaint.id,
+            action: 'workflow_auto_assigned',
+            newValue: `Workflow "${template.name}" auto-assigned with ${tasks.length} tasks created`,
+            userId: null,
+            reason: `Automatic workflow initiation for ${complaintType} complaint`
+          });
+
+          // Create inbox items for each task
+          for (const task of tasks) {
+            await storage.createInboxItem({
+              userId: task.assignedTo,
+              itemType: 'WORKFLOW_TASK',
+              title: `New Task: ${task.taskName}`,
+              description: `${task.taskType.replace(/_/g, ' ')} for complaint ${complaint.complaintId}`,
+              priority: task.priority,
+              workflowTaskId: task.id,
+              complaintId: complaint.id,
+              isRead: false
+            });
+          }
+
+          workflowAssigned = true;
+          console.log(`Workflow "${template.name}" automatically assigned to complaint ${complaint.complaintId} with ${tasks.length} tasks`);
+        } else {
+          console.log(`No workflow template found for complaint type: ${complaintType}`);
+        }
+      } catch (workflowError) {
+        console.error('Error in automatic workflow assignment:', workflowError);
+        // Continue processing even if workflow assignment fails
+      }
+
       // Send SMS notification if workflow configured
       const workflowStages = await storage.getWorkflowStages();
       const initialStage = workflowStages.find(stage => stage.name === 'initiated');
@@ -69,13 +121,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (user.phone) {
             await sendSMSNotification(
               user.phone,
-              `New complaint ${complaint.complaintId} assigned to you. Please check the ORCAA system.`
+              `New complaint ${complaint.complaintId} received and workflow ${workflowAssigned ? 'automatically initiated' : 'ready for assignment'}. Please check the ORCAA system.`
             );
           }
         }
       }
 
-      res.json(complaint);
+      res.json({
+        ...complaint,
+        workflowAutoAssigned: workflowAssigned
+      });
     } catch (error) {
       console.error("Error creating complaint:", error);
       res.status(400).json({ 
