@@ -430,7 +430,7 @@ export default function Inbox() {
                                       <Eye className="h-4 w-4 mr-1" />
                                       View
                                     </Button>
-                                    {(item.type === "leave_approval" || item.type === "overtime_approval" || item.type === "complaint") && item.status === "pending" && (
+                                    {(item.type === "leave_approval" || item.type === "overtime_approval" || item.type === "complaint" || item.type === "workflow_task") && item.status === "pending" && (
                                       <>
                                         <Button
                                           size="sm"
@@ -517,7 +517,7 @@ export default function Inbox() {
                                       <Eye className="h-4 w-4 mr-1" />
                                       View
                                     </Button>
-                                    {(item.type === "leave_approval" || item.type === "overtime_approval" || item.type === "complaint") && item.status === "pending" && (
+                                    {(item.type === "leave_approval" || item.type === "overtime_approval" || item.type === "complaint" || item.type === "workflow_task") && item.status === "pending" && (
                                       <>
                                         <Button
                                           size="sm"
@@ -593,7 +593,7 @@ export default function Inbox() {
                               <Eye className="h-4 w-4 mr-1" />
                               View
                             </Button>
-                            {(item.type === "leave_approval" || item.type === "overtime_approval" || item.type === "complaint") && item.status === "pending" && (
+                            {(item.type === "leave_approval" || item.type === "overtime_approval" || item.type === "complaint" || item.type === "workflow_task") && item.status === "pending" && (
                               <>
                                 <Button
                                   size="sm"
