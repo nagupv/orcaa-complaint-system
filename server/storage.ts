@@ -996,18 +996,23 @@ export class DatabaseStorage implements IStorage {
     taskType?: string;
   }): Promise<WorkflowTask[]> {
     let query = db.select().from(workflowTasks);
+    const conditions = [];
 
     if (filters?.assignedTo) {
-      query = query.where(eq(workflowTasks.assignedTo, filters.assignedTo));
+      conditions.push(eq(workflowTasks.assignedTo, filters.assignedTo));
     }
     if (filters?.complaintId) {
-      query = query.where(eq(workflowTasks.complaintId, filters.complaintId));
+      conditions.push(eq(workflowTasks.complaintId, filters.complaintId));
     }
     if (filters?.status) {
-      query = query.where(eq(workflowTasks.status, filters.status));
+      conditions.push(eq(workflowTasks.status, filters.status));
     }
     if (filters?.taskType) {
-      query = query.where(eq(workflowTasks.taskType, filters.taskType));
+      conditions.push(eq(workflowTasks.taskType, filters.taskType));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
     }
 
     return query.orderBy(desc(workflowTasks.createdAt));
@@ -1112,6 +1117,7 @@ export class DatabaseStorage implements IStorage {
 
     // Find all edges from the current node (for decision nodes with multiple paths)
     const outgoingEdges = workflowData.edges.filter((edge: any) => edge.source === currentNodeId);
+    
     if (outgoingEdges.length === 0) {
       return; // No next task (end of workflow)
     }
@@ -1122,8 +1128,8 @@ export class DatabaseStorage implements IStorage {
     
     // Find the next task node
     const nextNode = workflowData.nodes.find((node: any) => node.id === nextEdge.target);
+    
     if (!nextNode) {
-      console.log(`Next node not found for edge target: ${nextEdge.target}`);
       return;
     }
 
@@ -1152,7 +1158,6 @@ export class DatabaseStorage implements IStorage {
     const isTaskNode = taskTypes.includes(nodeType) || nextNode.type === 'task' || nextNode.type === 'decision';
     
     if (!isTaskNode) {
-      console.log(`Skipping non-task node: ${nodeType}, type: ${nextNode.type}`);
       return; // Not a task node
     }
 
