@@ -1550,15 +1550,63 @@ export class DatabaseStorage implements IStorage {
         
         console.log(`Creating first workflow task: ${nodeType} (${nodeLabel})`);
         
-        // Use simplified role assignment
-        const allowedRoles = ['field_staff'];
+        // Use Role-Action Mapping for proper task assignment
+        let allowedRoles: string[] = [];
+        let actionId: string | null = null;
         
-        // Find a user with required roles
+        // Map task type to action ID for role determination
+        switch (nodeType) {
+          case 'INITIAL_INSPECTION':
+            actionId = 'initial_inspection';
+            break;
+          case 'ASSESSMENT':
+            actionId = 'assessment';
+            break;
+          case 'ENFORCEMENT_ACTION':
+            actionId = 'enforcement_action';
+            break;
+          case 'RESOLUTION':
+            actionId = 'resolution';
+            break;
+          default:
+            actionId = nodeLabel?.toLowerCase().replace(/\s+/g, '_');
+        }
+        
+        // Get roles authorized for this action from Role-Action Mapping
+        if (actionId) {
+          allowedRoles = await this.getRolesForAction(actionId);
+        }
+        
+        // Fallback to default field_staff if no specific mapping found
+        if (allowedRoles.length === 0) {
+          allowedRoles = ['field_staff'];
+        }
+        
+        console.log(`Task ${nodeType} mapped to action "${actionId}" with roles: ${allowedRoles.join(', ')}`);
+        
+        // Find users with required permissions based on role-action mapping
         const users = await this.getAllUsers();
-        const assignedUser = users.find(user => {
+        const eligibleUsers = users.filter(user => {
           const userRoles = typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles;
           return allowedRoles.some(role => userRoles.includes(role));
         });
+        
+        // Prefer admin users, then supervisor, then field_staff
+        const priorityRoles = ['admin', 'supervisor', 'field_staff', 'contract_staff'];
+        let assignedUser = null;
+        
+        for (const priorityRole of priorityRoles) {
+          assignedUser = eligibleUsers.find(user => {
+            const userRoles = typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles;
+            return userRoles.includes(priorityRole) && allowedRoles.includes(priorityRole);
+          });
+          if (assignedUser) break;
+        }
+        
+        // Fallback to first eligible user if no priority match
+        if (!assignedUser && eligibleUsers.length > 0) {
+          assignedUser = eligibleUsers[0];
+        }
 
         if (assignedUser) {
           const userRoles = typeof assignedUser.roles === 'string' ? JSON.parse(assignedUser.roles) : assignedUser.roles;
