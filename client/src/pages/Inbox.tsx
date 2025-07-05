@@ -217,11 +217,12 @@ export default function Inbox() {
   const allItems = [
     ...complaints.map((complaint: any) => {
       const workflow = workflows.find((w: any) => w.id === complaint.workflowId);
+      const description = complaint.description || 'No description provided';
       return {
         ...complaint,
         type: "complaint",
         title: `${complaint.complaintId} - ${complaint.problemType}`,
-        description: `${complaint.description}${workflow ? ` | Workflow: ${workflow.name}` : ''}`,
+        description: `${description}${workflow ? ` | Workflow: ${workflow.name}` : ''}`,
         priority: complaint.priority,
         status: complaint.status,
         createdAt: complaint.createdAt,
