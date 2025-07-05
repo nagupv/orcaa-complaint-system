@@ -69,6 +69,12 @@ export default function Inbox() {
     enabled: !!user?.id,
   });
 
+  // Fetch workflow tasks to get current steps
+  const { data: workflowTasks = [], isLoading: workflowTasksLoading } = useQuery({
+    queryKey: ["/api/workflow-tasks"],
+    enabled: !!user?.id,
+  });
+
   const processItemAction = useMutation({
     mutationFn: async (params: { 
       item: any; 
@@ -222,16 +228,25 @@ export default function Inbox() {
       const problemTypeText = complaint.problemTypes && Array.isArray(complaint.problemTypes) 
         ? complaint.problemTypes.join(', ') 
         : complaint.status || 'Unknown';
+      
+      // Find current workflow step (active/pending task)
+      const currentTask = workflowTasks.find((task: any) => 
+        task.complaintId === complaint.id && 
+        (task.status === 'pending' || task.status === 'in_progress')
+      );
+      const currentStep = currentTask ? currentTask.taskName : 'No Active Step';
+      
       return {
         ...complaint,
         type: "complaint",
         title: `${complaint.complaintId} - ${problemTypeText}`,
-        description: `${description}${workflow ? ` | Workflow: ${workflow.name}` : ''}`,
+        description: `${description}${workflow ? ` | Workflow: ${workflow.name}` : ''}${currentStep ? ` | Step: ${currentStep}` : ''}`,
         priority: complaint.priority,
         status: complaint.status,
         createdAt: complaint.createdAt,
         workflowName: workflow?.name || 'No Workflow Assigned',
         problemType: problemTypeText, // For the detail view
+        currentStep: currentStep, // For the detail view
       };
     }),
     ...leaveRequests.map((request: any) => ({
@@ -656,6 +671,10 @@ export default function Inbox() {
                       <div>
                         <Label className="font-semibold">Current Workflow</Label>
                         <p className="text-sm text-gray-600">{selectedItem.workflowName || 'No Workflow Assigned'}</p>
+                      </div>
+                      <div>
+                        <Label className="font-semibold">Current Step</Label>
+                        <p className="text-sm text-gray-600">{selectedItem.currentStep || 'No Active Step'}</p>
                       </div>
                       {selectedItem.assignedTo && (
                         <div>
