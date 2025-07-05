@@ -144,6 +144,10 @@ export interface IStorage {
   updateWorkflow(id: number, updates: Partial<Workflow>): Promise<Workflow>;
   deleteWorkflow(id: number): Promise<void>;
   getWorkflowById(id: number): Promise<Workflow | undefined>;
+  getWorkflowTemplates(): Promise<Workflow[]>;
+  getTemplateForComplaintType(complaintType: string): Promise<Workflow | undefined>;
+  setTemplateForComplaintType(workflowId: number, complaintType: string): Promise<Workflow>;
+  assignWorkflowToComplaint(complaintId: number, workflowId?: number): Promise<void>;
   
   // Helper methods
   generateComplaintId(serviceType?: string): Promise<string>;
@@ -204,10 +208,16 @@ export class DatabaseStorage implements IStorage {
   // Complaint operations
   async createComplaint(complaint: InsertComplaint): Promise<Complaint> {
     const complaintId = await this.generateComplaintId(complaint.complaintType);
+    
+    // Get the template workflow for this complaint type
+    const template = await this.getTemplateForComplaintType(complaint.complaintType || "AIR_QUALITY");
+    const workflowId = template?.id || null;
+    
     const [newComplaint] = await db
       .insert(complaints)
-      .values({ ...complaint, complaintId })
+      .values({ ...complaint, complaintId, workflowId })
       .returning();
+    
     return newComplaint;
   }
 
@@ -795,6 +805,66 @@ export class DatabaseStorage implements IStorage {
   async getWorkflowById(id: number): Promise<Workflow | undefined> {
     const [workflow] = await db.select().from(workflows).where(eq(workflows.id, id));
     return workflow;
+  }
+
+  async getWorkflowTemplates(): Promise<Workflow[]> {
+    return await db.select().from(workflows).where(eq(workflows.isTemplate, true)).orderBy(workflows.complaintType, workflows.name);
+  }
+
+  async getTemplateForComplaintType(complaintType: string): Promise<Workflow | undefined> {
+    const [template] = await db
+      .select()
+      .from(workflows)
+      .where(and(
+        eq(workflows.complaintType, complaintType),
+        eq(workflows.isTemplate, true),
+        eq(workflows.isActive, true)
+      ));
+    return template;
+  }
+
+  async setTemplateForComplaintType(workflowId: number, complaintType: string): Promise<Workflow> {
+    // First, remove template status from any existing templates for this complaint type
+    await db
+      .update(workflows)
+      .set({ isTemplate: false })
+      .where(and(
+        eq(workflows.complaintType, complaintType),
+        eq(workflows.isTemplate, true)
+      ));
+
+    // Then set the new template
+    const [template] = await db
+      .update(workflows)
+      .set({ 
+        complaintType,
+        isTemplate: true,
+        updatedAt: new Date()
+      })
+      .where(eq(workflows.id, workflowId))
+      .returning();
+    
+    return template;
+  }
+
+  async assignWorkflowToComplaint(complaintId: number, workflowId?: number): Promise<void> {
+    // If no workflowId provided, auto-assign based on complaint type
+    if (!workflowId) {
+      const [complaint] = await db.select().from(complaints).where(eq(complaints.id, complaintId));
+      if (complaint) {
+        const template = await this.getTemplateForComplaintType(complaint.complaintType);
+        if (template) {
+          workflowId = template.id;
+        }
+      }
+    }
+
+    if (workflowId) {
+      await db
+        .update(complaints)
+        .set({ workflowId, updatedAt: new Date() })
+        .where(eq(complaints.id, complaintId));
+    }
   }
 }
 

@@ -74,6 +74,7 @@ export const complaints = pgTable("complaints", {
   status: varchar("status").notNull().default("initiated"), // initiated, inspection, work_in_progress, work_completed, reviewed, approved, closed
   assignedTo: varchar("assigned_to").references(() => users.id),
   priority: varchar("priority").default("normal"), // low, normal, high, urgent
+  workflowId: integer("workflow_id").references(() => workflows.id), // Links to the assigned workflow
   
   // Demolition Notification specific fields
   propertyOwnerName: varchar("property_owner_name"),
@@ -241,6 +242,10 @@ export const complaintsRelations = relations(complaints, ({ one, many }) => ({
     fields: [complaints.assignedTo],
     references: [users.id],
   }),
+  workflow: one(workflows, {
+    fields: [complaints.workflowId],
+    references: [workflows.id],
+  }),
   attachments: many(attachments),
   workDescriptions: many(workDescriptions),
   auditEntries: many(auditTrail),
@@ -321,11 +326,12 @@ export const overtimeRequestsRelations = relations(overtimeRequests, ({ one }) =
   }),
 }));
 
-export const workflowsRelations = relations(workflows, ({ one }) => ({
+export const workflowsRelations = relations(workflows, ({ one, many }) => ({
   creator: one(users, {
     fields: [workflows.createdBy],
     references: [users.id],
   }),
+  complaints: many(complaints),
 }));
 
 // Zod schemas

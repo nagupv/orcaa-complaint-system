@@ -1249,6 +1249,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Workflow template routes
+  app.get('/api/workflow-templates', isAuthenticated, async (req, res) => {
+    try {
+      const templates = await storage.getWorkflowTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching workflow templates:", error);
+      res.status(500).json({ message: "Failed to fetch workflow templates" });
+    }
+  });
+
+  app.get('/api/workflow-templates/:complaintType', isAuthenticated, async (req, res) => {
+    try {
+      const { complaintType } = req.params;
+      const template = await storage.getTemplateForComplaintType(complaintType);
+      res.json(template || null);
+    } catch (error) {
+      console.error("Error fetching template for complaint type:", error);
+      res.status(500).json({ message: "Failed to fetch template" });
+    }
+  });
+
+  app.post('/api/workflow-templates/:workflowId/:complaintType', isAuthenticated, async (req, res) => {
+    try {
+      const workflowId = parseInt(req.params.workflowId);
+      const { complaintType } = req.params;
+      
+      const template = await storage.setTemplateForComplaintType(workflowId, complaintType);
+      res.json(template);
+    } catch (error) {
+      console.error("Error setting workflow template:", error);
+      res.status(500).json({ message: "Failed to set workflow template" });
+    }
+  });
+
+  app.post('/api/complaints/:id/assign-workflow', isAuthenticated, async (req, res) => {
+    try {
+      const complaintId = parseInt(req.params.id);
+      const { workflowId } = req.body;
+      
+      await storage.assignWorkflowToComplaint(complaintId, workflowId);
+      res.json({ message: "Workflow assigned successfully" });
+    } catch (error) {
+      console.error("Error assigning workflow to complaint:", error);
+      res.status(500).json({ message: "Failed to assign workflow" });
+    }
+  });
+
   app.get('/api/workflows/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
