@@ -1662,7 +1662,7 @@ export class DatabaseStorage implements IStorage {
       // Create workflow context
       const context = {
         complaintId,
-        userId: 'system',
+        userId: null, // Use null instead of 'system' to avoid foreign key constraint
         executionId: `exec_${complaintId}_${Date.now()}`,
         variables: new Map(),
         results: new Map()
@@ -1676,7 +1676,7 @@ export class DatabaseStorage implements IStorage {
       await this.createAuditEntry({
         action: `Workflow orchestration completed for complaint ${complaintId}`,
         complaintId,
-        userId: 'system',
+        userId: null, // Use null instead of 'system' for foreign key constraint
         details: `Executed ${nodes.length} nodes with ${results.size} results`
       });
       
@@ -1688,7 +1688,7 @@ export class DatabaseStorage implements IStorage {
       await this.createAuditEntry({
         action: `Workflow orchestration failed for complaint ${complaintId}`,
         complaintId,
-        userId: 'system',
+        userId: null, // Use null instead of 'system' for foreign key constraint
         details: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
       });
       
