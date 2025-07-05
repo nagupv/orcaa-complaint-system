@@ -214,56 +214,63 @@ const createInitialEdges = (onDeleteEdge: (id: string) => void): Edge[] => [
     id: 'e1-2',
     source: '1',
     target: '2',
-    type: 'custom',
+    type: 'default',
     animated: true,
+    label: 'Process',
     data: { onDelete: onDeleteEdge }
   },
   {
     id: 'e2-3',
     source: '2',
     target: '3',
-    type: 'custom',
+    type: 'default',
     animated: true,
+    label: 'Process',
     data: { onDelete: onDeleteEdge }
   },
   {
     id: 'e3-4',
     source: '3',
     target: '4',
-    type: 'custom',
+    type: 'bidirectional',
     animated: true,
+    label: 'Sync',
     data: { onDelete: onDeleteEdge }
   },
   {
     id: 'e4-5',
     source: '4',
     target: '5',
-    type: 'custom',
+    type: 'conditional',
     animated: true,
-    data: { onDelete: onDeleteEdge }
+    label: 'If Approved',
+    data: { onDelete: onDeleteEdge, condition: true }
   },
   {
     id: 'e5-6',
     source: '5',
     target: '6',
-    type: 'custom',
+    type: 'default',
     animated: true,
+    label: 'Process',
     data: { onDelete: onDeleteEdge }
   },
   {
     id: 'e6-7',
     source: '6',
     target: '7',
-    type: 'custom',
+    type: 'default',
     animated: true,
+    label: 'Process',
     data: { onDelete: onDeleteEdge }
   },
   {
     id: 'e7-8',
     source: '7',
     target: '8',
-    type: 'custom',
+    type: 'default',
     animated: true,
+    label: 'Process',
     data: { onDelete: onDeleteEdge }
   },
 ];
@@ -310,8 +317,8 @@ const CustomNode = ({ data, id }: NodeProps) => {
   );
 };
 
-// Custom edge component with delete button
-const CustomEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, data }: EdgeProps) => {
+// Custom edge component with delete button and labels
+const CustomEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, data, label }: EdgeProps) => {
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -323,7 +330,7 @@ const CustomEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, ta
 
   return (
     <>
-      <BaseEdge path={edgePath} style={style} />
+      <BaseEdge path={edgePath} style={style} markerEnd="url(#arrow)" />
       <EdgeLabelRenderer>
         <div
           style={{
@@ -334,15 +341,180 @@ const CustomEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, ta
           }}
           className="nodrag nopan"
         >
-          <button
-            className="bg-red-500 text-white rounded-full p-1 opacity-0 hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-              data?.onDelete?.(id);
-            }}
-          >
-            <X className="h-3 w-3" />
-          </button>
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg px-2 py-1 shadow-md border">
+            {label && (
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                {label}
+              </span>
+            )}
+            <button
+              className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                data?.onDelete?.(id);
+              }}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
+};
+
+// Bidirectional edge component
+const BidirectionalEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, data, label }: EdgeProps) => {
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+
+  return (
+    <>
+      <BaseEdge path={edgePath} style={style} markerStart="url(#arrow)" markerEnd="url(#arrow)" />
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: 'absolute',
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            fontSize: 12,
+            pointerEvents: 'all',
+          }}
+          className="nodrag nopan"
+        >
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg px-2 py-1 shadow-md border">
+            {label && (
+              <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                {label}
+              </span>
+            )}
+            <button
+              className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                data?.onDelete?.(id);
+              }}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
+};
+
+// Conditional edge component
+const ConditionalEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, data, label }: EdgeProps) => {
+  const [edgePath, labelX, labelY] = getBezierPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+  });
+
+  const isTrue = data?.condition !== false;
+
+  return (
+    <>
+      <BaseEdge 
+        path={edgePath} 
+        style={{
+          ...style,
+          stroke: isTrue ? '#10b981' : '#ef4444',
+          strokeDasharray: isTrue ? '0' : '5,5',
+        }} 
+        markerEnd="url(#arrow)" 
+      />
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: 'absolute',
+            transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+            fontSize: 12,
+            pointerEvents: 'all',
+          }}
+          className="nodrag nopan"
+        >
+          <div className={`flex items-center gap-2 rounded-lg px-2 py-1 shadow-md border ${
+            isTrue 
+              ? 'bg-green-100 dark:bg-green-900 border-green-300' 
+              : 'bg-red-100 dark:bg-red-900 border-red-300'
+          }`}>
+            <span className={`text-xs font-medium ${
+              isTrue 
+                ? 'text-green-700 dark:text-green-300' 
+                : 'text-red-700 dark:text-red-300'
+            }`}>
+              {label || (isTrue ? 'Yes' : 'No')}
+            </span>
+            <button
+              className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                data?.onDelete?.(id);
+              }}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+      </EdgeLabelRenderer>
+    </>
+  );
+};
+
+// Self-connecting edge component
+const SelfConnectingEdge = ({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style = {}, data, label }: EdgeProps) => {
+  // Create a self-loop path
+  const offset = 50;
+  const path = `M ${sourceX} ${sourceY} C ${sourceX + offset} ${sourceY - offset}, ${sourceX + offset} ${sourceY + offset}, ${sourceX} ${sourceY}`;
+  
+  return (
+    <>
+      <path
+        d={path}
+        style={{
+          ...style,
+          fill: 'none',
+          stroke: '#8b5cf6',
+          strokeWidth: 2,
+        }}
+        markerEnd="url(#arrow)"
+      />
+      <EdgeLabelRenderer>
+        <div
+          style={{
+            position: 'absolute',
+            transform: `translate(-50%, -50%) translate(${sourceX + offset}px,${sourceY}px)`,
+            fontSize: 12,
+            pointerEvents: 'all',
+          }}
+          className="nodrag nopan"
+        >
+          <div className="flex items-center gap-2 bg-purple-100 dark:bg-purple-900 rounded-lg px-2 py-1 shadow-md border border-purple-300">
+            {label && (
+              <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                {label}
+              </span>
+            )}
+            <button
+              className="bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                data?.onDelete?.(id);
+              }}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
         </div>
       </EdgeLabelRenderer>
     </>
@@ -354,7 +526,11 @@ const nodeTypes_custom = {
 };
 
 const edgeTypes_custom = {
+  default: CustomEdge,
   custom: CustomEdge,
+  bidirectional: BidirectionalEdge,
+  conditional: ConditionalEdge,
+  selfConnecting: SelfConnectingEdge,
 };
 
 export default function WorkflowDesigner() {
@@ -370,15 +546,26 @@ export default function WorkflowDesigner() {
   const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(onDeleteNode));
   const [edges, setEdges, onEdgesChange] = useEdgesState(createInitialEdges(onDeleteEdge));
   const [selectedNodeType, setSelectedNodeType] = useState<string | null>(null);
-  const [selectedEdgeType, setSelectedEdgeType] = useState<string>('custom');
+  const [selectedEdgeType, setSelectedEdgeType] = useState<string>('default');
 
   const onConnect = useCallback(
     (params: Connection) => {
+      const edgeLabels = {
+        default: 'Process',
+        bidirectional: 'Sync',
+        conditional: 'If True',
+        selfConnecting: 'Loop'
+      };
+
       const newEdge = {
         ...params,
         type: selectedEdgeType,
         animated: true,
-        data: selectedEdgeType === 'custom' ? { onDelete: onDeleteEdge } : undefined,
+        label: edgeLabels[selectedEdgeType as keyof typeof edgeLabels] || 'Connect',
+        data: { 
+          onDelete: onDeleteEdge,
+          condition: selectedEdgeType === 'conditional' ? true : undefined
+        },
       };
       setEdges((eds) => addEdge(newEdge, eds));
     },
@@ -475,47 +662,42 @@ export default function WorkflowDesigner() {
                 <div>
                   <h3 className="font-semibold mb-3">Connector Types</h3>
                   <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 gap-2">
                       <Button
                         onClick={() => setSelectedEdgeType('default')}
                         variant={selectedEdgeType === 'default' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs"
+                        className="text-xs justify-start"
                       >
-                        Default
+                        🏹 Default with Arrows
                       </Button>
                       <Button
-                        onClick={() => setSelectedEdgeType('straight')}
-                        variant={selectedEdgeType === 'straight' ? 'default' : 'outline'}
+                        onClick={() => setSelectedEdgeType('bidirectional')}
+                        variant={selectedEdgeType === 'bidirectional' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs"
+                        className="text-xs justify-start"
                       >
-                        Straight
+                        ↔️ Bidirectional
                       </Button>
                       <Button
-                        onClick={() => setSelectedEdgeType('step')}
-                        variant={selectedEdgeType === 'step' ? 'default' : 'outline'}
+                        onClick={() => setSelectedEdgeType('conditional')}
+                        variant={selectedEdgeType === 'conditional' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs"
+                        className="text-xs justify-start"
                       >
-                        Step
+                        🔀 Conditional
                       </Button>
                       <Button
-                        onClick={() => setSelectedEdgeType('smoothstep')}
-                        variant={selectedEdgeType === 'smoothstep' ? 'default' : 'outline'}
+                        onClick={() => setSelectedEdgeType('selfConnecting')}
+                        variant={selectedEdgeType === 'selfConnecting' ? 'default' : 'outline'}
                         size="sm"
-                        className="text-xs"
+                        className="text-xs justify-start"
                       >
-                        Smooth Step
+                        🔄 Self Connecting
                       </Button>
-                      <Button
-                        onClick={() => setSelectedEdgeType('custom')}
-                        variant={selectedEdgeType === 'custom' ? 'default' : 'outline'}
-                        size="sm"
-                        className="text-xs"
-                      >
-                        Custom
-                      </Button>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      Selected: <strong>{selectedEdgeType}</strong>
                     </div>
                   </div>
                 </div>
@@ -589,10 +771,28 @@ export default function WorkflowDesigner() {
                   <Panel position="top-right">
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-lg">
                       <div className="text-xs text-muted-foreground">
-                        Drag nodes to reposition • Click and drag between nodes to connect
+                        Drag nodes to reposition • Click and drag between handles to connect
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Selected connector: <strong>{selectedEdgeType}</strong>
                       </div>
                     </div>
                   </Panel>
+                  <svg>
+                    <defs>
+                      <marker
+                        id="arrow"
+                        viewBox="0 0 10 10"
+                        refX="9"
+                        refY="3"
+                        markerWidth="6"
+                        markerHeight="6"
+                        orient="auto"
+                      >
+                        <path d="m0,0 l0,6 l9,3 l-9,3 l0,6" style={{ fill: '#b1b1b7' }} />
+                      </marker>
+                    </defs>
+                  </svg>
                 </ReactFlow>
               </div>
             </div>
