@@ -9,6 +9,7 @@ import ListValueManagement from "./ListValueManagement";
 import WorkflowDesigner from "./WorkflowDesigner";
 import WorkflowTemplates from "./WorkflowTemplates";
 import RoleActionMapping from "./RoleActionMapping";
+import EmailTemplateConfig from "./EmailTemplateConfig";
 
 export default function ApplicationManagement() {
   const [activeSection, setActiveSection] = useState("users");
@@ -22,6 +23,7 @@ export default function ApplicationManagement() {
     { id: "list-values", label: "List Values", component: ListValueManagement },
     { id: "workflow", label: "Workflow Designer", component: WorkflowDesigner },
     { id: "templates", label: "Workflow Templates", component: WorkflowTemplates },
+    { id: "email-templates", label: "Email Templates", component: EmailTemplateConfig },
     { 
       id: "mappings", 
       label: "Mappings", 

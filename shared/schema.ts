@@ -303,6 +303,22 @@ export const inboxItems = pgTable("inbox_items", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Email templates table - for storing reusable email templates
+export const emailTemplates = pgTable("email_templates", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  subject: varchar("subject", { length: 500 }).notNull(),
+  body: text("body").notNull(),
+  templateType: varchar("template_type").notNull(), // complaint_received, status_update, action_required, etc.
+  isActive: boolean("is_active").default(true),
+  variables: jsonb("variables").$type<string[]>().default([]),
+  description: text("description"),
+  category: varchar("category").default("general"), // general, complaint, workflow, notification
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const complaintsRelations = relations(complaints, ({ one, many }) => ({
   assignedUser: one(users, {
@@ -436,6 +452,13 @@ export const inboxItemsRelations = relations(inboxItems, ({ one }) => ({
   }),
 }));
 
+export const emailTemplatesRelations = relations(emailTemplates, ({ one }) => ({
+  createdByUser: one(users, {
+    fields: [emailTemplates.createdBy],
+    references: [users.id],
+  }),
+}));
+
 // Zod schemas
 export const insertComplaintSchema = createInsertSchema(complaints).omit({
   id: true,
@@ -517,6 +540,12 @@ export const insertRoleActionMappingSchema = createInsertSchema(roleActionMappin
   updatedAt: true,
 });
 
+export const insertEmailTemplateSchema = createInsertSchema(emailTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -547,3 +576,5 @@ export type InboxItem = typeof inboxItems.$inferSelect;
 export type InsertInboxItem = z.infer<typeof insertInboxItemSchema>;
 export type RoleActionMapping = typeof roleActionMapping.$inferSelect;
 export type InsertRoleActionMapping = z.infer<typeof insertRoleActionMappingSchema>;
+export type EmailTemplate = typeof emailTemplates.$inferSelect;
+export type InsertEmailTemplate = z.infer<typeof insertEmailTemplateSchema>;

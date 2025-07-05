@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
-import { insertComplaintSchema, insertWorkDescriptionSchema, insertAuditSchema, insertListValueSchema, users } from "@shared/schema";
+import { insertComplaintSchema, insertWorkDescriptionSchema, insertAuditSchema, insertListValueSchema, insertEmailTemplateSchema, users, type EmailTemplate } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 import { handleFileUpload } from "./services/fileUpload";
@@ -11,6 +11,7 @@ import { sendSMSNotification } from "./services/twilioService";
 import multer from "multer";
 import path from "path";
 import { z } from "zod";
+import { ValidationError } from "zod-validation-error";
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -2213,6 +2214,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error forwarding workflow task:', error);
       res.status(500).json({ error: 'Failed to forward workflow task' });
+    }
+  });
+
+  // Email template routes
+  app.get('/api/email-templates', isAuthenticated, async (req: any, res) => {
+    try {
+      const { templateType, category, isActive } = req.query;
+      const filters: any = {};
+      
+      if (templateType) filters.templateType = templateType;
+      if (category) filters.category = category;
+      if (isActive !== undefined) filters.isActive = isActive === 'true';
+      
+      const templates = await storage.getEmailTemplates(filters);
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching email templates:', error);
+      res.status(500).json({ error: 'Failed to fetch email templates' });
+    }
+  });
+
+  app.post('/api/email-templates', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user has admin role
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      const userRoles = typeof user?.roles === 'string' ? JSON.parse(user.roles) : user?.roles || [];
+      
+      if (!userRoles.includes('admin')) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      
+      const validatedData = insertEmailTemplateSchema.parse({
+        ...req.body,
+        createdBy: userId
+      });
+      
+      const template = await storage.createEmailTemplate(validatedData);
+      res.json(template);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const validationError = ValidationError.fromZodError(error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      console.error('Error creating email template:', error);
+      res.status(500).json({ error: 'Failed to create email template' });
+    }
+  });
+
+  app.put('/api/email-templates/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user has admin role
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      const userRoles = typeof user?.roles === 'string' ? JSON.parse(user.roles) : user?.roles || [];
+      
+      if (!userRoles.includes('admin')) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      
+      const id = parseInt(req.params.id);
+      const updates = req.body;
+      
+      const template = await storage.updateEmailTemplate(id, updates);
+      res.json(template);
+    } catch (error) {
+      console.error('Error updating email template:', error);
+      res.status(500).json({ error: 'Failed to update email template' });
+    }
+  });
+
+  app.delete('/api/email-templates/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user has admin role
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      const userRoles = typeof user?.roles === 'string' ? JSON.parse(user.roles) : user?.roles || [];
+      
+      if (!userRoles.includes('admin')) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      
+      const id = parseInt(req.params.id);
+      await storage.deleteEmailTemplate(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting email template:', error);
+      res.status(500).json({ error: 'Failed to delete email template' });
+    }
+  });
+
+  app.get('/api/email-templates/:id', isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const template = await storage.getEmailTemplateById(id);
+      
+      if (!template) {
+        return res.status(404).json({ error: 'Email template not found' });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error('Error fetching email template:', error);
+      res.status(500).json({ error: 'Failed to fetch email template' });
+    }
+  });
+
+  app.get('/api/email-templates/by-type/:templateType', isAuthenticated, async (req, res) => {
+    try {
+      const { templateType } = req.params;
+      const template = await storage.getEmailTemplateByType(templateType);
+      
+      if (!template) {
+        return res.status(404).json({ error: 'Email template not found' });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error('Error fetching email template by type:', error);
+      res.status(500).json({ error: 'Failed to fetch email template' });
     }
   });
 

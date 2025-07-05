@@ -14,6 +14,7 @@ import {
   workflows,
   workflowTasks,
   inboxItems,
+  emailTemplates,
   type User,
   type UpsertUser,
   type Complaint,
@@ -43,6 +44,8 @@ import {
   type InsertWorkflowTask,
   type InboxItem,
   type InsertInboxItem,
+  type EmailTemplate,
+  type InsertEmailTemplate,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, gte, lte, isNull, sql } from "drizzle-orm";
@@ -199,6 +202,18 @@ export interface IStorage {
   
   // Workflow task creation from workflow nodes
   createWorkflowTasksFromWorkflow(complaintId: number, workflowId: number): Promise<WorkflowTask[]>;
+  
+  // Email template operations
+  getEmailTemplates(filters?: {
+    templateType?: string;
+    category?: string;
+    isActive?: boolean;
+  }): Promise<EmailTemplate[]>;
+  createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate>;
+  updateEmailTemplate(id: number, updates: Partial<EmailTemplate>): Promise<EmailTemplate>;
+  deleteEmailTemplate(id: number): Promise<void>;
+  getEmailTemplateById(id: number): Promise<EmailTemplate | undefined>;
+  getEmailTemplateByType(templateType: string): Promise<EmailTemplate | undefined>;
   
   // Helper methods
   generateComplaintId(serviceType?: string): Promise<string>;
@@ -1304,6 +1319,101 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Workflow task creation from workflow nodes
+  async getEmailTemplates(filters?: {
+    templateType?: string;
+    category?: string;
+    isActive?: boolean;
+  }): Promise<EmailTemplate[]> {
+    let query = db.select().from(emailTemplates);
+    
+    if (filters) {
+      const conditions: any[] = [];
+      if (filters.templateType) {
+        conditions.push(eq(emailTemplates.templateType, filters.templateType));
+      }
+      if (filters.category) {
+        conditions.push(eq(emailTemplates.category, filters.category));
+      }
+      if (filters.isActive !== undefined) {
+        conditions.push(eq(emailTemplates.isActive, filters.isActive));
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+    }
+    
+    return await query.orderBy(emailTemplates.name);
+  }
+
+  async createEmailTemplate(template: InsertEmailTemplate): Promise<EmailTemplate> {
+    const [created] = await db.insert(emailTemplates)
+      .values(template)
+      .returning();
+    
+    await this.createAuditEntry({
+      action: `Email template created: ${created.name}`,
+      userId: template.createdBy,
+      newValue: `Template ID: ${created.id}, Type: ${created.templateType}`
+    });
+    
+    return created;
+  }
+
+  async updateEmailTemplate(id: number, updates: Partial<EmailTemplate>): Promise<EmailTemplate> {
+    const existing = await this.getEmailTemplateById(id);
+    if (!existing) {
+      throw new Error('Email template not found');
+    }
+    
+    const [updated] = await db.update(emailTemplates)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(emailTemplates.id, id))
+      .returning();
+    
+    await this.createAuditEntry({
+      action: `Email template updated: ${updated.name}`,
+      userId: 'system',
+      previousValue: `Name: ${existing.name}, Type: ${existing.templateType}`,
+      newValue: `Name: ${updated.name}, Type: ${updated.templateType}`
+    });
+    
+    return updated;
+  }
+
+  async deleteEmailTemplate(id: number): Promise<void> {
+    const existing = await this.getEmailTemplateById(id);
+    if (!existing) {
+      throw new Error('Email template not found');
+    }
+    
+    await db.delete(emailTemplates).where(eq(emailTemplates.id, id));
+    
+    await this.createAuditEntry({
+      action: `Email template deleted: ${existing.name}`,
+      userId: 'system',
+      previousValue: `Template ID: ${id}, Type: ${existing.templateType}`
+    });
+  }
+
+  async getEmailTemplateById(id: number): Promise<EmailTemplate | undefined> {
+    const [template] = await db.select()
+      .from(emailTemplates)
+      .where(eq(emailTemplates.id, id));
+    return template;
+  }
+
+  async getEmailTemplateByType(templateType: string): Promise<EmailTemplate | undefined> {
+    const [template] = await db.select()
+      .from(emailTemplates)
+      .where(and(
+        eq(emailTemplates.templateType, templateType),
+        eq(emailTemplates.isActive, true)
+      ))
+      .orderBy(emailTemplates.createdAt);
+    return template;
+  }
+
   async createWorkflowTasksFromWorkflow(complaintId: number, workflowId: number): Promise<WorkflowTask[]> {
     const workflow = await this.getWorkflowById(workflowId);
     if (!workflow) {
