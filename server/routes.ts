@@ -2080,6 +2080,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual workflow task creation for existing complaints
+  app.post('/api/complaints/:complaintId/initialize-workflow', isAuthenticated, async (req: any, res) => {
+    try {
+      const complaintId = parseInt(req.params.complaintId);
+      const userId = req.user.claims.sub;
+      
+      // Check if user has admin role
+      const user = await storage.getUser(userId);
+      const userRoles = typeof user?.roles === 'string' ? JSON.parse(user.roles) : user?.roles || [];
+      
+      if (!userRoles.includes('admin') && !userRoles.includes('supervisor')) {
+        return res.status(403).json({ error: 'Admin or supervisor access required' });
+      }
+      
+      // Get the complaint
+      const complaint = await storage.getComplaint(complaintId);
+      if (!complaint) {
+        return res.status(404).json({ error: 'Complaint not found' });
+      }
+      
+      // Check if workflow is already assigned
+      if (!complaint.workflowId) {
+        // Determine complaint type and assign workflow
+        let complaintType = 'AIR_QUALITY';
+        if (complaint.problemType?.some(p => p.toLowerCase().includes('demolition') || p.toLowerCase().includes('asbestos'))) {
+          complaintType = 'DEMOLITION_NOTICE';
+        }
+        
+        const template = await storage.getTemplateForComplaintType(complaintType);
+        if (template) {
+          await storage.assignWorkflowToComplaint(complaintId, template.id);
+          complaint.workflowId = template.id;
+        }
+      }
+      
+      // Create workflow tasks if they don't exist
+      const existingTasks = await storage.getWorkflowTasks({ complaintId });
+      if (existingTasks.length === 0 && complaint.workflowId) {
+        const tasks = await storage.createWorkflowTasksFromWorkflow(complaintId, complaint.workflowId);
+        
+        // Create inbox items for each task
+        for (const task of tasks) {
+          await storage.createInboxItem({
+            userId: task.assignedTo,
+            itemType: 'WORKFLOW_TASK',
+            itemId: task.id,
+            title: `New Task: ${task.taskName}`,
+            description: `${task.taskType.replace(/_/g, ' ')} for complaint ${complaint.complaintId}`,
+            priority: task.priority,
+            workflowTaskId: task.id,
+            complaintId: complaint.id,
+            isRead: false
+          });
+        }
+        
+        // Create audit entry
+        await storage.createAuditEntry({
+          complaintId: complaintId,
+          action: 'workflow_manually_initiated',
+          newValue: `${tasks.length} workflow tasks created manually`,
+          userId: userId,
+          reason: 'Manual workflow initialization'
+        });
+        
+        res.json({ 
+          success: true, 
+          tasksCreated: tasks.length,
+          workflowId: complaint.workflowId,
+          message: `Successfully initialized workflow with ${tasks.length} tasks` 
+        });
+      } else {
+        res.json({ 
+          success: false, 
+          message: `Workflow already initialized with ${existingTasks.length} tasks` 
+        });
+      }
+    } catch (error) {
+      console.error('Error initializing workflow:', error);
+      res.status(500).json({ error: 'Failed to initialize workflow' });
+    }
+  });
+
   // Workflow Task Action Endpoints
   app.post('/api/workflow-tasks/:id/approve', isAuthenticated, async (req: any, res) => {
     try {

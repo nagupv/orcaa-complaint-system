@@ -1523,9 +1523,72 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createWorkflowTasksFromWorkflow(complaintId: number, workflowId: number): Promise<WorkflowTask[]> {
-    // Temporarily disabled due to compilation issues
-    console.log('Workflow task creation temporarily disabled');
-    return [];
+    const workflow = await this.getWorkflowById(workflowId);
+    if (!workflow) {
+      throw new Error('Workflow not found');
+    }
+
+    const workflowData = workflow.workflowData as any;
+    const tasks: WorkflowTask[] = [];
+    
+    // **PROCESS WORKFLOW ORCHESTRATION** - Handle all notifications and immediate actions
+    if (workflowData.nodes && workflowData.edges) {
+      await this.executeWorkflowOrchestration(complaintId, workflowData.nodes, workflowData.edges);
+    }
+
+    // **SEQUENTIAL WORKFLOW LOGIC** - Only create the first task initially
+    if (workflowData.nodes && workflowData.edges) {
+      // Find the first task node (after start node)
+      const firstTaskNode = workflowData.nodes.find((node: any) => 
+        node.type === 'task' || node.type === 'decision'
+      );
+      
+      if (firstTaskNode) {
+        // Convert node label to task type format
+        const nodeLabel = firstTaskNode.data?.label || firstTaskNode.type;
+        const nodeType = nodeLabel?.toUpperCase().replace(/\s+/g, '_');
+        
+        console.log(`Creating first workflow task: ${nodeType} (${nodeLabel})`);
+        
+        // Use simplified role assignment
+        const allowedRoles = ['field_staff'];
+        
+        // Find a user with required roles
+        const users = await this.getAllUsers();
+        const assignedUser = users.find(user => {
+          const userRoles = typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles;
+          return allowedRoles.some(role => userRoles.includes(role));
+        });
+
+        if (assignedUser) {
+          const userRoles = typeof assignedUser.roles === 'string' ? JSON.parse(assignedUser.roles) : assignedUser.roles;
+          const assignedRole = allowedRoles.find(role => userRoles.includes(role)) || allowedRoles[0];
+          
+          const task = await this.createWorkflowTask({
+            complaintId,
+            workflowId,
+            taskType: nodeType,
+            taskName: firstTaskNode.data?.label || nodeType.replace(/_/g, ' '),
+            assignedTo: assignedUser.id,
+            assignedRole,
+            status: 'pending',
+            priority: 'medium',
+            taskData: {
+              ...firstTaskNode.data,
+              nodeId: firstTaskNode.id,
+              workflowSequence: 1
+            }
+          });
+          tasks.push(task);
+          
+          console.log(`Created workflow task: ${task.taskName} assigned to ${assignedUser.firstName} ${assignedUser.lastName}`);
+        } else {
+          console.warn(`No users found with required roles for task type ${nodeType}`);
+        }
+      }
+    }
+
+    return tasks;
   }
 
   async executeWorkflowOrchestration(complaintId: number, nodes: any[], edges: any[]): Promise<void> {
