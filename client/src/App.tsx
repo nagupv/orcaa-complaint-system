@@ -29,6 +29,7 @@ import ComplaintForm from "@/pages/ComplaintForm";
 import DemolitionForm from "@/pages/DemolitionForm";
 import ComplaintSearch from "@/pages/ComplaintSearch";
 import EnhancedComplaintSearch from "@/pages/EnhancedComplaintSearch";
+import Help from "@/pages/Help";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -64,6 +65,7 @@ function Router() {
           <Route path="/role-action-mapping" component={RoleActionMapping} />
           <Route path="/user-role-report" component={UserRoleReport} />
           <Route path="/enhanced-search" component={EnhancedComplaintSearch} />
+          <Route path="/help" component={Help} />
         </>
       )}
       <Route component={NotFound} />

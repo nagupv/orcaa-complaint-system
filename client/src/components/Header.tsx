@@ -109,6 +109,10 @@ export default function Header() {
                 Audit Trail
               </Link>
               
+              <Link href="/help" className="text-gray-700 hover:text-orcaa-blue font-medium">
+                Help
+              </Link>
+              
               {/* Application Management Dropdown - No Action on Main Link */}
               <div className="relative group">
                 <span className="dropdown-trigger text-gray-700 hover:text-orcaa-blue font-medium flex items-center gap-1 cursor-pointer">
@@ -234,6 +238,10 @@ export default function Header() {
               </div>
               <Link href="/audit-trail" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
                 Audit Trail
+              </Link>
+              
+              <Link href="/help" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
+                Help
               </Link>
               
               {/* Application Management Mobile Section */}
