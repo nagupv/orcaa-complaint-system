@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORCAA Complaint Notification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .email-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #2563eb;
+            color: white;
+            padding: 20px;
+            border-radius: 8px 8px 0 0;
+            text-align: center;
+            margin: -30px -30px 30px -30px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .complaint-details {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .detail-label {
+            font-weight: bold;
+            color: #374151;
+            min-width: 120px;
+        }
+        .detail-value {
+            color: #6b7280;
+            flex: 1;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-new {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        .status-in-progress {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        .status-resolved {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .priority-high {
+            background-color: #fecaca;
+            color: #dc2626;
+        }
+        .priority-medium {
+            background-color: #fed7aa;
+            color: #ea580c;
+        }
+        .priority-low {
+            background-color: #e0e7ff;
+            color: #4338ca;
+        }
+        .action-required {
+            background-color: #fef2f2;
+            border: 1px solid #fca5a5;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .action-required h3 {
+            color: #dc2626;
+            margin-top: 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .button:hover {
+            background-color: #1d4ed8;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+        }
+        .contact-info {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f1f5f9;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h1>ORCAA Complaint Management System</h1>
+            <p>Olympic Region Clean Air Agency</p>
+        </div>
+
+        <h2>Complaint Status Update</h2>
+        
+        <p>Dear {{recipientName}},</p>
+        
+        <p>We are writing to inform you about an update to your air quality complaint. Please find the details below:</p>
+
+        <div class="complaint-details">
+            <div class="detail-row">
+                <span class="detail-label">Complaint ID:</span>
+                <span class="detail-value">{{complaintId}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Status:</span>
+                <span class="detail-value">
+                    <span class="status-badge status-{{statusClass}}">{{status}}</span>
+                </span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Priority:</span>
+                <span class="detail-value">
+                    <span class="status-badge priority-{{priorityClass}}">{{priority}}</span>
+                </span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Problem Type:</span>
+                <span class="detail-value">{{problemType}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Date Submitted:</span>
+                <span class="detail-value">{{submissionDate}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Last Updated:</span>
+                <span class="detail-value">{{lastUpdated}}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Assigned Staff:</span>
+                <span class="detail-value">{{assignedStaff}}</span>
+            </div>
+        </div>
+
+        <h3>Latest Update</h3>
+        <p>{{updateDescription}}</p>
+
+        {{#if actionRequired}}
+        <div class="action-required">
+            <h3>Action Required</h3>
+            <p>{{actionDescription}}</p>
+            <a href="{{actionUrl}}" class="button">Take Action</a>
+        </div>
+        {{/if}}
+
+        {{#if nextSteps}}
+        <h3>Next Steps</h3>
+        <p>{{nextSteps}}</p>
+        {{/if}}
+
+        <div class="contact-info">
+            <h4>Need More Information?</h4>
+            <p>If you have questions about this complaint or need additional information, please contact us:</p>
+            <ul>
+                <li><strong>Phone:</strong> (360) 539-7610</li>
+                <li><strong>Email:</strong> info@orcaa.org</li>
+                <li><strong>Website:</strong> www.orcaa.org</li>
+                <li><strong>Office Hours:</strong> Monday-Friday, 8:00 AM - 4:30 PM</li>
+            </ul>
+        </div>
+
+        <p>Thank you for your commitment to maintaining clean air quality in our region. Your complaint helps us protect public health and the environment.</p>
+
+        <p>Best regards,<br>
+        <strong>ORCAA Staff</strong><br>
+        Olympic Region Clean Air Agency</p>
+
+        <div class="footer">
+            <p>This is an automated notification from the ORCAA Complaint Management System.</p>
+            <p>Olympic Region Clean Air Agency | 2940 Limited Lane NW | Olympia, WA 98502</p>
+            <p>Phone: (360) 539-7610 | Website: www.orcaa.org</p>
+        </div>
+    </div>
+</body>
+</html>
