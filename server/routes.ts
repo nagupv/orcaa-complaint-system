@@ -1443,6 +1443,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual workflow task creation for fixing missing tasks
+  app.post('/api/complaints/:id/create-workflow-tasks', isAuthenticated, async (req, res) => {
+    try {
+      const complaintId = parseInt(req.params.id);
+      const { workflowId } = req.body;
+      
+      // Get complaint details first
+      const complaint = await storage.getComplaint(complaintId);
+      if (!complaint) {
+        return res.status(404).json({ message: "Complaint not found" });
+      }
+      
+      // Create workflow tasks from workflow template
+      const tasks = await storage.createWorkflowTasksFromWorkflow(complaintId, workflowId || complaint.workflowId);
+      
+      // Create inbox items for each task
+      for (const task of tasks) {
+        await storage.createInboxItem({
+          userId: task.assignedTo,
+          itemType: 'WORKFLOW_TASK',
+          title: `New Task: ${task.taskName}`,
+          description: `${task.taskType.replace(/_/g, ' ')} for complaint ${complaint.complaintId}`,
+          priority: task.priority,
+          workflowTaskId: task.id,
+          complaintId: complaint.id,
+          isRead: false
+        });
+      }
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        complaintId: complaint.id,
+        action: 'workflow_tasks_created',
+        newValue: `${tasks.length} workflow tasks created manually for complaint ${complaint.complaintId}`,
+        userId: req.user.claims.sub,
+        reason: 'Manual workflow task creation'
+      });
+      
+      res.json({ message: "Workflow tasks created successfully", tasks });
+    } catch (error) {
+      console.error("Error creating workflow tasks:", error);
+      res.status(500).json({ message: "Failed to create workflow tasks" });
+    }
+  });
+
   app.get('/api/workflows/:id', isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
