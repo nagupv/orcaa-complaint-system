@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronDown } from "lucide-react";
 import UserManagement from "./UserManagement";
@@ -13,6 +13,39 @@ import RoleActionMapping from "./RoleActionMapping";
 export default function ApplicationManagement() {
   const [activeSection, setActiveSection] = useState("users");
   const [activeMappingSection, setActiveMappingSection] = useState("user-role");
+
+  // Listen for hash changes to update active section
+  useEffect(() => {
+    const hash = window.location.hash.slice(1); // Remove the # symbol
+    const validSections = ["users", "roles", "list-values", "workflow", "templates", "mappings", "user-role", "role-action", "reports"];
+    if (hash && validSections.includes(hash)) {
+      if (hash === "user-role" || hash === "role-action") {
+        setActiveSection("mappings");
+        setActiveMappingSection(hash);
+      } else {
+        setActiveSection(hash);
+      }
+    }
+  }, []);
+
+  // Listen for hash changes while on the page
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      const validSections = ["users", "roles", "list-values", "workflow", "templates", "mappings", "user-role", "role-action", "reports"];
+      if (hash && validSections.includes(hash)) {
+        if (hash === "user-role" || hash === "role-action") {
+          setActiveSection("mappings");
+          setActiveMappingSection(hash);
+        } else {
+          setActiveSection(hash);
+        }
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   const menuItems = [
     { id: "users", label: "User Management", component: UserManagement },
@@ -66,6 +99,7 @@ export default function ApplicationManagement() {
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveSection(item.id);
+                      window.history.replaceState(null, '', `/application-management#${item.id}`);
                     }}
                     className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-1 hover:no-underline ${
                       activeSection === item.id
@@ -89,6 +123,7 @@ export default function ApplicationManagement() {
                               e.preventDefault();
                               setActiveSection("mappings");
                               setActiveMappingSection(subItem.id);
+                              window.history.replaceState(null, '', `/application-management#${subItem.id}`);
                             }}
                             className={`block w-full text-left px-4 py-2 text-sm transition-colors hover:no-underline ${
                               activeSection === "mappings" && activeMappingSection === subItem.id

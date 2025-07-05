@@ -95,13 +95,13 @@ export default function Header() {
                 {/* Dropdown Menu */}
                 <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="py-1">
-                    <Link href="/time-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/time-management#timesheets" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       Time Entries
                     </Link>
-                    <Link href="/time-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/time-management#leave" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       Leave Requests
                     </Link>
-                    <Link href="/time-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/time-management#overtime" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       Overtime Requests
                     </Link>
                   </div>
@@ -121,30 +121,30 @@ export default function Header() {
                 {/* Dropdown Menu */}
                 <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="py-1">
-                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/application-management#users" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       User Management
                     </Link>
-                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/application-management#roles" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       Role Management
                     </Link>
-                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/application-management#list-values" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       List Values
                     </Link>
-                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/application-management#workflow" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       Workflow Designer
                     </Link>
-                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/application-management#templates" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       Workflow Templates
                     </Link>
                     <div className="border-t border-gray-200 my-1"></div>
-                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/application-management#user-role" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       User & Role Mapping
                     </Link>
-                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/application-management#role-action" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       Role-Action Mapping
                     </Link>
                     <div className="border-t border-gray-200 my-1"></div>
-                    <Link href="/application-management" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
+                    <Link href="/application-management#reports" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue">
                       User Role Report
                     </Link>
                   </div>
@@ -223,13 +223,13 @@ export default function Header() {
                   <span className="font-semibold">Time Management</span>
                 </Link>
                 <div className="ml-4 mt-2 space-y-2">
-                  <Link href="/time-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/time-management#timesheets" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     Time Entries
                   </Link>
-                  <Link href="/time-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/time-management#leave" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     Leave Requests
                   </Link>
-                  <Link href="/time-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/time-management#overtime" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     Overtime Requests
                   </Link>
                 </div>
@@ -244,28 +244,28 @@ export default function Header() {
                   <span className="font-semibold">Application Management</span>
                 </Link>
                 <div className="ml-4 mt-2 space-y-2">
-                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/application-management#users" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     User Management
                   </Link>
-                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/application-management#roles" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     Role Management
                   </Link>
-                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/application-management#list-values" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     List Values
                   </Link>
-                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/application-management#workflow" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     Workflow Designer
                   </Link>
-                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/application-management#templates" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     Workflow Templates
                   </Link>
-                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/application-management#user-role" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     User & Role Mapping
                   </Link>
-                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/application-management#role-action" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     Role-Action Mapping
                   </Link>
-                  <Link href="/application-management" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
+                  <Link href="/application-management#reports" className="block text-sm text-gray-600 hover:text-orcaa-blue py-1">
                     User Role Report
                   </Link>
                 </div>

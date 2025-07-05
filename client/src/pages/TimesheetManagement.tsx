@@ -57,7 +57,28 @@ export default function TimesheetManagement() {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTimesheet, setEditingTimesheet] = useState<Timesheet | null>(null);
-  const [activeTab, setActiveTab] = useState("time-entries");
+  const [activeTab, setActiveTab] = useState("timesheets");
+
+  // Listen for hash changes to update active tab
+  useEffect(() => {
+    const hash = window.location.hash.slice(1); // Remove the # symbol
+    if (hash && ['timesheets', 'leave', 'overtime'].includes(hash)) {
+      setActiveTab(hash);
+    }
+  }, []);
+
+  // Listen for hash changes while on the page
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash && ['timesheets', 'leave', 'overtime'].includes(hash)) {
+        setActiveTab(hash);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
   const [editingLeaveRequest, setEditingLeaveRequest] = useState<any | null>(null);
   const [editingOvertimeRequest, setEditingOvertimeRequest] = useState<any | null>(null);
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
@@ -584,7 +605,10 @@ export default function TimesheetManagement() {
         </div>
       </div>
 
-      <Tabs defaultValue="timesheets" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(value) => {
+        setActiveTab(value);
+        window.history.replaceState(null, '', `/time-management#${value}`);
+      }} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="timesheets" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
