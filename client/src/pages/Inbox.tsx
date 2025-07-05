@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { formatDistanceToNow, format } from "date-fns";
+import WorkflowTaskDetail from "@/components/WorkflowTaskDetail";
 
 export default function Inbox() {
   const { user } = useAuth();
@@ -27,6 +28,8 @@ export default function Inbox() {
   const [actionType, setActionType] = useState<"approve" | "reject" | "forward">("approve");
   const [comments, setComments] = useState("");
   const [forwardEmail, setForwardEmail] = useState("");
+  const [workflowTaskDetailOpen, setWorkflowTaskDetailOpen] = useState(false);
+  const [selectedWorkflowTask, setSelectedWorkflowTask] = useState<any>(null);
 
   // Fetch assigned complaints
   const { data: complaints = [], isLoading: complaintsLoading } = useQuery({
@@ -163,6 +166,16 @@ export default function Inbox() {
   };
 
   const handleViewDetails = (item: any) => {
+    if (item.type === "workflow_task" && item.workflowTaskId) {
+      // For workflow tasks, open the comprehensive WorkflowTaskDetail component
+      const workflowTask = workflowTasks.find((task: any) => task.id === item.workflowTaskId);
+      if (workflowTask) {
+        setSelectedWorkflowTask(workflowTask);
+        setWorkflowTaskDetailOpen(true);
+        return;
+      }
+    }
+    // For other items, open the simple modal
     setSelectedItem(item);
     setViewDetailsOpen(true);
   };
@@ -846,6 +859,18 @@ export default function Inbox() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Workflow Task Detail Component */}
+        {selectedWorkflowTask && (
+          <WorkflowTaskDetail
+            taskId={selectedWorkflowTask.id}
+            open={workflowTaskDetailOpen}
+            onClose={() => {
+              setWorkflowTaskDetailOpen(false);
+              setSelectedWorkflowTask(null);
+            }}
+          />
+        )}
       </div>
     </div>
   );
