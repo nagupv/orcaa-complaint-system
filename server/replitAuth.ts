@@ -58,13 +58,33 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
+  // Check if user already exists to avoid overwriting existing roles
+  const existingUser = await storage.getUser(claims["sub"]);
+  
+  // For new users, determine roles based on email domain or admin configuration
+  let defaultRoles = ["field_staff"];
+  
+  // Check if this is the first user (make them admin)
+  const allUsers = await storage.getAllUsers();
+  if (allUsers.length === 0) {
+    defaultRoles = ["admin", "supervisor"];
+    console.log("First user detected, assigning admin privileges:", claims["email"]);
+  }
+  
+  // Admin emails can be configured via environment variable
+  const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
+  if (adminEmails.includes(claims["email"])) {
+    defaultRoles = ["admin", "supervisor"];
+    console.log("Admin email detected, assigning admin privileges:", claims["email"]);
+  }
+
   await storage.upsertUser({
     id: claims["sub"],
     email: claims["email"],
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
-    roles: JSON.stringify(["field_staff"]),
+    roles: existingUser ? existingUser.roles : JSON.stringify(defaultRoles),
   });
 }
 
