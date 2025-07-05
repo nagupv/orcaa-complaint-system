@@ -12,15 +12,28 @@ import {
   Search,
   BarChart3,
   Workflow,
-  Shield
+  Shield,
+  CheckCircle,
+  AlertTriangle,
+  Info,
+  Phone,
+  Globe,
+  UserCheck,
+  BookOpen,
+  Target,
+  Zap
 } from "lucide-react";
 
 export default function Help() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Help & Documentation</h1>
-        <p className="text-gray-600">Complete guide to using the ORCAA Complaint Management System</p>
+      <div className="mb-8 text-center">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">ORCAA Staff Help Center</h1>
+        <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          Your comprehensive guide to the Olympic Region Clean Air Agency's Complaint Management System. 
+          Learn how to efficiently process air quality complaints, manage workflows, track time, and leverage 
+          advanced features to serve our community better.
+        </p>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-6">
@@ -36,52 +49,97 @@ export default function Help() {
         <TabsContent value="overview" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <HelpCircle className="h-5 w-5" />
-                System Overview
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Target className="w-6 h-6 text-orcaa-blue" />
+                System Overview & Mission
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p>The ORCAA Complaint Management System is designed to help staff efficiently manage air quality complaints from the public.</p>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <h3 className="font-semibold">Key Features</h3>
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-blue-500" />
-                      Complaint submission and tracking
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Workflow className="h-4 w-4 text-green-500" />
-                      Automated workflow processing
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-orange-500" />
-                      Time tracking and reporting
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4 text-purple-500" />
-                      Analytics and dashboard
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-red-500" />
-                      Role-based access control
-                    </li>
-                  </ul>
-                </div>
-                
-                <div className="space-y-3">
-                  <h3 className="font-semibold">User Roles</h3>
-                  <div className="space-y-2">
-                    <Badge variant="outline">Field Staff</Badge>
-                    <Badge variant="outline">Contract Staff</Badge>
-                    <Badge variant="outline">Supervisor</Badge>
-                    <Badge variant="outline">Approver</Badge>
-                    <Badge variant="outline">Admin</Badge>
-                  </div>
-                </div>
+            <CardContent className="space-y-6">
+              <div className="bg-gradient-to-r from-orcaa-blue/10 to-green-50 p-6 rounded-lg">
+                <h3 className="text-lg font-semibold mb-3 text-orcaa-blue">Our Mission</h3>
+                <p className="text-gray-700 leading-relaxed">
+                  The ORCAA Complaint Management System empowers the Olympic Region Clean Air Agency to 
+                  efficiently protect public health and environmental quality. Our comprehensive platform 
+                  ensures every air quality complaint receives prompt, professional attention through 
+                  structured workflows, automated task assignment, and thorough documentation.
+                </p>
               </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="border-l-4 border-l-orcaa-blue">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Zap className="w-5 h-5 text-orcaa-blue" />
+                      Core Capabilities
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm"><strong>Intelligent Complaint Processing:</strong> Automated intake, categorization, and routing based on complaint type and urgency</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm"><strong>Dynamic Workflow Management:</strong> Customizable workflows that adapt to different complaint types and regulatory requirements</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm"><strong>Role-Based Authorization:</strong> Granular permissions ensuring staff access only appropriate functions for their responsibilities</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm"><strong>Comprehensive Time Tracking:</strong> Detailed activity logging for project billing, compliance reporting, and performance analytics</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm"><strong>Advanced Search & Analytics:</strong> Powerful filtering and reporting tools for compliance, trend analysis, and operational insights</span>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+                
+                <Card className="border-l-4 border-l-green-500">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <UserCheck className="w-5 h-5 text-green-500" />
+                      Staff Benefits
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-orcaa-blue mt-0.5 flex-shrink-0" />
+                        <span className="text-sm"><strong>Streamlined Daily Operations:</strong> Automated task assignment eliminates manual routing, ensuring balanced workloads</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-orcaa-blue mt-0.5 flex-shrink-0" />
+                        <span className="text-sm"><strong>Enhanced Collaboration:</strong> Real-time updates and shared documentation improve team coordination</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-orcaa-blue mt-0.5 flex-shrink-0" />
+                        <span className="text-sm"><strong>Regulatory Compliance:</strong> Built-in audit trails and documentation standards ensure regulatory adherence</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-orcaa-blue mt-0.5 flex-shrink-0" />
+                        <span className="text-sm"><strong>Performance Insights:</strong> Individual and team productivity metrics support professional development</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle className="w-4 h-4 text-orcaa-blue mt-0.5 flex-shrink-0" />
+                        <span className="text-sm"><strong>Mobile-Friendly Access:</strong> Responsive design enables field work and remote accessibility</span>
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Alert className="bg-blue-50 border-blue-200">
+                <Info className="w-4 h-4 text-blue-600" />
+                <AlertDescription className="text-blue-800">
+                  <strong>Quick Start:</strong> New users should begin with the Dashboard to familiarize themselves with 
+                  active complaints and their assigned tasks. The Inbox provides a centralized view of all pending work items.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
 
@@ -379,47 +437,128 @@ export default function Help() {
         <TabsContent value="support" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Support & Contact
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Phone className="w-6 h-6 text-orcaa-blue" />
+                Support & Contact Information
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="font-semibold">Technical Support</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-semibold">System Issues</h4>
-                    <p className="text-sm text-gray-600 mt-2">For login problems, system errors, or technical difficulties</p>
-                    <p className="text-sm font-medium mt-2">Contact: IT Support</p>
-                  </div>
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-semibold">Training & Usage</h4>
-                    <p className="text-sm text-gray-600 mt-2">For help with features, workflows, or general usage questions</p>
-                    <p className="text-sm font-medium mt-2">Contact: System Administrator</p>
-                  </div>
-                </div>
+              <div className="bg-gradient-to-r from-orcaa-blue/10 to-blue-50 p-6 rounded-lg">
+                <h3 className="text-lg font-semibold mb-3 text-orcaa-blue">Getting Help</h3>
+                <p className="text-gray-700 leading-relaxed">
+                  Our support team is here to ensure you can effectively use the ORCAA Complaint Management System 
+                  to serve our community's air quality protection needs. Whether you need technical assistance, 
+                  training, or have questions about workflows, we're ready to help.
+                </p>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="font-semibold">ORCAA Contact Information</h3>
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm">
-                    <strong>Olympic Region Clean Air Agency</strong><br />
-                    2940 Limited Lane NW<br />
-                    Olympia, WA 98502<br />
-                    Phone: (360) 539-7610<br />
-                    Website: <a href="https://orcaa.org" className="text-blue-600 hover:underline">orcaa.org</a>
-                  </p>
-                </div>
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card className="border-l-4 border-l-red-500">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <AlertTriangle className="w-5 h-5 text-red-500" />
+                      Technical Support
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-red-50 rounded-lg">
+                      <h4 className="font-semibold text-red-800 mb-2">System Issues & Errors</h4>
+                      <ul className="text-sm text-red-700 space-y-1">
+                        <li>• Login problems or authentication failures</li>
+                        <li>• System crashes or unexpected errors</li>
+                        <li>• Performance issues or slow loading</li>
+                        <li>• Database connectivity problems</li>
+                        <li>• File upload or attachment issues</li>
+                      </ul>
+                      <p className="text-sm font-medium mt-3 text-red-800">Contact: IT Support Team</p>
+                      <p className="text-xs text-red-600 mt-1">Response Time: Within 2 hours during business hours</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-l-4 border-l-green-500">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <BookOpen className="w-5 h-5 text-green-500" />
+                      Training & Usage Support
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-4 bg-green-50 rounded-lg">
+                      <h4 className="font-semibold text-green-800 mb-2">Feature Training & Guidance</h4>
+                      <ul className="text-sm text-green-700 space-y-1">
+                        <li>• Workflow process questions</li>
+                        <li>• Feature usage and best practices</li>
+                        <li>• Role permissions and access requests</li>
+                        <li>• Report generation and data analysis</li>
+                        <li>• New user onboarding and training</li>
+                      </ul>
+                      <p className="text-sm font-medium mt-3 text-green-800">Contact: System Administrator</p>
+                      <p className="text-xs text-green-600 mt-1">Response Time: Same day during business hours</p>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
-              <Alert>
-                <HelpCircle className="h-4 w-4" />
-                <AlertDescription>
-                  For urgent air quality complaints from the public, direct them to use the public complaint form on the ORCAA website or call the main office.
-                </AlertDescription>
-              </Alert>
+              <Card className="border-l-4 border-l-orcaa-blue">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Globe className="w-5 h-5 text-orcaa-blue" />
+                    ORCAA Contact Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div className="p-4 bg-orcaa-blue/10 rounded-lg">
+                        <h4 className="font-semibold text-orcaa-blue mb-3">Main Office</h4>
+                        <div className="space-y-2 text-sm">
+                          <p><strong>Olympic Region Clean Air Agency</strong></p>
+                          <p>2940 Limited Lane NW<br />Olympia, WA 98502</p>
+                          <p><strong>Phone:</strong> (360) 539-7610</p>
+                          <p><strong>Fax:</strong> (360) 491-6308</p>
+                          <p><strong>Website:</strong> <a href="https://orcaa.org" className="text-orcaa-blue hover:underline" target="_blank" rel="noopener noreferrer">orcaa.org</a></p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="p-4 bg-green-50 rounded-lg">
+                        <h4 className="font-semibold text-green-700 mb-3">Business Hours</h4>
+                        <div className="space-y-2 text-sm">
+                          <p><strong>Monday - Friday:</strong> 8:00 AM - 4:30 PM</p>
+                          <p><strong>Weekends:</strong> Closed</p>
+                          <p><strong>Holidays:</strong> Closed</p>
+                        </div>
+                        <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                          <p className="text-xs text-yellow-800">
+                            <strong>Emergency Response:</strong> For after-hours environmental emergencies, 
+                            contact local emergency services (911) or Washington State Patrol (1-800-543-5678)
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <Alert className="bg-blue-50 border-blue-200">
+                  <Info className="w-4 h-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>For Public Complaints:</strong> Direct citizens to submit complaints through the 
+                    public form on orcaa.org or by calling our main office during business hours.
+                  </AlertDescription>
+                </Alert>
+
+                <Alert className="bg-green-50 border-green-200">
+                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    <strong>System Status:</strong> Check the Dashboard for real-time system health 
+                    indicators and any scheduled maintenance notifications.
+                  </AlertDescription>
+                </Alert>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

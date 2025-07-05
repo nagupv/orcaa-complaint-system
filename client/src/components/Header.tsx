@@ -109,10 +109,6 @@ export default function Header() {
                 Audit Trail
               </Link>
               
-              <Link href="/help" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                Help
-              </Link>
-              
               {/* Application Management Dropdown - No Action on Main Link */}
               <div className="relative group">
                 <span className="dropdown-trigger text-gray-700 hover:text-orcaa-blue font-medium flex items-center gap-1 cursor-pointer">
@@ -155,6 +151,10 @@ export default function Header() {
                   </div>
                 </div>
               </div>
+              
+              <Link href="/help" className="text-gray-700 hover:text-orcaa-blue font-medium">
+                Help
+              </Link>
             </nav>
 
             {/* User Authentication Section */}
@@ -240,10 +240,6 @@ export default function Header() {
                 Audit Trail
               </Link>
               
-              <Link href="/help" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
-                Help
-              </Link>
-              
               {/* Application Management Mobile Section */}
               <div className="border-t border-gray-200 pt-3 mt-3">
                 <Link href="/application-management" className="text-gray-700 hover:text-orcaa-blue font-medium py-2 flex items-center gap-2">
@@ -279,6 +275,10 @@ export default function Header() {
                   </Link>
                 </div>
               </div>
+              
+              <Link href="/help" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
+                Help
+              </Link>
             </nav>
           </div>
         )}
