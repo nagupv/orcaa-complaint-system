@@ -17,14 +17,19 @@ export default function ApplicationManagement() {
   // Listen for hash changes to update active section
   useEffect(() => {
     const hash = window.location.hash.slice(1); // Remove the # symbol
+    console.log("Initial hash:", hash);
     const validSections = ["users", "roles", "list-values", "workflow", "templates", "mappings", "user-role", "role-action", "reports"];
     if (hash && validSections.includes(hash)) {
+      console.log("Setting active section to:", hash);
       if (hash === "user-role" || hash === "role-action") {
         setActiveSection("mappings");
         setActiveMappingSection(hash);
       } else {
         setActiveSection(hash);
       }
+    } else {
+      console.log("No valid hash found, using default");
+      setActiveSection("users"); // Default to users section
     }
   }, []);
 
@@ -32,14 +37,18 @@ export default function ApplicationManagement() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1);
+      console.log("Hash changed to:", hash);
       const validSections = ["users", "roles", "list-values", "workflow", "templates", "mappings", "user-role", "role-action", "reports"];
       if (hash && validSections.includes(hash)) {
+        console.log("Valid hash, setting active section to:", hash);
         if (hash === "user-role" || hash === "role-action") {
           setActiveSection("mappings");
           setActiveMappingSection(hash);
         } else {
           setActiveSection(hash);
         }
+      } else {
+        console.log("Invalid hash:", hash);
       }
     };
 
