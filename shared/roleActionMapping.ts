@@ -52,7 +52,7 @@ export const ACTION_CATEGORIES: ActionCategory[] = [
         id: "initial_inspection",
         name: "Initial Inspection",
         description: "Perform field inspections of complaints",
-        requiredRoles: ["field_staff"]
+        requiredRoles: ["admin"]
       },
       {
         id: "safety_inspection",
