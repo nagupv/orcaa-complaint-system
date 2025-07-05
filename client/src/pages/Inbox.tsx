@@ -223,35 +223,60 @@ export default function Inbox() {
 
   const isApprover = user?.roles?.some((role: string) => ["admin", "supervisor", "approver"].includes(role));
 
+  // Get unique workflow tasks for the current user (only latest task per complaint)
+  const userWorkflowTasks = (() => {
+    const userTasks = workflowTasks.filter((task: any) => task.assignedTo === user?.id && task.status === 'pending');
+    
+    return userTasks.reduce((uniqueTasks: any[], task: any) => {
+      // Only keep the HIGHEST ID (most recent) task per complaint for this user
+      const existingTaskIndex = uniqueTasks.findIndex(t => t.complaintId === task.complaintId);
+      if (existingTaskIndex === -1) {
+        uniqueTasks.push(task);
+      } else {
+        // Keep the task with the higher ID (more recent)
+        if (task.id > uniqueTasks[existingTaskIndex].id) {
+          uniqueTasks[existingTaskIndex] = task;
+        }
+      }
+      return uniqueTasks;
+    }, []);
+  })();
+
+  // Get complaint IDs that have active workflow tasks for the current user
+  const complaintsWithActiveWorkflowTasks = new Set(userWorkflowTasks.map(task => task.complaintId));
+
   const allItems = [
-    ...complaints.map((complaint: any) => {
-      const workflow = workflows.find((w: any) => w.id === complaint.workflowId);
-      const description = complaint.description || 'No description provided';
-      // Handle problemTypes array or use status as fallback
-      const problemTypeText = complaint.problemTypes && Array.isArray(complaint.problemTypes) 
-        ? complaint.problemTypes.join(', ') 
-        : complaint.status || 'Unknown';
-      
-      // Find current workflow step (active/pending task)
-      const currentTask = workflowTasks.find((task: any) => 
-        task.complaintId === complaint.id && 
-        (task.status === 'pending' || task.status === 'in_progress')
-      );
-      const currentStep = currentTask ? currentTask.taskName : 'No Active Step';
-      
-      return {
-        ...complaint,
-        type: "complaint",
-        title: `${complaint.complaintId} - ${problemTypeText}`,
-        description: `${description}${workflow ? ` | Workflow: ${workflow.name}` : ''}${currentStep ? ` | Step: ${currentStep}` : ''}`,
-        priority: complaint.priority,
-        status: complaint.status,
-        createdAt: complaint.createdAt,
-        workflowName: workflow?.name || 'No Workflow Assigned',
-        problemType: problemTypeText, // For the detail view
-        currentStep: currentStep, // For the detail view
-      };
-    }),
+    // Show complaints that don't have active workflow tasks for this user (informational view)
+    ...complaints
+      .filter((complaint: any) => !complaintsWithActiveWorkflowTasks.has(complaint.id))
+      .map((complaint: any) => {
+        const workflow = workflows.find((w: any) => w.id === complaint.workflowId);
+        const description = complaint.description || 'No description provided';
+        // Handle problemTypes array or use status as fallback
+        const problemTypeText = complaint.problemTypes && Array.isArray(complaint.problemTypes) 
+          ? complaint.problemTypes.join(', ') 
+          : complaint.status || 'Unknown';
+        
+        // Find current workflow step (active/pending task)
+        const currentTask = workflowTasks.find((task: any) => 
+          task.complaintId === complaint.id && 
+          (task.status === 'pending' || task.status === 'in_progress')
+        );
+        const currentStep = currentTask ? currentTask.taskName : 'No Active Step';
+        
+        return {
+          ...complaint,
+          type: "complaint",
+          title: `${complaint.complaintId} - ${problemTypeText}`,
+          description: `${description}${workflow ? ` | Workflow: ${workflow.name}` : ''}${currentStep ? ` | Step: ${currentStep}` : ''}`,
+          priority: complaint.priority,
+          status: complaint.status,
+          createdAt: complaint.createdAt,
+          workflowName: workflow?.name || 'No Workflow Assigned',
+          problemType: problemTypeText, // For the detail view
+          currentStep: currentStep, // For the detail view
+        };
+      }),
     ...leaveRequests.map((request: any) => ({
       ...request,
       type: "leave_approval",
@@ -288,28 +313,8 @@ export default function Inbox() {
       status: request.status,
       createdAt: request.createdAt,
     })),
-    // Add workflow tasks as actionable items - only show current pending tasks per complaint
-    ...(() => {
-      const userTasks = workflowTasks.filter((task: any) => task.assignedTo === user?.id && task.status === 'pending');
-      console.log('User tasks before filtering:', userTasks.map((t: any) => ({id: t.id, complaintId: t.complaintId, status: t.status})));
-      
-      const uniqueTasks = userTasks.reduce((uniqueTasks: any[], task: any) => {
-        // Only keep the HIGHEST ID (most recent) task per complaint for this user
-        const existingTaskIndex = uniqueTasks.findIndex(t => t.complaintId === task.complaintId);
-        if (existingTaskIndex === -1) {
-          uniqueTasks.push(task);
-        } else {
-          // Keep the task with the higher ID (more recent)
-          if (task.id > uniqueTasks[existingTaskIndex].id) {
-            uniqueTasks[existingTaskIndex] = task;
-          }
-        }
-        return uniqueTasks;
-      }, []);
-      
-      console.log('Unique tasks after filtering:', uniqueTasks.map((t: any) => ({id: t.id, complaintId: t.complaintId, status: t.status})));
-      return uniqueTasks;
-    })()
+    // Add workflow tasks as actionable items - only show current pending tasks per complaint for the current user
+    ...userWorkflowTasks
       .map((task: any) => {
         const complaint = complaints.find((c: any) => c.id === task.complaintId);
         const workflow = workflows.find((w: any) => w.id === task.workflowId);
