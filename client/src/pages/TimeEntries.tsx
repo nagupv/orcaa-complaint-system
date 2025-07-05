@@ -243,6 +243,80 @@ export default function TimeEntries() {
           </CardHeader>
         </Card>
 
+        {/* Monthly Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">Total Hours This Month</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orcaa-blue">
+                {(() => {
+                  const currentMonth = new Date().getMonth();
+                  const currentYear = new Date().getFullYear();
+                  const monthlyTotal = timesheets
+                    .filter((ts: any) => {
+                      const tsDate = new Date(ts.date);
+                      return tsDate.getMonth() === currentMonth && tsDate.getFullYear() === currentYear;
+                    })
+                    .reduce((sum: number, ts: any) => sum + parseFloat(ts.timeInHours), 0);
+                  return monthlyTotal.toFixed(1);
+                })()}h
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">Entries This Month</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orcaa-blue">
+                {(() => {
+                  const currentMonth = new Date().getMonth();
+                  const currentYear = new Date().getFullYear();
+                  return timesheets.filter((ts: any) => {
+                    const tsDate = new Date(ts.date);
+                    return tsDate.getMonth() === currentMonth && tsDate.getFullYear() === currentYear;
+                  }).length;
+                })()}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">Average Hours/Day</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orcaa-blue">
+                {(() => {
+                  const currentMonth = new Date().getMonth();
+                  const currentYear = new Date().getFullYear();
+                  const monthlyEntries = timesheets.filter((ts: any) => {
+                    const tsDate = new Date(ts.date);
+                    return tsDate.getMonth() === currentMonth && tsDate.getFullYear() === currentYear;
+                  });
+                  const workingDays = new Set(monthlyEntries.map((ts: any) => ts.date)).size;
+                  const totalHours = monthlyEntries.reduce((sum: number, ts: any) => sum + parseFloat(ts.timeInHours), 0);
+                  return workingDays > 0 ? (totalHours / workingDays).toFixed(1) : '0.0';
+                })()}h
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-gray-600">This Week</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orcaa-blue">
+                {totalHoursThisWeek.toFixed(1)}h
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Time Entries Table */}
         <Card>
           <CardHeader>
@@ -724,6 +798,74 @@ export default function TimeEntries() {
                                   </TableCell>
                                 ))}
                                 <TableCell className="font-semibold">{dayTotal}h</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            {/* Weekly Activity Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Weekly Activity Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const getWeekStart = (date: string) => {
+                    const d = new Date(date);
+                    const day = d.getDay();
+                    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday as start
+                    return new Date(d.setDate(diff)).toISOString().split('T')[0];
+                  };
+
+                  const weeklyActivitySummary = filteredTimesheets.reduce((acc: any, ts: any) => {
+                    const weekStart = getWeekStart(ts.date);
+                    const activity = ts.activity;
+                    const hours = parseFloat(ts.timeInHours);
+                    
+                    if (!acc[weekStart]) acc[weekStart] = {};
+                    if (!acc[weekStart][activity]) acc[weekStart][activity] = 0;
+                    acc[weekStart][activity] += hours;
+                    
+                    return acc;
+                  }, {});
+                  
+                  const allActivities = Array.from(new Set(filteredTimesheets.map((ts: any) => ts.activity)));
+                  
+                  return (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Week Start</TableHead>
+                            {allActivities.map(activity => (
+                              <TableHead key={activity}>{activity}</TableHead>
+                            ))}
+                            <TableHead className="font-semibold">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {Object.entries(weeklyActivitySummary).sort().map(([weekStart, activities]) => {
+                            const weekTotal = Object.values(activities as any).reduce((sum: number, hours: any) => sum + hours, 0);
+                            return (
+                              <TableRow key={weekStart}>
+                                <TableCell className="font-medium">
+                                  {format(parseISO(weekStart), 'MMM dd, yyyy')}
+                                </TableCell>
+                                {allActivities.map(activity => (
+                                  <TableCell key={activity}>
+                                    {(activities as any)[activity] ? `${(activities as any)[activity]}h` : '-'}
+                                  </TableCell>
+                                ))}
+                                <TableCell className="font-semibold">{weekTotal}h</TableCell>
                               </TableRow>
                             );
                           })}
