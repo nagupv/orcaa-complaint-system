@@ -78,24 +78,24 @@ export default function Header() {
           {/* Desktop Navigation & User Info */}
           <div className="flex items-center space-x-6">
             <nav className="hidden lg:flex items-center space-x-6">
-              <Link href="/" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                Home
+              <Link href="/dashboard" className="text-gray-700 hover:text-orcaa-blue font-medium">
+                Dashboard
               </Link>
-              <Link href="/services" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                Services
+              <Link href="/inbox" className="text-gray-700 hover:text-orcaa-blue font-medium">
+                Inbox
               </Link>
-              <Link href="/air-quality" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                Air Quality
+              <Link href="/time-management" className="text-gray-700 hover:text-orcaa-blue font-medium">
+                Time Management
               </Link>
-              <Link href="/burning" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                Burning
+              <Link href="/audit-trail" className="text-gray-700 hover:text-orcaa-blue font-medium">
+                Audit Trail
               </Link>
-              <Link href="/asbestos" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                Asbestos
+              <Link href="/application-management" className="text-gray-700 hover:text-orcaa-blue font-medium">
+                Application Management
               </Link>
-              <Link href="/contact" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                Contact
-              </Link>
+              <a href="https://orcaa.org" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-orcaa-blue font-medium">
+                ORCAA Website
+              </a>
             </nav>
 
             {/* User Authentication Section */}
@@ -153,24 +153,24 @@ export default function Header() {
         {isMenuOpen && (
           <div className="lg:hidden border-t border-gray-200 py-4">
             <nav className="flex flex-col space-y-3">
-              <Link href="/" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
-                Home
+              <Link href="/dashboard" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
+                Dashboard
               </Link>
-              <Link href="/services" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
-                Services
+              <Link href="/inbox" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
+                Inbox
               </Link>
-              <Link href="/air-quality" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
-                Air Quality
+              <Link href="/time-management" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
+                Time Management
               </Link>
-              <Link href="/burning" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
-                Burning
+              <Link href="/audit-trail" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
+                Audit Trail
               </Link>
-              <Link href="/asbestos" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
-                Asbestos
+              <Link href="/application-management" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
+                Application Management
               </Link>
-              <Link href="/contact" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
-                Contact
-              </Link>
+              <a href="https://orcaa.org" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-orcaa-blue font-medium py-2">
+                ORCAA Website
+              </a>
             </nav>
           </div>
         )}
