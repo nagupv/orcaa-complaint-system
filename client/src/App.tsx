@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 import Landing from "@/pages/Landing";
 import Home from "@/pages/Home";
 import Dashboard from "@/pages/Dashboard";
-import EnhancedInbox from "@/pages/EnhancedInbox";
+import Inbox from "@/pages/Inbox";
 import TimesheetManagement from "@/pages/TimesheetManagement";
 import TimeEntries from "@/pages/TimeEntries";
 import LeaveRequests from "@/pages/LeaveRequests";
@@ -45,7 +45,7 @@ function Router() {
         <>
           <Route path="/" component={Home} />
           <Route path="/dashboard" component={Dashboard} />
-          <Route path="/inbox" component={EnhancedInbox} />
+          <Route path="/inbox" component={Inbox} />
           <Route path="/time-management" component={TimesheetManagement} />
           <Route path="/time-entries" component={TimeEntries} />
           <Route path="/leave-requests" component={LeaveRequests} />

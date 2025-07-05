@@ -331,6 +331,182 @@ export default function Inbox() {
                     <Bell className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                     <p className="text-gray-600">No items in your inbox</p>
                   </div>
+                ) : activeTab === "all" ? (
+                  <>
+                    {/* Pending/Ongoing Items Section */}
+                    {(() => {
+                      const pendingOngoingItems = filteredItems.filter(item => 
+                        item.status === "pending" || item.status === "in_progress" || item.status === "initiated"
+                      );
+                      
+                      return pendingOngoingItems.length > 0 && (
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 mb-4">
+                            <AlertCircle className="h-5 w-5 text-orange-500" />
+                            <h3 className="text-lg font-semibold text-gray-900">Pending / Ongoing Items ({pendingOngoingItems.length})</h3>
+                          </div>
+                          {pendingOngoingItems.map((item) => (
+                            <Card key={`${item.type}-${item.id}`} className="hover:shadow-md transition-shadow border-l-4 border-l-orange-500">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-start gap-3 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      {getItemIcon(item.type)}
+                                      <div className="flex items-center gap-2">
+                                        <Badge className={`${getStatusColor(item.status)} text-white`}>
+                                          {item.status}
+                                        </Badge>
+                                        {item.priority && (
+                                          <Badge className={`${getPriorityColor(item.priority)} text-white`}>
+                                            {item.priority}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex-1">
+                                      <h3 className="font-semibold text-gray-900">{item.title}</h3>
+                                      <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleViewDetails(item)}
+                                    >
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      View
+                                    </Button>
+                                    {(item.type === "leave_approval" || item.type === "overtime_approval" || item.type === "complaint") && item.status === "pending" && (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleItemAction(item, "approve")}
+                                          disabled={processItemAction.isPending}
+                                        >
+                                          <CheckCircle className="h-4 w-4 mr-1" />
+                                          Approve
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleItemAction(item, "reject")}
+                                          disabled={processItemAction.isPending}
+                                        >
+                                          <XCircle className="h-4 w-4 mr-1" />
+                                          Reject
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleItemAction(item, "forward")}
+                                          disabled={processItemAction.isPending}
+                                        >
+                                          <Forward className="h-4 w-4 mr-1" />
+                                          Forward
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Remaining Items Section */}
+                    {(() => {
+                      const remainingItems = filteredItems.filter(item => 
+                        item.status !== "pending" && item.status !== "in_progress" && item.status !== "initiated"
+                      );
+                      
+                      return remainingItems.length > 0 && (
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 mb-4">
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                            <h3 className="text-lg font-semibold text-gray-900">Other Items ({remainingItems.length})</h3>
+                          </div>
+                          {remainingItems.map((item) => (
+                            <Card key={`${item.type}-${item.id}`} className="hover:shadow-md transition-shadow">
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex items-start gap-3 flex-1">
+                                    <div className="flex items-center gap-2">
+                                      {getItemIcon(item.type)}
+                                      <div className="flex items-center gap-2">
+                                        <Badge className={`${getStatusColor(item.status)} text-white`}>
+                                          {item.status}
+                                        </Badge>
+                                        {item.priority && (
+                                          <Badge className={`${getPriorityColor(item.priority)} text-white`}>
+                                            {item.priority}
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex-1">
+                                      <h3 className="font-semibold text-gray-900">{item.title}</h3>
+                                      <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleViewDetails(item)}
+                                    >
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      View
+                                    </Button>
+                                    {(item.type === "leave_approval" || item.type === "overtime_approval" || item.type === "complaint") && item.status === "pending" && (
+                                      <>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleItemAction(item, "approve")}
+                                          disabled={processItemAction.isPending}
+                                        >
+                                          <CheckCircle className="h-4 w-4 mr-1" />
+                                          Approve
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleItemAction(item, "reject")}
+                                          disabled={processItemAction.isPending}
+                                        >
+                                          <XCircle className="h-4 w-4 mr-1" />
+                                          Reject
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleItemAction(item, "forward")}
+                                          disabled={processItemAction.isPending}
+                                        >
+                                          <Forward className="h-4 w-4 mr-1" />
+                                          Forward
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      );
+                    })()}
+                  </>
                 ) : (
                   filteredItems.map((item) => (
                     <Card key={`${item.type}-${item.id}`} className="hover:shadow-md transition-shadow">
