@@ -1067,10 +1067,10 @@ export class DatabaseStorage implements IStorage {
     return task;
   }
 
-  async completeWorkflowTask(id: number, completedBy: string, completionNotes?: string): Promise<WorkflowTask> {
+  async completeWorkflowTask(id: number, completedBy: string, completionNotes?: string, taskStatus: string = 'completed'): Promise<WorkflowTask> {
     const [completedTask] = await db.update(workflowTasks)
       .set({ 
-        status: 'completed', 
+        status: taskStatus, 
         completedBy, 
         completedAt: new Date(),
         completionNotes,
@@ -1081,7 +1081,7 @@ export class DatabaseStorage implements IStorage {
 
     // Update related inbox item
     await db.update(inboxItems)
-      .set({ status: 'completed' })
+      .set({ status: taskStatus })
       .where(eq(inboxItems.workflowTaskId, id));
 
     // **CREATE NEXT TASK IN WORKFLOW SEQUENCE**
@@ -1333,8 +1333,14 @@ export class DatabaseStorage implements IStorage {
   determineCompletionStatus(edge: any, completedTask: WorkflowTask): string {
     const edgeLabel = edge.label?.toLowerCase() || '';
     const taskType = completedTask.taskType?.toLowerCase() || '';
+    const taskStatus = completedTask.status?.toLowerCase() || '';
     
-    // Check for rejection/dismissal patterns
+    // First check if the task itself was rejected
+    if (taskStatus === 'rejected') {
+      return 'closed'; // Use 'closed' for rejected tasks
+    }
+    
+    // Check for rejection/dismissal patterns in edge labels
     if (edgeLabel.includes('no violation') || 
         edgeLabel.includes('dismissed') || 
         edgeLabel.includes('rejected') ||

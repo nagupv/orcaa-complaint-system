@@ -2143,7 +2143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Complete the workflow task as rejected (which will handle workflow progression)
-      const rejectedTask = await storage.completeWorkflowTask(taskId, rejectedBy, reason);
+      const rejectedTask = await storage.completeWorkflowTask(taskId, rejectedBy, reason, 'rejected');
       
       // Create audit entry
       await storage.createAuditEntry({
