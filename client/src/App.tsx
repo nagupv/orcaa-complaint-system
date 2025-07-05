@@ -16,6 +16,14 @@ import LeaveRequests from "@/pages/LeaveRequests";
 import OvertimeRequests from "@/pages/OvertimeRequests";
 import AuditTrail from "@/pages/AuditTrail";
 import ApplicationManagement from "@/pages/ApplicationManagement";
+import UserManagement from "@/pages/UserManagement";
+import RoleManagement from "@/pages/RoleManagement";
+import ListValueManagement from "@/pages/ListValueManagement";
+import WorkflowDesigner from "@/pages/WorkflowDesigner";
+import WorkflowTemplates from "@/pages/WorkflowTemplates";
+import UserRoleMapping from "@/pages/UserRoleMapping";
+import RoleActionMapping from "@/pages/RoleActionMapping";
+import UserRoleReport from "@/pages/UserRoleReport";
 import ServiceSelection from "@/pages/ServiceSelection";
 import ComplaintForm from "@/pages/ComplaintForm";
 import DemolitionForm from "@/pages/DemolitionForm";
@@ -44,6 +52,14 @@ function Router() {
           <Route path="/overtime-requests" component={OvertimeRequests} />
           <Route path="/audit-trail" component={AuditTrail} />
           <Route path="/application-management" component={ApplicationManagement} />
+          <Route path="/user-management" component={UserManagement} />
+          <Route path="/role-management" component={RoleManagement} />
+          <Route path="/list-values" component={ListValueManagement} />
+          <Route path="/workflow-designer" component={WorkflowDesigner} />
+          <Route path="/workflow-templates" component={WorkflowTemplates} />
+          <Route path="/user-role-mapping" component={UserRoleMapping} />
+          <Route path="/role-action-mapping" component={RoleActionMapping} />
+          <Route path="/user-role-report" component={UserRoleReport} />
         </>
       )}
       <Route component={NotFound} />
