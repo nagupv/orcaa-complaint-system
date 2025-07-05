@@ -196,7 +196,7 @@ export class EmailService {
       // Send email using SendGrid
       const msg = {
         to: emailData.recipientEmail,
-        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@orcaa.org', // Use environment variable or default
+        from: process.env.SENDGRID_FROM_EMAIL || 'venkat.naga@uzvis.com', // Use verified sender email
         subject: subject,
         html: body,
       };
@@ -213,8 +213,13 @@ export class EmailService {
       });
 
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to send email:', error);
+      
+      // Log detailed error information
+      if (error.response && error.response.body && error.response.body.errors) {
+        console.error('SendGrid error details:', JSON.stringify(error.response.body.errors, null, 2));
+      }
       
       // Log error in audit trail
       await storage.createAuditEntry({
