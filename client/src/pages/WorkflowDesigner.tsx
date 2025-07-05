@@ -30,6 +30,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Mail, 
   FileText, 
@@ -533,66 +534,72 @@ const NodeConfigDialog = ({ nodeId, nodeLabel, currentConfig, onSave, onClose }:
     onSave(config);
   };
 
+  // Fetch email templates for workflow configuration
+  const { data: emailTemplates } = useQuery({
+    queryKey: ['/api/email-templates'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/email-templates');
+      return response.json();
+    }
+  });
+
   const renderEmailConfig = () => (
     <div className="space-y-4">
       <div>
-        <Label htmlFor="emailAccount">To Email Account *</Label>
-        <Input
-          id="emailAccount"
-          placeholder="e.g., complaints@orcaa.org"
-          value={config.emailAccount || ''}
-          onChange={(e) => setConfig({ ...config, emailAccount: e.target.value })}
-        />
-      </div>
-      
-      <div>
-        <Label htmlFor="ccEmailAccount">CC Email Account</Label>
-        <Input
-          id="ccEmailAccount"
-          placeholder="e.g., supervisor@orcaa.org"
-          value={config.ccEmailAccount || ''}
-          onChange={(e) => setConfig({ ...config, ccEmailAccount: e.target.value })}
-        />
-      </div>
-      
-      <div>
-        <Label htmlFor="emailSubject">Email Subject Template *</Label>
-        <Input
-          id="emailSubject"
-          placeholder="e.g., Complaint {{complaintId}} - {{status}}"
-          value={config.emailSubject || ''}
-          onChange={(e) => setConfig({ ...config, emailSubject: e.target.value })}
-        />
-      </div>
-      
-      <div>
-        <Label htmlFor="emailTemplate">Email Body Template *</Label>
-        <textarea
-          id="emailTemplate"
-          className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          placeholder="Dear {{recipientName}},&#10;&#10;This is regarding complaint {{complaintId}}.&#10;&#10;Current Status: {{status}}&#10;Description: {{description}}&#10;&#10;Thank you,&#10;ORCAA Team"
-          value={config.emailTemplate || ''}
-          onChange={(e) => setConfig({ ...config, emailTemplate: e.target.value })}
-        />
-        <div className="text-xs text-muted-foreground mt-1">
-          Available variables: complaintId, status, description, recipientName, recipientEmail, date
-        </div>
+        <Label htmlFor="emailTemplate">Email Template *</Label>
+        <Select 
+          value={config.selectedTemplate || ''} 
+          onValueChange={(value) => {
+            const template = emailTemplates?.find((t: any) => t.id.toString() === value);
+            setConfig({ 
+              ...config, 
+              selectedTemplate: value,
+              emailSubject: template?.subject || '',
+              emailTemplate: template?.body || '',
+              templateName: template?.name || ''
+            });
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select an email template" />
+          </SelectTrigger>
+          <SelectContent>
+            {emailTemplates?.filter((template: any) => template.isActive).map((template: any) => (
+              <SelectItem key={template.id} value={template.id.toString()}>
+                <div className="flex flex-col">
+                  <span className="font-medium">{template.name}</span>
+                  <span className="text-xs text-muted-foreground">{template.subject}</span>
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {config.selectedTemplate && (
+          <div className="mt-2 p-3 bg-muted rounded-md">
+            <div className="text-sm">
+              <div className="font-medium">Selected: {config.templateName}</div>
+              <div className="text-muted-foreground mt-1">Subject: {config.emailSubject}</div>
+            </div>
+          </div>
+        )}
       </div>
       
       <div>
         <Label htmlFor="recipientType">Recipient Type *</Label>
-        <select
-          id="recipientType"
-          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          value={config.recipientType || ''}
-          onChange={(e) => setConfig({ ...config, recipientType: e.target.value })}
+        <Select 
+          value={config.recipientType || ''} 
+          onValueChange={(value) => setConfig({ ...config, recipientType: value })}
         >
-          <option value="">Select recipient type</option>
-          <option value="complainant">Complainant</option>
-          <option value="assigned_staff">Assigned Staff</option>
-          <option value="supervisor">Supervisor</option>
-          <option value="custom">Custom Email</option>
-        </select>
+          <SelectTrigger>
+            <SelectValue placeholder="Select recipient type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="complainant">Complainant</SelectItem>
+            <SelectItem value="assigned_staff">Assigned Staff</SelectItem>
+            <SelectItem value="supervisor">Supervisor</SelectItem>
+            <SelectItem value="custom">Custom Email</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       
       {config.recipientType === 'custom' && (
@@ -607,6 +614,16 @@ const NodeConfigDialog = ({ nodeId, nodeLabel, currentConfig, onSave, onClose }:
         </div>
       )}
       
+      <div>
+        <Label htmlFor="ccEmailAccount">CC Email Account</Label>
+        <Input
+          id="ccEmailAccount"
+          placeholder="e.g., supervisor@orcaa.org"
+          value={config.ccEmailAccount || ''}
+          onChange={(e) => setConfig({ ...config, ccEmailAccount: e.target.value })}
+        />
+      </div>
+      
       <div className="flex items-center space-x-2">
         <input
           type="checkbox"
@@ -617,6 +634,25 @@ const NodeConfigDialog = ({ nodeId, nodeLabel, currentConfig, onSave, onClose }:
         />
         <Label htmlFor="sendCopy">Send copy to complaint assignee</Label>
       </div>
+
+      {config.selectedTemplate && (
+        <div className="mt-4 p-4 border rounded-md bg-background">
+          <Label className="text-sm font-medium">Template Preview</Label>
+          <div className="mt-2 space-y-2">
+            <div>
+              <span className="text-xs text-muted-foreground">Subject:</span>
+              <div className="text-sm font-medium">{config.emailSubject}</div>
+            </div>
+            <div>
+              <span className="text-xs text-muted-foreground">Body Preview:</span>
+              <div 
+                className="text-sm prose prose-sm max-w-none mt-1 max-h-24 overflow-y-auto border rounded p-2 bg-muted/50"
+                dangerouslySetInnerHTML={{ __html: config.emailTemplate }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -745,11 +781,14 @@ const NodeConfigDialog = ({ nodeId, nodeLabel, currentConfig, onSave, onClose }:
 
   const isConfigValid = () => {
     if (nodeLabel === 'Email Notification') {
-      return config.emailAccount && config.emailSubject && config.emailTemplate && config.recipientType;
+      return config.selectedTemplate && config.recipientType && 
+             (config.recipientType !== 'custom' || config.customEmail);
     } else if (nodeLabel === 'SMS Notification') {
-      return config.smsTemplate && config.recipientType;
+      return config.smsTemplate && config.smsRecipientType &&
+             (config.smsRecipientType !== 'custom' || config.customPhone);
     } else if (nodeLabel === 'WhatsApp Notification') {
-      return config.whatsappTemplate && config.recipientType;
+      return config.whatsappTemplate && config.whatsappRecipientType &&
+             (config.whatsappRecipientType !== 'custom' || config.customWhatsappNumber);
     }
     return false;
   };
