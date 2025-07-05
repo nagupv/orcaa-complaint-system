@@ -43,14 +43,11 @@ export default function ApplicationManagement() {
                 <TabsTrigger value="templates" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
                   Workflow Templates
                 </TabsTrigger>
-                <TabsTrigger value="mapping" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-                  User & Role Mapping
+                <TabsTrigger value="mappings" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
+                  Mappings
                 </TabsTrigger>
                 <TabsTrigger value="reports" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
                   User Role Report
-                </TabsTrigger>
-                <TabsTrigger value="permissions" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-                  Role-Action Mapping
                 </TabsTrigger>
               </TabsList>
 
@@ -74,16 +71,29 @@ export default function ApplicationManagement() {
                 <WorkflowTemplates />
               </TabsContent>
 
-              <TabsContent value="mapping" className="mt-6">
-                <UserRoleMapping />
+              <TabsContent value="mappings" className="mt-6">
+                <Tabs defaultValue="user-role" className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="user-role" className="data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
+                      User & Role Mapping
+                    </TabsTrigger>
+                    <TabsTrigger value="role-action" className="data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
+                      Role-Action Mapping
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="user-role" className="mt-4">
+                    <UserRoleMapping />
+                  </TabsContent>
+                  
+                  <TabsContent value="role-action" className="mt-4">
+                    <RoleActionMapping />
+                  </TabsContent>
+                </Tabs>
               </TabsContent>
 
               <TabsContent value="reports" className="mt-6">
                 <UserRoleReport />
-              </TabsContent>
-
-              <TabsContent value="permissions" className="mt-6">
-                <RoleActionMapping />
               </TabsContent>
             </Tabs>
           </CardContent>
