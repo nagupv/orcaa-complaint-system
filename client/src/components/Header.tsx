@@ -78,19 +78,12 @@ export default function Header() {
           {/* Desktop Navigation & User Info */}
           <div className="flex items-center space-x-6">
             <nav className="hidden lg:flex items-center space-x-6">
-              <Link href="/dashboard" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                Dashboard
-              </Link>
-              <Link href="/inbox" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                Inbox
-              </Link>
-              
-              {/* Time Management Dropdown */}
+              {/* Time Management Dropdown - No Action on Main Link */}
               <div className="relative group">
-                <Link href="/time-management" className="dropdown-trigger text-gray-700 hover:text-orcaa-blue font-medium flex items-center gap-1">
+                <span className="dropdown-trigger text-gray-700 hover:text-orcaa-blue font-medium flex items-center gap-1 cursor-pointer">
                   Time Management
                   <ChevronDown className="h-4 w-4" />
-                </Link>
+                </span>
                 
                 {/* Dropdown Menu with improved hover behavior */}
                 <div className="dropdown-menu absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible z-50">
@@ -107,16 +100,13 @@ export default function Header() {
                   </div>
                 </div>
               </div>
-              <Link href="/audit-trail" className="text-gray-700 hover:text-orcaa-blue font-medium">
-                Audit Trail
-              </Link>
               
-              {/* Application Management Dropdown */}
+              {/* Application Management Dropdown - No Action on Main Link */}
               <div className="relative group">
-                <Link href="/application-management" className="dropdown-trigger text-gray-700 hover:text-orcaa-blue font-medium flex items-center gap-1">
+                <span className="dropdown-trigger text-gray-700 hover:text-orcaa-blue font-medium flex items-center gap-1 cursor-pointer">
                   Application Management
                   <ChevronDown className="h-4 w-4" />
-                </Link>
+                </span>
                 
                 {/* Dropdown Menu with improved hover behavior */}
                 <div className="dropdown-menu absolute left-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible z-50">
