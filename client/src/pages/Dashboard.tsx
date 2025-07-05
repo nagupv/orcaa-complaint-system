@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,10 @@ import StatisticsCards from "@/components/StatisticsCards";
 import ComplaintTable from "@/components/ComplaintTable";
 import { Complaint } from "@shared/schema";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { Search, Filter, X, Calendar, MapPin, AlertTriangle } from "lucide-react";
+import { Search, Filter, X, Calendar, MapPin, AlertTriangle, Download, FileSpreadsheet, FileText } from "lucide-react";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 export default function Dashboard() {
   const [filters, setFilters] = useState({
@@ -104,6 +108,118 @@ export default function Dashboard() {
       dateFrom: "",
       dateTo: "",
     });
+  };
+
+  // Export functions
+  const exportToExcel = () => {
+    if (!complaints || complaints.length === 0) {
+      alert("No complaints data to export");
+      return;
+    }
+
+    // Prepare data for export
+    const exportData = complaints.map(complaint => ({
+      'Complaint ID': complaint.complaintId,
+      'Type': complaint.complaintType,
+      'Status': complaint.status,
+      'Priority': complaint.priority,
+      'Problem Type': complaint.problemType,
+      'Complainant': complaint.isAnonymous ? 'Anonymous' : `${complaint.complainantFirstName || ''} ${complaint.complainantLastName || ''}`.trim(),
+      'Email': complaint.complainantEmail || '',
+      'Phone': complaint.complainantPhone || '',
+      'Address': complaint.address || '',
+      'City': complaint.city || '',
+      'County': complaint.county || '',
+      'Description': complaint.description || '',
+      'Assigned To': complaint.assignedTo || '',
+      'Created Date': complaint.createdAt ? new Date(complaint.createdAt).toLocaleDateString() : '',
+      'Updated Date': complaint.updatedAt ? new Date(complaint.updatedAt).toLocaleDateString() : ''
+    }));
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    
+    // Auto-width columns
+    const colWidths = Object.keys(exportData[0] || {}).map(key => ({
+      wch: Math.max(key.length, 15)
+    }));
+    ws['!cols'] = colWidths;
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Complaints');
+
+    // Generate filename with current date
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `ORCAA_Complaints_${date}.xlsx`;
+    
+    // Save file
+    XLSX.writeFile(wb, filename);
+  };
+
+  const exportToPDF = () => {
+    if (!complaints || complaints.length === 0) {
+      alert("No complaints data to export");
+      return;
+    }
+
+    // Create new PDF document
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(16);
+    doc.text('ORCAA Complaint Management System', 14, 20);
+    doc.setFontSize(12);
+    doc.text('Complaints Report', 14, 30);
+    doc.setFontSize(10);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 40);
+    doc.text(`Total Complaints: ${complaints.length}`, 14, 50);
+
+    // Prepare table data
+    const tableData = complaints.map(complaint => [
+      complaint.complaintId,
+      complaint.complaintType,
+      complaint.status,
+      complaint.priority,
+      complaint.problemType,
+      complaint.isAnonymous ? 'Anonymous' : `${complaint.complainantFirstName || ''} ${complaint.complainantLastName || ''}`.trim(),
+      complaint.city || '',
+      complaint.assignedTo || '',
+      complaint.createdAt ? new Date(complaint.createdAt).toLocaleDateString() : ''
+    ]);
+
+    // Add table
+    (doc as any).autoTable({
+      head: [['ID', 'Type', 'Status', 'Priority', 'Problem', 'Complainant', 'City', 'Assigned To', 'Created']],
+      body: tableData,
+      startY: 60,
+      styles: {
+        fontSize: 8,
+        cellPadding: 2
+      },
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontSize: 9
+      },
+      columnStyles: {
+        0: { cellWidth: 20 },
+        1: { cellWidth: 15 },
+        2: { cellWidth: 15 },
+        3: { cellWidth: 15 },
+        4: { cellWidth: 20 },
+        5: { cellWidth: 25 },
+        6: { cellWidth: 15 },
+        7: { cellWidth: 20 },
+        8: { cellWidth: 20 }
+      }
+    });
+
+    // Generate filename with current date
+    const date = new Date().toISOString().split('T')[0];
+    const filename = `ORCAA_Complaints_${date}.pdf`;
+    
+    // Save file
+    doc.save(filename);
   };
 
   // Quick filter presets
@@ -378,6 +494,24 @@ export default function Dashboard() {
                 Found {complaints.length} complaints
               </div>
               <div className="flex space-x-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Download className="h-4 w-4 mr-1" />
+                      Save
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={exportToExcel}>
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Export to Excel
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={exportToPDF}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Export to PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button variant="outline" size="sm" onClick={clearFilters}>
                   <X className="h-4 w-4 mr-1" />
                   Clear All
