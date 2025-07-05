@@ -1207,18 +1207,37 @@ export class DatabaseStorage implements IStorage {
       return; // Task already exists
     }
 
-    // Use simplified role assignment for now
-    const requiredRoles = ['field_staff'];
+    // Map node type to action ID and get required roles using role-action mapping
+    const { mapTaskTypeToActionId, getRequiredRolesForAction } = require('../shared/roleActionMapping');
+    const actionId = mapTaskTypeToActionId(nodeType);
+    const requiredRoles = getRequiredRolesForAction(actionId);
     
     // Default to field_staff if no mapping found
     const allowedRoles = requiredRoles.length > 0 ? requiredRoles : ['field_staff'];
 
-    // Find a user with any of the required roles
+    // Find users with required permissions based on role-action mapping
     const users = await this.getAllUsers();
-    const assignedUser = users.find(user => {
+    const eligibleUsers = users.filter(user => {
       const userRoles = typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles;
       return allowedRoles.some(role => userRoles.includes(role));
     });
+    
+    // Prefer admin users, then supervisor, then field_staff
+    const priorityRoles = ['admin', 'supervisor', 'field_staff', 'contract_staff'];
+    let assignedUser = null;
+    
+    for (const priorityRole of priorityRoles) {
+      assignedUser = eligibleUsers.find(user => {
+        const userRoles = typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles;
+        return userRoles.includes(priorityRole) && allowedRoles.includes(priorityRole);
+      });
+      if (assignedUser) break;
+    }
+    
+    // Fallback to first eligible user if no priority match
+    if (!assignedUser && eligibleUsers.length > 0) {
+      assignedUser = eligibleUsers[0];
+    }
 
     if (!assignedUser) {
       // Log warning if no user found with required roles
@@ -1227,9 +1246,9 @@ export class DatabaseStorage implements IStorage {
       await this.createAuditEntry({
         complaintId: completedTask.complaintId,
         action: 'NEXT_WORKFLOW_TASK_ASSIGNMENT_FAILED',
-        actionBy: 'system',
-        description: `Failed to create next workflow task "${nodeType}" - no users found with required roles: ${allowedRoles.join(', ')}`,
-        oldValue: null,
+        userId: 'system',
+        reason: `Failed to create next workflow task "${nodeType}" - no users found with required roles: ${allowedRoles.join(', ')}`,
+        previousValue: null,
         newValue: JSON.stringify({
           taskType: nodeType,
           actionId,
@@ -1280,9 +1299,9 @@ export class DatabaseStorage implements IStorage {
     await this.createAuditEntry({
       complaintId: completedTask.complaintId,
       action: 'NEXT_WORKFLOW_TASK_CREATED',
-      actionBy: 'system',
-      description: `Next workflow task "${nextTask.taskName}" assigned to ${assignedUser.firstName} ${assignedUser.lastName} (${assignedRole}) based on Role-Action Mapping. Required roles: ${allowedRoles.join(', ')}`,
-      oldValue: null,
+      userId: 'system',
+      reason: `Next workflow task "${nextTask.taskName}" assigned to ${assignedUser.firstName} ${assignedUser.lastName} (${assignedRole}) based on Role-Action Mapping. Required roles: ${allowedRoles.join(', ')}`,
+      previousValue: null,
       newValue: JSON.stringify({
         taskId: nextTask.id,
         assignedTo: assignedUser.id,
