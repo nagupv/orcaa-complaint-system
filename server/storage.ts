@@ -1548,6 +1548,11 @@ export class DatabaseStorage implements IStorage {
       'REJECT_DEMOLITION'
     ];
 
+    // **PROCESS EMAIL NOTIFICATIONS FIRST** - Handle immediate notifications
+    if (workflowData.nodes) {
+      await this.processWorkflowNotifications(complaintId, workflowData.nodes);
+    }
+
     // **SEQUENTIAL WORKFLOW LOGIC** - Only create the first task initially
     // Other tasks will be created when previous tasks are completed
     if (workflowData.nodes && workflowData.edges) {
