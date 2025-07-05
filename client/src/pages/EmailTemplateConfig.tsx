@@ -89,13 +89,18 @@ export default function EmailTemplateConfig() {
   // Fetch email templates
   const { data: templates = [], isLoading } = useQuery<EmailTemplate[]>({
     queryKey: ['/api/email-templates'],
-    queryFn: () => apiRequest('/api/email-templates')
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/email-templates');
+      return response.json();
+    }
   });
 
   // Create template mutation
   const createTemplateMutation = useMutation({
-    mutationFn: (data: InsertEmailTemplate) => 
-      apiRequest('/api/email-templates', 'POST', data),
+    mutationFn: async (data: InsertEmailTemplate) => {
+      const response = await apiRequest('POST', '/api/email-templates', data);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/email-templates'] });
       setIsCreateOpen(false);
@@ -116,8 +121,10 @@ export default function EmailTemplateConfig() {
 
   // Update template mutation
   const updateTemplateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<EmailTemplate> }) =>
-      apiRequest(`/api/email-templates/${id}`, 'PUT', data),
+    mutationFn: async ({ id, data }: { id: number; data: Partial<EmailTemplate> }) => {
+      const response = await apiRequest('PUT', `/api/email-templates/${id}`, data);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/email-templates'] });
       setEditingTemplate(null);
@@ -138,7 +145,10 @@ export default function EmailTemplateConfig() {
 
   // Delete template mutation
   const deleteTemplateMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/email-templates/${id}`, 'DELETE'),
+    mutationFn: async (id: number) => {
+      const response = await apiRequest('DELETE', `/api/email-templates/${id}`);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/email-templates'] });
       toast({
