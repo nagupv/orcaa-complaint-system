@@ -1634,66 +1634,58 @@ export default function WorkflowDesigner() {
                     
                     {/* Designer Actions Panel */}
                     <Panel position="top-left">
-                      <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-lg border">
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Designer Actions</h4>
-                          <div className="flex flex-col gap-2">
-                            <Button
-                              onClick={() => {
-                                setSelectedWorkflowId(null);
-                                setWorkflowName('');
-                                setWorkflowDescription('');
-                                setSaveDialogOpen(true);
-                              }}
-                              variant="outline"
-                              size="sm"
-                              className="h-8 justify-start"
-                              title="Save Workflow"
-                            >
-                              <Save className="h-4 w-4 mr-2" />
-                              Save
-                            </Button>
-                            <Button
-                              onClick={() => setLoadDialogOpen(true)}
-                              variant="outline"
-                              size="sm"
-                              className="h-8 justify-start"
-                              title="Load Workflow"
-                            >
-                              <FolderOpen className="h-4 w-4 mr-2" />
-                              Load
-                            </Button>
-                            <Button
-                              onClick={onClearDesigner}
-                              variant="outline"
-                              size="sm"
-                              className="h-8 justify-start"
-                              title="Clear Designer"
-                            >
-                              <RotateCcw className="h-4 w-4 mr-2" />
-                              Clear
-                            </Button>
-                            <Button
-                              onClick={onExportWorkflow}
-                              variant="outline"
-                              size="sm"
-                              className="h-8 justify-start"
-                              title="Export Workflow"
-                            >
-                              <Download className="h-4 w-4 mr-2" />
-                              Export
-                            </Button>
-                            <Button
-                              onClick={onLoadExampleWorkflow}
-                              variant="outline"
-                              size="sm"
-                              className="h-8 justify-start"
-                              title="Load Example"
-                            >
-                              <Lightbulb className="h-4 w-4 mr-2" />
-                              Example
-                            </Button>
-                          </div>
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-2 shadow-lg border">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            onClick={() => {
+                              setSelectedWorkflowId(null);
+                              setWorkflowName('');
+                              setWorkflowDescription('');
+                              setSaveDialogOpen(true);
+                            }}
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            title="Save Workflow"
+                          >
+                            <Save className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => setLoadDialogOpen(true)}
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            title="Load Workflow"
+                          >
+                            <FolderOpen className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={onClearDesigner}
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            title="Clear Designer"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={onExportWorkflow}
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            title="Export Workflow"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={onLoadExampleWorkflow}
+                            variant="outline"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            title="Load Example"
+                          >
+                            <Lightbulb className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
                     </Panel>
