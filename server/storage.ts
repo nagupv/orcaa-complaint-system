@@ -1083,38 +1083,46 @@ export class DatabaseStorage implements IStorage {
       return; // Task already exists
     }
 
-    // Determine assigned role and default user
-    let assignedRole = 'field_staff';
+    // Import role action mapping utility
+    const { mapTaskTypeToActionId, getRequiredRolesForAction } = await import('../shared/roleActionMapping.js');
     
-    switch (nodeType) {
-      case 'INITIAL_INSPECTION':
-      case 'SAFETY_INSPECTION':
-        assignedRole = 'field_staff';
-        break;
-      case 'ASSESSMENT':
-        assignedRole = 'supervisor';
-        break;
-      case 'ENFORCEMENT_ACTION':
-        assignedRole = 'admin';
-        break;
-      case 'RESOLUTION':
-        assignedRole = 'approver';
-        break;
-      case 'REJECT_DEMOLITION':
-        assignedRole = 'admin';
-        break;
-    }
+    // Use Role-Action Mapping to determine required roles
+    const actionId = mapTaskTypeToActionId(nodeType);
+    const requiredRoles = actionId ? getRequiredRolesForAction(actionId) : [];
+    
+    // Default to field_staff if no mapping found
+    const allowedRoles = requiredRoles.length > 0 ? requiredRoles : ['field_staff'];
 
-    // Find a user with the required role
+    // Find a user with any of the required roles
     const users = await this.getAllUsers();
     const assignedUser = users.find(user => {
       const userRoles = typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles;
-      return userRoles.includes(assignedRole);
+      return allowedRoles.some(role => userRoles.includes(role));
     });
 
     if (!assignedUser) {
+      // Log warning if no user found with required roles
+      console.warn(`No users found with required roles for next task ${nodeType}. Required roles: ${allowedRoles.join(', ')}`);
+      
+      await this.createAuditEntry({
+        complaintId: completedTask.complaintId,
+        action: 'NEXT_WORKFLOW_TASK_ASSIGNMENT_FAILED',
+        actionBy: 'system',
+        description: `Failed to create next workflow task "${nodeType}" - no users found with required roles: ${allowedRoles.join(', ')}`,
+        oldValue: null,
+        newValue: JSON.stringify({
+          taskType: nodeType,
+          actionId,
+          requiredRoles: allowedRoles,
+          reason: 'No users with required roles'
+        })
+      });
       return;
     }
+
+    // Use the first matching role as the assigned role
+    const userRoles = typeof assignedUser.roles === 'string' ? JSON.parse(assignedUser.roles) : assignedUser.roles;
+    const assignedRole = allowedRoles.find(role => userRoles.includes(role)) || allowedRoles[0];
 
     // Create the next task
     const nextTask = await this.createWorkflowTask({
@@ -1129,7 +1137,9 @@ export class DatabaseStorage implements IStorage {
       taskData: {
         ...nextNode.data,
         nodeId: nextNode.id,
-        workflowSequence: (currentTaskData?.workflowSequence || 0) + 1
+        workflowSequence: (currentTaskData?.workflowSequence || 0) + 1,
+        actionId: actionId, // Store action ID for future reference
+        requiredRoles: allowedRoles // Store required roles for audit trail
       }
     });
 
@@ -1146,7 +1156,24 @@ export class DatabaseStorage implements IStorage {
       isRead: false
     });
 
-    console.log(`Created next workflow task: ${nextTask.taskName} for complaint ${completedTask.complaintId}`);
+    // Log role assignment decision for audit trail
+    await this.createAuditEntry({
+      complaintId: completedTask.complaintId,
+      action: 'NEXT_WORKFLOW_TASK_CREATED',
+      actionBy: 'system',
+      description: `Next workflow task "${nextTask.taskName}" assigned to ${assignedUser.firstName} ${assignedUser.lastName} (${assignedRole}) based on Role-Action Mapping. Required roles: ${allowedRoles.join(', ')}`,
+      oldValue: null,
+      newValue: JSON.stringify({
+        taskId: nextTask.id,
+        assignedTo: assignedUser.id,
+        assignedRole,
+        actionId,
+        requiredRoles: allowedRoles,
+        previousTaskId: completedTask.id
+      })
+    });
+
+    console.log(`Created next workflow task: ${nextTask.taskName} for complaint ${completedTask.complaintId} using Role-Action Mapping`);
   }
 
   // Inbox operations
@@ -1229,6 +1256,9 @@ export class DatabaseStorage implements IStorage {
     const workflowData = workflow.workflowData as any;
     const tasks: WorkflowTask[] = [];
     
+    // Import role action mapping utility
+    const { mapTaskTypeToActionId, getRequiredRolesForAction } = await import('../shared/roleActionMapping.js');
+    
     // Define task types that create workflow tasks
     const taskTypes = [
       'INITIAL_INSPECTION',
@@ -1259,37 +1289,25 @@ export class DatabaseStorage implements IStorage {
           const nodeType = nodeLabel?.toUpperCase().replace(/\s+/g, '_');
           
           if (taskTypes.includes(nodeType)) {
-            // Determine assigned role and default user
-            let assignedRole = 'field_staff';
+            // Use Role-Action Mapping to determine required roles
+            const actionId = mapTaskTypeToActionId(nodeType);
+            const requiredRoles = actionId ? getRequiredRolesForAction(actionId) : [];
             
-            // Role mapping based on task type
-            switch (nodeType) {
-              case 'INITIAL_INSPECTION':
-              case 'SAFETY_INSPECTION':
-                assignedRole = 'field_staff';
-                break;
-              case 'ASSESSMENT':
-                assignedRole = 'supervisor';
-                break;
-              case 'ENFORCEMENT_ACTION':
-                assignedRole = 'admin';
-                break;
-              case 'RESOLUTION':
-                assignedRole = 'approver';
-                break;
-              case 'REJECT_DEMOLITION':
-                assignedRole = 'admin';
-                break;
-            }
-
-            // Find a user with the required role
+            // Default to field_staff if no mapping found
+            const allowedRoles = requiredRoles.length > 0 ? requiredRoles : ['field_staff'];
+            
+            // Find a user with any of the required roles
             const users = await this.getAllUsers();
             const assignedUser = users.find(user => {
               const userRoles = typeof user.roles === 'string' ? JSON.parse(user.roles) : user.roles;
-              return userRoles.includes(assignedRole);
+              return allowedRoles.some(role => userRoles.includes(role));
             });
 
             if (assignedUser) {
+              // Use the first matching role as the assigned role
+              const userRoles = typeof assignedUser.roles === 'string' ? JSON.parse(assignedUser.roles) : assignedUser.roles;
+              const assignedRole = allowedRoles.find(role => userRoles.includes(role)) || allowedRoles[0];
+              
               const task = await this.createWorkflowTask({
                 complaintId,
                 workflowId,
@@ -1302,10 +1320,45 @@ export class DatabaseStorage implements IStorage {
                 taskData: {
                   ...firstTaskNode.data,
                   nodeId: firstTaskNode.id,
-                  workflowSequence: 1
+                  workflowSequence: 1,
+                  actionId: actionId, // Store action ID for future reference
+                  requiredRoles: allowedRoles // Store required roles for audit trail
                 }
               });
               tasks.push(task);
+              
+              // Log role assignment decision for audit trail
+              await this.createAuditEntry({
+                complaintId,
+                action: 'WORKFLOW_TASK_ASSIGNED',
+                actionBy: 'system',
+                description: `Task "${task.taskName}" assigned to ${assignedUser.firstName} ${assignedUser.lastName} (${assignedRole}) based on Role-Action Mapping. Required roles: ${allowedRoles.join(', ')}`,
+                oldValue: null,
+                newValue: JSON.stringify({
+                  taskId: task.id,
+                  assignedTo: assignedUser.id,
+                  assignedRole,
+                  actionId,
+                  requiredRoles: allowedRoles
+                })
+              });
+            } else {
+              // Log warning if no user found with required roles
+              console.warn(`No users found with required roles for task type ${nodeType}. Required roles: ${allowedRoles.join(', ')}`);
+              
+              await this.createAuditEntry({
+                complaintId,
+                action: 'WORKFLOW_TASK_ASSIGNMENT_FAILED',
+                actionBy: 'system',
+                description: `Failed to assign task "${nodeType}" - no users found with required roles: ${allowedRoles.join(', ')}`,
+                oldValue: null,
+                newValue: JSON.stringify({
+                  taskType: nodeType,
+                  actionId,
+                  requiredRoles: allowedRoles,
+                  reason: 'No users with required roles'
+                })
+              });
             }
           }
         }
