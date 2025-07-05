@@ -809,6 +809,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update role permissions
+  app.put('/api/roles/:roleName/permissions', isAuthenticated, async (req: any, res) => {
+    try {
+      // Check if user has admin role
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (!currentUser) {
+        return res.status(401).json({ message: "User not found" });
+      }
+      const userRoles = typeof currentUser.roles === 'string' ? JSON.parse(currentUser.roles) : currentUser.roles;
+      if (!userRoles.includes('admin')) {
+        return res.status(403).json({ message: "Only admins can update role permissions" });
+      }
+
+      const roleName = req.params.roleName;
+      const { permissions } = req.body;
+      
+      // Find the role by name
+      const roles = await storage.getRoles();
+      const role = roles.find(r => r.name === roleName);
+      if (!role) {
+        return res.status(404).json({ message: "Role not found" });
+      }
+
+      // Update the role permissions
+      const updatedRole = await storage.updateRole(role.id, { permissions });
+      
+      // Create audit entry for permission change
+      await storage.createAuditEntry({
+        action: 'role_permissions_updated',
+        previousValue: JSON.stringify(role.permissions || []),
+        newValue: JSON.stringify(permissions),
+        userId: req.user.claims.sub,
+        reason: `Role ${roleName} permissions updated`
+      });
+
+      res.json(updatedRole);
+    } catch (error) {
+      console.error('Error updating role permissions:', error);
+      res.status(500).json({ error: 'Failed to update role permissions' });
+    }
+  });
+
   // List Values routes
   app.get('/api/list-values', isAuthenticated, async (req, res) => {
     try {

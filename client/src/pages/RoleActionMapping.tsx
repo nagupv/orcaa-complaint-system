@@ -200,28 +200,31 @@ export default function RoleActionMapping() {
     },
   });
 
-  // Initialize role permissions from action definitions
+  // Initialize role permissions from database
   React.useEffect(() => {
     const permissions: Record<string, string[]> = {};
     roles.forEach(role => {
-      permissions[role.name] = [];
-      ACTION_CATEGORIES.forEach(category => {
-        category.actions.forEach(action => {
-          if (action.requiredRoles.includes(role.name)) {
-            permissions[role.name].push(action.id);
-          }
+      // Use actual permissions from database if available, otherwise use default permissions
+      if (role.permissions && Array.isArray(role.permissions)) {
+        permissions[role.name] = role.permissions;
+      } else {
+        // Fallback to default permissions based on action definitions
+        permissions[role.name] = [];
+        ACTION_CATEGORIES.forEach(category => {
+          category.actions.forEach(action => {
+            if (action.requiredRoles.includes(role.name)) {
+              permissions[role.name].push(action.id);
+            }
+          });
         });
-      });
+      }
     });
     setRolePermissions(permissions);
   }, [roles]);
 
   const updateRolePermissions = useMutation({
     mutationFn: async ({ roleName, permissions }: { roleName: string; permissions: string[] }) => {
-      // This would update the role permissions in the database
-      // For now, we'll just show a success message
-      console.log(`Updating permissions for ${roleName}:`, permissions);
-      return { success: true };
+      return await apiRequest("PUT", `/api/roles/${roleName}/permissions`, { permissions });
     },
     onSuccess: () => {
       toast({
@@ -229,6 +232,7 @@ export default function RoleActionMapping() {
         description: "Role permissions updated successfully",
       });
       setEditingRole(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/roles"] });
     },
     onError: () => {
       toast({
@@ -312,7 +316,7 @@ export default function RoleActionMapping() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="mt-2 w-full"
+                      className="mt-2 w-full text-xs px-2 py-1"
                       onClick={() => setEditingRole(editingRole === role.name ? null : role.name)}
                     >
                       {editingRole === role.name ? "Cancel" : "Edit"}
@@ -387,10 +391,17 @@ export default function RoleActionMapping() {
             {/* Save Button for Editing Role */}
             {editingRole && (
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setEditingRole(null)}>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="text-xs px-3 py-1"
+                  onClick={() => setEditingRole(null)}
+                >
                   Cancel
                 </Button>
                 <Button 
+                  size="sm"
+                  className="text-xs px-3 py-1"
                   onClick={() => handleSavePermissions(editingRole)}
                   disabled={updateRolePermissions.isPending}
                 >
