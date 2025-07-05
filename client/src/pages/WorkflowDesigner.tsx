@@ -1682,15 +1682,21 @@ export default function WorkflowDesigner() {
                         <div className="flex items-center gap-2">
                           <Button
                             onClick={() => {
-                              setSelectedWorkflowId(null);
-                              setWorkflowName('');
-                              setWorkflowDescription('');
-                              setSaveDialogOpen(true);
+                              if (selectedWorkflowId && workflowName) {
+                                // If we have a loaded workflow, save directly without dialog
+                                handleSaveWorkflow();
+                              } else {
+                                // Open dialog for new workflow
+                                setSelectedWorkflowId(null);
+                                setWorkflowName('');
+                                setWorkflowDescription('');
+                                setSaveDialogOpen(true);
+                              }
                             }}
                             variant="outline"
                             size="sm"
                             className="h-8 w-8 p-0"
-                            title="Save Workflow"
+                            title={selectedWorkflowId ? "Update Workflow" : "Save Workflow"}
                           >
                             <Save className="h-4 w-4" />
                           </Button>
