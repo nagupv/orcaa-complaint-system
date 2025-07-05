@@ -8,6 +8,7 @@ import UserRoleReport from "./UserRoleReport";
 import ListValueManagement from "./ListValueManagement";
 import WorkflowDesigner from "./WorkflowDesigner";
 import WorkflowTemplates from "./WorkflowTemplates";
+import RoleActionMapping from "./RoleActionMapping";
 
 export default function ApplicationManagement() {
   const [activeTab, setActiveTab] = useState("users");
@@ -48,6 +49,9 @@ export default function ApplicationManagement() {
                 <TabsTrigger value="reports" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
                   User Role Report
                 </TabsTrigger>
+                <TabsTrigger value="permissions" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
+                  Role-Action Mapping
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="users" className="mt-6">
@@ -76,6 +80,10 @@ export default function ApplicationManagement() {
 
               <TabsContent value="reports" className="mt-6">
                 <UserRoleReport />
+              </TabsContent>
+
+              <TabsContent value="permissions" className="mt-6">
+                <RoleActionMapping />
               </TabsContent>
             </Tabs>
           </CardContent>
