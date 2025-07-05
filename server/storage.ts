@@ -1548,9 +1548,9 @@ export class DatabaseStorage implements IStorage {
       'REJECT_DEMOLITION'
     ];
 
-    // **PROCESS EMAIL NOTIFICATIONS FIRST** - Handle immediate notifications
-    if (workflowData.nodes) {
-      await this.processWorkflowNotifications(complaintId, workflowData.nodes);
+    // **PROCESS WORKFLOW ORCHESTRATION** - Handle all notifications and immediate actions
+    if (workflowData.nodes && workflowData.edges) {
+      await this.executeWorkflowOrchestration(complaintId, workflowData.nodes, workflowData.edges);
     }
 
     // **SEQUENTIAL WORKFLOW LOGIC** - Only create the first task initially
@@ -1650,6 +1650,50 @@ export class DatabaseStorage implements IStorage {
     }
 
     return tasks;
+  }
+
+  async executeWorkflowOrchestration(complaintId: number, nodes: any[], edges: any[]): Promise<void> {
+    try {
+      console.log(`Starting workflow orchestration for complaint ${complaintId}`);
+      
+      // Import and create workflow orchestrator
+      const { WorkflowOrchestrator } = await import('./services/workflowOrchestrator.js');
+      
+      // Create workflow context
+      const context = {
+        complaintId,
+        userId: 'system',
+        executionId: `exec_${complaintId}_${Date.now()}`,
+        variables: new Map(),
+        results: new Map()
+      };
+      
+      // Create and execute orchestrator
+      const orchestrator = new WorkflowOrchestrator(nodes, edges, context);
+      const results = await orchestrator.executeWorkflow();
+      
+      // Log audit entry for workflow execution
+      await this.createAuditEntry({
+        action: `Workflow orchestration completed for complaint ${complaintId}`,
+        complaintId,
+        userId: 'system',
+        details: `Executed ${nodes.length} nodes with ${results.size} results`
+      });
+      
+      console.log(`Workflow orchestration completed for complaint ${complaintId}`);
+    } catch (error) {
+      console.error(`Workflow orchestration failed for complaint ${complaintId}:`, error);
+      
+      // Log error in audit trail
+      await this.createAuditEntry({
+        action: `Workflow orchestration failed for complaint ${complaintId}`,
+        complaintId,
+        userId: 'system',
+        details: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+      
+      throw error;
+    }
   }
 }
 
