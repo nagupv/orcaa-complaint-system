@@ -1110,15 +1110,20 @@ export class DatabaseStorage implements IStorage {
       return;
     }
 
-    // Find the next task edge from the current node
-    const nextEdge = workflowData.edges.find((edge: any) => edge.source === currentNodeId);
-    if (!nextEdge) {
+    // Find all edges from the current node (for decision nodes with multiple paths)
+    const outgoingEdges = workflowData.edges.filter((edge: any) => edge.source === currentNodeId);
+    if (outgoingEdges.length === 0) {
       return; // No next task (end of workflow)
     }
 
+    // For decision nodes, create tasks for all possible paths
+    // For now, we'll create the first path and enhance this later for user choice
+    const nextEdge = outgoingEdges[0];
+    
     // Find the next task node
     const nextNode = workflowData.nodes.find((node: any) => node.id === nextEdge.target);
     if (!nextNode) {
+      console.log(`Next node not found for edge target: ${nextEdge.target}`);
       return;
     }
 
