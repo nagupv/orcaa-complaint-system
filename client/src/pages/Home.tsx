@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Dashboard from "@/pages/Dashboard";
-import WorkflowManagement from "@/pages/WorkflowManagement";
-
+import Inbox from "@/pages/Inbox";
 import TimesheetManagement from "@/pages/TimesheetManagement";
 import AuditTrail from "@/pages/AuditTrail";
 import ApplicationManagement from "@/pages/ApplicationManagement";
@@ -25,8 +24,8 @@ export default function Home() {
             <TabsTrigger value="dashboard" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="workflow" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-              Workflow Designer
+            <TabsTrigger value="inbox" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
+              Inbox
             </TabsTrigger>
             <TabsTrigger value="timesheet" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
               Time Management
@@ -45,8 +44,8 @@ export default function Home() {
             <Dashboard />
           </TabsContent>
 
-          <TabsContent value="workflow" className="mt-6">
-            <WorkflowManagement />
+          <TabsContent value="inbox" className="mt-6">
+            <Inbox />
           </TabsContent>
 
           <TabsContent value="timesheet" className="mt-6">
