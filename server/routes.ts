@@ -2246,17 +2246,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: 'Admin access required' });
       }
       
+      console.log('Email template creation request body:', req.body);
+      console.log('User ID:', userId);
+      
       const validatedData = insertEmailTemplateSchema.parse({
         ...req.body,
         createdBy: userId
       });
       
+      console.log('Validated data:', validatedData);
+      
       const template = await storage.createEmailTemplate(validatedData);
       res.json(template);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error('Zod validation error:', error.errors);
         const validationError = ValidationError.fromZodError(error);
-        return res.status(400).json({ error: validationError.message });
+        return res.status(400).json({ error: validationError.message, details: error.errors });
       }
       console.error('Error creating email template:', error);
       res.status(500).json({ error: 'Failed to create email template' });
