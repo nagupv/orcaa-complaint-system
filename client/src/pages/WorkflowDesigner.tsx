@@ -1751,7 +1751,8 @@ export default function WorkflowDesigner() {
                   </ReactFlow>
                 </div>
 
-                <div>
+                {/* Workflow Management buttons removed as they are now in the top-left panel */}
+                <div style={{display: 'none'}}>
                   <h3 className="font-semibold mb-3">Workflow Management</h3>
                   <div className="space-y-2">
                     <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
