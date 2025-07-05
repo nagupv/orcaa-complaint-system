@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,29 +6,62 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import StatisticsCards from "@/components/StatisticsCards";
 import ComplaintTable from "@/components/ComplaintTable";
 import { Complaint } from "@shared/schema";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { Search, Filter, X, Calendar, MapPin, AlertTriangle } from "lucide-react";
 
 export default function Dashboard() {
   const [filters, setFilters] = useState({
-    search: "",
+    textSearch: "",
+    complaintType: "",
     status: "",
+    priority: "",
     problemType: "",
+    city: "",
+    county: "",
+    assignedTo: "",
     dateFrom: "",
     dateTo: "",
   });
 
+  const [filterOptions, setFilterOptions] = useState({
+    statuses: [],
+    cities: [],
+    counties: [],
+    problemTypes: [],
+    assignedUsers: [],
+  });
+
+  // Load filter options
+  const { data: filterOptionsData } = useQuery({
+    queryKey: ["/api/complaints/filter-options"],
+    queryFn: async () => {
+      const response = await fetch("/api/complaints/filter-options", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch filter options");
+      return response.json();
+    },
+  });
+
+  useEffect(() => {
+    if (filterOptionsData) {
+      setFilterOptions(filterOptionsData);
+    }
+  }, [filterOptionsData]);
+
   const { data: complaints, isLoading, refetch } = useQuery({
-    queryKey: ["/api/complaints", filters],
+    queryKey: ["/api/complaints/search", filters],
     queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== "all") params.append(key, value);
+        if (value && value !== "all" && value !== "") params.append(key, value);
       });
       
-      const response = await fetch(`/api/complaints?${params}`, {
+      const response = await fetch(`/api/complaints/search?${params}`, {
         credentials: "include",
       });
       
@@ -58,13 +91,26 @@ export default function Dashboard() {
 
   const clearFilters = () => {
     setFilters({
-      search: "",
+      textSearch: "",
+      complaintType: "",
       status: "",
+      priority: "",
       problemType: "",
+      city: "",
+      county: "",
+      assignedTo: "",
       dateFrom: "",
       dateTo: "",
     });
   };
+
+  // Quick filter presets
+  const quickFilters = [
+    { label: "High Priority", key: "priority", value: "high", icon: AlertTriangle },
+    { label: "Today", key: "dateFrom", value: new Date().toISOString().split('T')[0], icon: Calendar },
+    { label: "This Week", key: "dateFrom", value: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], icon: Calendar },
+    { label: "In Progress", key: "status", value: "work_in_progress", icon: Filter },
+  ];
 
   return (
     <div className="space-y-6">
@@ -142,21 +188,63 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      {/* Search and Filter Section */}
+      {/* Enhanced Search and Filter Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Search & Filter</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Advanced Search & Filter
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-            <div>
-              <Label htmlFor="search">Search</Label>
+          {/* Quick Filter Buttons */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {quickFilters.map((filter) => {
+              const Icon = filter.icon;
+              return (
+                <Button
+                  key={filter.label}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleFilterChange(filter.key, filter.value)}
+                  className="flex items-center gap-2"
+                >
+                  <Icon className="h-4 w-4" />
+                  {filter.label}
+                </Button>
+              );
+            })}
+          </div>
+
+          {/* Search Input */}
+          <div className="mb-4">
+            <Label htmlFor="textSearch" className="text-sm font-medium">Search across all fields</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                id="search"
-                placeholder="Search complaints..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange("search", e.target.value)}
+                id="textSearch"
+                placeholder="Search complaints, addresses, comments, problem types..."
+                value={filters.textSearch}
+                onChange={(e) => handleFilterChange("textSearch", e.target.value)}
+                className="pl-10"
               />
+            </div>
+          </div>
+
+          {/* Filter Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+            <div>
+              <Label htmlFor="complaintType">Complaint Type</Label>
+              <Select value={filters.complaintType} onValueChange={(value) => handleFilterChange("complaintType", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="Air Quality">Air Quality</SelectItem>
+                  <SelectItem value="Demolition Notice">Demolition Notice</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div>
@@ -166,18 +254,32 @@ export default function Dashboard() {
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="initiated">Initiated</SelectItem>
-                  <SelectItem value="inspection">Inspection</SelectItem>
-                  <SelectItem value="work_in_progress">Work In Progress</SelectItem>
-                  <SelectItem value="work_completed">Work Completed</SelectItem>
-                  <SelectItem value="reviewed">Reviewed</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="">All Status</SelectItem>
+                  {filterOptions.statuses.map((status: string) => (
+                    <SelectItem key={status} value={status}>
+                      {status.charAt(0).toUpperCase() + status.slice(1).replace(/_/g, ' ')}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-            
+
+            <div>
+              <Label htmlFor="priority">Priority</Label>
+              <Select value={filters.priority} onValueChange={(value) => handleFilterChange("priority", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Priorities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Priorities</SelectItem>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="urgent">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <Label htmlFor="problemType">Problem Type</Label>
               <Select value={filters.problemType} onValueChange={(value) => handleFilterChange("problemType", value)}>
@@ -185,20 +287,67 @@ export default function Dashboard() {
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="smoke">Smoke</SelectItem>
-                  <SelectItem value="industrial">Industrial</SelectItem>
-                  <SelectItem value="odor">Odor</SelectItem>
-                  <SelectItem value="outdoor_burning">Outdoor Burning</SelectItem>
-                  <SelectItem value="dust">Dust</SelectItem>
-                  <SelectItem value="wood_stove">Wood Stove</SelectItem>
-                  <SelectItem value="asbestos_demo">Asbestos/Demo</SelectItem>
-                  <SelectItem value="marijuana">Marijuana</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="">All Types</SelectItem>
+                  {filterOptions.problemTypes.map((type: string) => (
+                    <SelectItem key={type} value={type}>
+                      {type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ')}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-            
+
+            <div>
+              <Label htmlFor="city">City</Label>
+              <Select value={filters.city} onValueChange={(value) => handleFilterChange("city", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Cities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Cities</SelectItem>
+                  {filterOptions.cities.map((city: string) => (
+                    <SelectItem key={city} value={city}>
+                      {city}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="county">County</Label>
+              <Select value={filters.county} onValueChange={(value) => handleFilterChange("county", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Counties" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Counties</SelectItem>
+                  {filterOptions.counties.map((county: string) => (
+                    <SelectItem key={county} value={county}>
+                      {county}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="assignedTo">Assigned To</Label>
+              <Select value={filters.assignedTo} onValueChange={(value) => handleFilterChange("assignedTo", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Users" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Users</SelectItem>
+                  {filterOptions.assignedUsers.map((user: string) => (
+                    <SelectItem key={user} value={user}>
+                      {user}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <Label htmlFor="dateFrom">Date From</Label>
               <Input
@@ -208,19 +357,32 @@ export default function Dashboard() {
                 onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
               />
             </div>
+
+            <div>
+              <Label htmlFor="dateTo">Date To</Label>
+              <Input
+                id="dateTo"
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => handleFilterChange("dateTo", e.target.value)}
+              />
+            </div>
           </div>
-          
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={clearFilters}>
-              Clear Filters
-            </Button>
-            <Button 
-              onClick={applyFilters}
-              className="bg-orcaa-blue hover:bg-orcaa-blue-light"
-            >
-              Apply Filters
-            </Button>
-          </div>
+
+          {/* Search Results Count */}
+          {complaints && (
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm text-gray-600">
+                Found {complaints.length} complaints
+              </div>
+              <div className="flex space-x-2">
+                <Button variant="outline" size="sm" onClick={clearFilters}>
+                  <X className="h-4 w-4 mr-1" />
+                  Clear All
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
