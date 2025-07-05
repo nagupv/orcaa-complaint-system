@@ -231,7 +231,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Complaint not found" });
       }
 
-      res.json(complaint);
+      // Map database fields to frontend expected format
+      const mappedComplaint = {
+        ...complaint,
+        // Contact information mapping
+        contactName: `${complaint.complainantFirstName || ''} ${complaint.complainantLastName || ''}`.trim(),
+        contactEmail: complaint.complainantEmail,
+        contactPhone: complaint.complainantPhone,
+        // Location mapping
+        address: complaint.sourceAddress,
+        city: complaint.sourceCity,
+        state: complaint.complainantState,
+        zipCode: complaint.workSiteZip || complaint.complainantZipCode,
+        // Description mapping
+        description: complaint.otherDescription,
+        problemType: Array.isArray(complaint.problemTypes) ? complaint.problemTypes.join(', ') : complaint.problemTypes,
+        specificLocation: complaint.workSiteAddress,
+        // Additional fields
+        latitude: null, // Not in current schema
+        longitude: null // Not in current schema
+      };
+
+      res.json(mappedComplaint);
     } catch (error) {
       console.error("Error fetching complaint:", error);
       res.status(500).json({ message: "Failed to fetch complaint" });
