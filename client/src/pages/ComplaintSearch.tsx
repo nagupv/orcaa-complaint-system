@@ -34,8 +34,24 @@ export default function ComplaintSearch() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchSubmitted, setSearchSubmitted] = useState(false);
 
-  const { data: complaint, isLoading, error, refetch } = useQuery({
+  const { data: complaint, isLoading, error, refetch } = useQuery<Complaint>({
     queryKey: ['/api/complaints/public-search', searchTerm],
+    queryFn: async (): Promise<Complaint> => {
+      if (!searchTerm.trim()) {
+        throw new Error('Please enter a complaint ID');
+      }
+      
+      const response = await fetch(`/api/complaints/public-search/${encodeURIComponent(searchTerm.trim().toUpperCase())}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Complaint not found');
+        }
+        throw new Error('Failed to search complaint');
+      }
+      
+      return response.json() as Promise<Complaint>;
+    },
     enabled: false, // Only search when explicitly triggered
     retry: false
   });
