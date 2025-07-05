@@ -227,6 +227,9 @@ export const workflows = pgTable("workflows", {
   name: varchar("name", { length: 255 }).notNull(),
   description: text("description"),
   workflowData: jsonb("workflow_data").notNull(), // stores nodes, edges, and metadata
+  complaintType: varchar("complaint_type"), // AIR_QUALITY, DEMOLITION_NOTICE, or null for generic workflows
+  isTemplate: boolean("is_template").default(false), // true for default templates
+  isActive: boolean("is_active").default(true), // enable/disable workflows
   createdBy: varchar("created_by").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
