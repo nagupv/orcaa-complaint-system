@@ -1650,7 +1650,7 @@ export class DatabaseStorage implements IStorage {
       }
     }
 
-    return tasks;
+    throw new Error('Workflow task creation temporarily disabled due to syntax issue');
   }
 
   async executeWorkflowOrchestration(complaintId: number, nodes: any[], edges: any[]): Promise<void> {
