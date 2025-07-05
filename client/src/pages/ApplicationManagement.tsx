@@ -15,6 +15,14 @@ export default function ApplicationManagement() {
   const [activeSection, setActiveSection] = useState("users");
   const [activeMappingSection, setActiveMappingSection] = useState("user-role");
 
+  const updateHash = (section: string, subsection?: string) => {
+    if (subsection) {
+      window.location.hash = subsection;
+    } else {
+      window.location.hash = section;
+    }
+  };
+
 
 
   const menuItems = [
@@ -35,6 +43,29 @@ export default function ApplicationManagement() {
     { id: "reports", label: "User Role Report", component: UserRoleReport }
   ];
 
+  // Handle URL hash changes
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.substring(1);
+      if (hash) {
+        const menuItem = menuItems.find(item => item.id === hash);
+        if (menuItem) {
+          setActiveSection(hash);
+        } else if (hash === "user-role" || hash === "role-action") {
+          setActiveSection("mappings");
+          setActiveMappingSection(hash);
+        }
+      }
+    };
+
+    // Check initial hash
+    handleHashChange();
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   const renderContent = () => {
     if (activeSection === "mappings") {
       const mappingItem = menuItems.find(item => item.id === "mappings");
@@ -44,53 +75,77 @@ export default function ApplicationManagement() {
     } else {
       const activeItem = menuItems.find(item => item.id === activeSection);
       const Component = activeItem?.component;
-      return Component ? <Component /> : (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-orcaa-blue">
-              Application Management
-            </CardTitle>
-            <p className="text-gray-600">
-              Manage users, roles, and permissions for the ORCAA complaint management system
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="p-4 border rounded-lg hover:bg-gray-50">
-                <h3 className="font-semibold text-orcaa-blue mb-2">User Management</h3>
-                <p className="text-sm text-gray-600">Create, update, and manage user accounts</p>
-              </div>
-              <div className="p-4 border rounded-lg hover:bg-gray-50">
-                <h3 className="font-semibold text-orcaa-blue mb-2">Role Management</h3>
-                <p className="text-sm text-gray-600">Define and manage user roles</p>
-              </div>
-              <div className="p-4 border rounded-lg hover:bg-gray-50">
-                <h3 className="font-semibold text-orcaa-blue mb-2">List Values</h3>
-                <p className="text-sm text-gray-600">Configure system list values</p>
-              </div>
-              <div className="p-4 border rounded-lg hover:bg-gray-50">
-                <h3 className="font-semibold text-orcaa-blue mb-2">Workflow Designer</h3>
-                <p className="text-sm text-gray-600">Design and configure workflows</p>
-              </div>
-              <div className="p-4 border rounded-lg hover:bg-gray-50">
-                <h3 className="font-semibold text-orcaa-blue mb-2">Workflow Templates</h3>
-                <p className="text-sm text-gray-600">Manage workflow templates</p>
-              </div>
-              <div className="p-4 border rounded-lg hover:bg-gray-50">
-                <h3 className="font-semibold text-orcaa-blue mb-2">User Role Report</h3>
-                <p className="text-sm text-gray-600">View user role assignments</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      );
+      return Component ? <Component /> : null;
     }
   };
 
+  const renderNavigation = () => (
+    <div className="bg-white border-b border-gray-200 mb-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav className="flex space-x-8 overflow-x-auto">
+          {menuItems.map((item) => (
+            <div key={item.id}>
+              {item.submenu ? (
+                <div className="relative group">
+                  <button
+                    className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeSection === item.id
+                        ? "border-blue-500 text-blue-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                    onClick={() => {
+                      setActiveSection(item.id);
+                      updateHash(item.id);
+                    }}
+                  >
+                    {item.label}
+                    <ChevronDown className="ml-1 h-4 w-4 inline" />
+                  </button>
+                  {activeSection === item.id && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                      {item.submenu.map((subItem) => (
+                        <button
+                          key={subItem.id}
+                          className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-50 ${
+                            activeMappingSection === subItem.id ? "bg-blue-50 text-blue-600" : "text-gray-700"
+                          }`}
+                          onClick={() => {
+                            setActiveMappingSection(subItem.id);
+                            updateHash(item.id, subItem.id);
+                          }}
+                        >
+                          {subItem.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeSection === item.id
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                  onClick={() => {
+                    setActiveSection(item.id);
+                    updateHash(item.id);
+                  }}
+                >
+                  {item.label}
+                </button>
+              )}
+            </div>
+          ))}
+        </nav>
+      </div>
+    </div>
+  );
+
   return (
     <div className="bg-gray-50 min-h-screen">
+      {renderNavigation()}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Content Area - Navigation handled by header dropdown */}
         <div>
           {renderContent()}
         </div>
