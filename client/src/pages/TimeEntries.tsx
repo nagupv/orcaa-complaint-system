@@ -73,7 +73,7 @@ export default function TimeEntries() {
       const timesheetData: InsertTimesheet = {
         userId: user?.id || "",
         date: data.date,
-        hours: data.hours,
+        timeInHours: data.hours.toString(),
         activity: data.activity,
         businessWorkId: data.businessWorkId || null,
         comments: data.comments || null,
@@ -103,7 +103,7 @@ export default function TimeEntries() {
     mutationFn: async ({ id, data }: { id: number; data: TimesheetFormData }) => {
       const timesheetData: Partial<InsertTimesheet> = {
         date: data.date,
-        hours: data.hours,
+        timeInHours: data.hours.toString(),
         activity: data.activity,
         businessWorkId: data.businessWorkId || null,
         comments: data.comments || null,
@@ -162,7 +162,7 @@ export default function TimeEntries() {
     setEditingTimesheet(timesheet);
     form.reset({
       date: timesheet.date,
-      hours: timesheet.hours,
+      hours: parseFloat(timesheet.timeInHours),
       activity: timesheet.activity,
       businessWorkId: timesheet.businessWorkId || "",
       comments: timesheet.comments || "",
@@ -192,7 +192,7 @@ export default function TimeEntries() {
     new Date(ts.date) <= weekEnd
   );
 
-  const totalHoursThisWeek = filteredTimesheets.reduce((sum: number, ts: Timesheet) => sum + ts.hours, 0);
+  const totalHoursThisWeek = filteredTimesheets.reduce((sum: number, ts: Timesheet) => sum + parseFloat(ts.timeInHours), 0);
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -400,7 +400,7 @@ export default function TimeEntries() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary">
-                            {timesheet.hours}h
+                            {parseFloat(timesheet.timeInHours)}h
                           </Badge>
                         </TableCell>
                         <TableCell>{timesheet.activity}</TableCell>
