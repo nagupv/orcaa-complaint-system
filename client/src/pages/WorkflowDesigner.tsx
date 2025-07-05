@@ -427,12 +427,22 @@ const NodeConfigDialog = ({ nodeId, nodeLabel, currentConfig, onSave, onClose }:
   const renderEmailConfig = () => (
     <div className="space-y-4">
       <div>
-        <Label htmlFor="emailAccount">Email Account *</Label>
+        <Label htmlFor="emailAccount">To Email Account *</Label>
         <Input
           id="emailAccount"
           placeholder="e.g., complaints@orcaa.org"
           value={config.emailAccount || ''}
           onChange={(e) => setConfig({ ...config, emailAccount: e.target.value })}
+        />
+      </div>
+      
+      <div>
+        <Label htmlFor="ccEmailAccount">CC Email Account</Label>
+        <Input
+          id="ccEmailAccount"
+          placeholder="e.g., supervisor@orcaa.org"
+          value={config.ccEmailAccount || ''}
+          onChange={(e) => setConfig({ ...config, ccEmailAccount: e.target.value })}
         />
       </div>
       
@@ -504,6 +514,16 @@ const NodeConfigDialog = ({ nodeId, nodeLabel, currentConfig, onSave, onClose }:
   const renderSMSConfig = () => (
     <div className="space-y-4">
       <div>
+        <Label htmlFor="smsFromNumber">From Phone Number *</Label>
+        <Input
+          id="smsFromNumber"
+          placeholder="e.g., +1234567890"
+          value={config.smsFromNumber || ''}
+          onChange={(e) => setConfig({ ...config, smsFromNumber: e.target.value })}
+        />
+      </div>
+      
+      <div>
         <Label htmlFor="smsTemplate">SMS Message Template *</Label>
         <textarea
           id="smsTemplate"
@@ -522,8 +542,8 @@ const NodeConfigDialog = ({ nodeId, nodeLabel, currentConfig, onSave, onClose }:
         <select
           id="smsRecipientType"
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          value={config.recipientType || ''}
-          onChange={(e) => setConfig({ ...config, recipientType: e.target.value })}
+          value={config.smsRecipientType || ''}
+          onChange={(e) => setConfig({ ...config, smsRecipientType: e.target.value })}
         >
           <option value="">Select recipient type</option>
           <option value="complainant">Complainant</option>
@@ -533,11 +553,11 @@ const NodeConfigDialog = ({ nodeId, nodeLabel, currentConfig, onSave, onClose }:
         </select>
       </div>
       
-      {config.recipientType === 'custom' && (
+      {config.smsRecipientType === 'custom' && (
         <div>
-          <Label htmlFor="customPhone">Custom Phone Number *</Label>
+          <Label htmlFor="customSmsPhone">Custom Phone Number *</Label>
           <Input
-            id="customPhone"
+            id="customSmsPhone"
             placeholder="+1234567890"
             value={config.customPhone || ''}
             onChange={(e) => setConfig({ ...config, customPhone: e.target.value })}
@@ -549,6 +569,16 @@ const NodeConfigDialog = ({ nodeId, nodeLabel, currentConfig, onSave, onClose }:
 
   const renderWhatsAppConfig = () => (
     <div className="space-y-4">
+      <div>
+        <Label htmlFor="whatsappFromNumber">From WhatsApp Number *</Label>
+        <Input
+          id="whatsappFromNumber"
+          placeholder="e.g., whatsapp:+1234567890"
+          value={config.whatsappFromNumber || ''}
+          onChange={(e) => setConfig({ ...config, whatsappFromNumber: e.target.value })}
+        />
+      </div>
+      
       <div>
         <Label htmlFor="whatsappTemplate">WhatsApp Message Template *</Label>
         <textarea
@@ -568,8 +598,8 @@ const NodeConfigDialog = ({ nodeId, nodeLabel, currentConfig, onSave, onClose }:
         <select
           id="whatsappRecipientType"
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-          value={config.recipientType || ''}
-          onChange={(e) => setConfig({ ...config, recipientType: e.target.value })}
+          value={config.whatsappRecipientType || ''}
+          onChange={(e) => setConfig({ ...config, whatsappRecipientType: e.target.value })}
         >
           <option value="">Select recipient type</option>
           <option value="complainant">Complainant</option>
@@ -579,17 +609,28 @@ const NodeConfigDialog = ({ nodeId, nodeLabel, currentConfig, onSave, onClose }:
         </select>
       </div>
       
-      {config.recipientType === 'custom' && (
+      {config.whatsappRecipientType === 'custom' && (
         <div>
-          <Label htmlFor="customWhatsApp">Custom WhatsApp Number *</Label>
+          <Label htmlFor="customWhatsappNumber">Custom WhatsApp Number *</Label>
           <Input
-            id="customWhatsApp"
+            id="customWhatsappNumber"
             placeholder="whatsapp:+1234567890"
-            value={config.customWhatsApp || ''}
-            onChange={(e) => setConfig({ ...config, customWhatsApp: e.target.value })}
+            value={config.customWhatsappNumber || ''}
+            onChange={(e) => setConfig({ ...config, customWhatsappNumber: e.target.value })}
           />
         </div>
       )}
+      
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="whatsappMediaAttachment"
+          checked={config.whatsappMediaAttachment || false}
+          onChange={(e) => setConfig({ ...config, whatsappMediaAttachment: e.target.checked })}
+          className="h-4 w-4 rounded border border-input"
+        />
+        <Label htmlFor="whatsappMediaAttachment">Include complaint attachments</Label>
+      </div>
     </div>
   );
 
