@@ -1191,6 +1191,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin promotion endpoint for specific email
+  app.post('/api/admin/promote-user', async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      // Security check - only allow promotion of specific pre-approved email
+      if (email !== 'nagupv@gmail.com') {
+        return res.status(403).json({ error: 'Unauthorized email for promotion' });
+      }
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found. User must log in first.' });
+      }
+      
+      // Update user roles to include admin and supervisor
+      const updatedUser = await storage.updateUserRoles(user.id, ['admin', 'supervisor', 'field_staff']);
+      
+      // Create audit entry
+      await storage.createAuditEntry({
+        action: 'admin_promotion',
+        userId: user.id,
+        reason: `Promoted ${email} to admin role via direct database update`
+      });
+      
+      res.json({ 
+        success: true, 
+        message: `Successfully promoted ${email} to admin role`,
+        user: updatedUser 
+      });
+    } catch (error) {
+      console.error('Error promoting user to admin:', error);
+      res.status(500).json({ error: 'Failed to promote user to admin' });
+    }
+  });
+
   // List Values routes
   app.get('/api/list-values', isAuthenticated, async (req, res) => {
     try {
