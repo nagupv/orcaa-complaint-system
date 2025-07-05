@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChevronDown } from "lucide-react";
 import UserManagement from "./UserManagement";
 import RoleManagement from "./RoleManagement";
 import UserRoleMapping from "./UserRoleMapping";
@@ -11,7 +11,38 @@ import WorkflowTemplates from "./WorkflowTemplates";
 import RoleActionMapping from "./RoleActionMapping";
 
 export default function ApplicationManagement() {
-  const [activeTab, setActiveTab] = useState("users");
+  const [activeSection, setActiveSection] = useState("users");
+  const [activeMappingSection, setActiveMappingSection] = useState("user-role");
+
+  const menuItems = [
+    { id: "users", label: "User Management", component: UserManagement },
+    { id: "roles", label: "Role Management", component: RoleManagement },
+    { id: "list-values", label: "List Values", component: ListValueManagement },
+    { id: "workflow", label: "Workflow Designer", component: WorkflowDesigner },
+    { id: "templates", label: "Workflow Templates", component: WorkflowTemplates },
+    { 
+      id: "mappings", 
+      label: "Mappings", 
+      submenu: [
+        { id: "user-role", label: "User & Role Mapping", component: UserRoleMapping },
+        { id: "role-action", label: "Role-Action Mapping", component: RoleActionMapping }
+      ]
+    },
+    { id: "reports", label: "User Role Report", component: UserRoleReport }
+  ];
+
+  const renderContent = () => {
+    if (activeSection === "mappings") {
+      const mappingItem = menuItems.find(item => item.id === "mappings");
+      const activeMapping = mappingItem?.submenu?.find(sub => sub.id === activeMappingSection);
+      const Component = activeMapping?.component;
+      return Component ? <Component /> : null;
+    } else {
+      const activeItem = menuItems.find(item => item.id === activeSection);
+      const Component = activeItem?.component;
+      return Component ? <Component /> : null;
+    }
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -26,76 +57,53 @@ export default function ApplicationManagement() {
             </p>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="flex w-full flex-wrap gap-1">
-                <TabsTrigger value="users" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-                  User Management
-                </TabsTrigger>
-                <TabsTrigger value="roles" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-                  Role Management
-                </TabsTrigger>
-                <TabsTrigger value="list-values" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-                  List Values
-                </TabsTrigger>
-                <TabsTrigger value="workflow" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-                  Workflow Designer
-                </TabsTrigger>
-                <TabsTrigger value="templates" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-                  Workflow Templates
-                </TabsTrigger>
-                <TabsTrigger value="mappings" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-                  Mappings
-                </TabsTrigger>
-                <TabsTrigger value="reports" className="flex-1 data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-                  User Role Report
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="users" className="mt-6">
-                <UserManagement />
-              </TabsContent>
-
-              <TabsContent value="roles" className="mt-6">
-                <RoleManagement />
-              </TabsContent>
-
-              <TabsContent value="list-values" className="mt-6">
-                <ListValueManagement />
-              </TabsContent>
-
-              <TabsContent value="workflow" className="mt-6">
-                <WorkflowDesigner />
-              </TabsContent>
-
-              <TabsContent value="templates" className="mt-6">
-                <WorkflowTemplates />
-              </TabsContent>
-
-              <TabsContent value="mappings" className="mt-6">
-                <Tabs defaultValue="user-role" className="space-y-4">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="user-role" className="data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-                      User & Role Mapping
-                    </TabsTrigger>
-                    <TabsTrigger value="role-action" className="data-[state=active]:bg-orcaa-blue data-[state=active]:text-white">
-                      Role-Action Mapping
-                    </TabsTrigger>
-                  </TabsList>
+            {/* Hover Navigation Menu */}
+            <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-200 pb-4">
+              {menuItems.map((item) => (
+                <div key={item.id} className="relative group">
+                  <button
+                    onClick={() => setActiveSection(item.id)}
+                    className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center gap-1 ${
+                      activeSection === item.id
+                        ? "bg-orcaa-blue text-white"
+                        : "text-gray-700 hover:bg-gray-100 hover:text-orcaa-blue"
+                    }`}
+                  >
+                    {item.label}
+                    {item.submenu && <ChevronDown className="h-4 w-4" />}
+                  </button>
                   
-                  <TabsContent value="user-role" className="mt-4">
-                    <UserRoleMapping />
-                  </TabsContent>
-                  
-                  <TabsContent value="role-action" className="mt-4">
-                    <RoleActionMapping />
-                  </TabsContent>
-                </Tabs>
-              </TabsContent>
+                  {/* Dropdown for Mappings */}
+                  {item.submenu && (
+                    <div className="absolute left-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                      <div className="py-1">
+                        {item.submenu.map((subItem) => (
+                          <button
+                            key={subItem.id}
+                            onClick={() => {
+                              setActiveSection("mappings");
+                              setActiveMappingSection(subItem.id);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                              activeSection === "mappings" && activeMappingSection === subItem.id
+                                ? "bg-orcaa-blue text-white"
+                                : "text-gray-700 hover:bg-gray-50 hover:text-orcaa-blue"
+                            }`}
+                          >
+                            {subItem.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
 
-              <TabsContent value="reports" className="mt-6">
-                <UserRoleReport />
-              </TabsContent>
-            </Tabs>
+            {/* Content Area */}
+            <div className="mt-6">
+              {renderContent()}
+            </div>
           </CardContent>
         </Card>
       </div>
