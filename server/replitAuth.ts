@@ -74,9 +74,12 @@ async function upsertUser(
     console.log("First user detected, assigning admin privileges:", claims["email"]);
   }
   
-  // Admin emails can be configured via environment variable
+  // Admin emails can be configured via environment variable or hardcoded for key users
   const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
-  if (adminEmails.includes(claims["email"])) {
+  const hardcodedAdminEmails = ['nagupv@gmail.com']; // Persistent admin emails
+  const allAdminEmails = [...adminEmails, ...hardcodedAdminEmails];
+  
+  if (allAdminEmails.includes(claims["email"])) {
     defaultRoles = ["admin", "supervisor"];
     console.log("Admin email detected, assigning admin privileges:", claims["email"]);
   }
