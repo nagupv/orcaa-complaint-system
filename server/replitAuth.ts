@@ -132,10 +132,32 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
-    verified(null, user);
+    try {
+      console.log(`[Auth Verify] Processing tokens for user authentication`);
+      const claims = tokens.claims();
+      console.log(`[Auth Verify] User claims:`, { 
+        sub: claims.sub, 
+        email: claims.email, 
+        first_name: claims.first_name,
+        last_name: claims.last_name 
+      });
+      
+      const user = {};
+      updateUserSession(user, tokens);
+      console.log(`[Auth Verify] Updated user session`);
+      
+      await upsertUser(claims);
+      console.log(`[Auth Verify] Upserted user successfully`);
+      
+      verified(null, user);
+    } catch (error) {
+      console.error(`[Auth Verify] Error during authentication verification:`, error);
+      console.error(`[Auth Verify] Error details:`, {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      verified(error, null);
+    }
   };
 
   for (const domain of process.env
@@ -156,17 +178,53 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    // Determine the correct domain for the strategy
+    const domains = process.env.REPLIT_DOMAINS!.split(",");
+    const requestDomain = req.hostname;
+    
+    // For localhost development, use the first Replit domain
+    const targetDomain = domains.find(d => d === requestDomain) || domains[0];
+    
+    console.log(`[Auth Login] Request hostname: ${requestDomain}`);
+    console.log(`[Auth Login] Available domains: ${domains.join(', ')}`);
+    console.log(`[Auth Login] Using strategy: replitauth:${targetDomain}`);
+    
+    passport.authenticate(`replitauth:${targetDomain}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    // Determine the correct domain for the strategy (same logic as login)
+    const domains = process.env.REPLIT_DOMAINS!.split(",");
+    const requestDomain = req.hostname;
+    const targetDomain = domains.find(d => d === requestDomain) || domains[0];
+    
+    console.log(`[Auth Callback] Processing authentication callback for domain: ${requestDomain}`);
+    console.log(`[Auth Callback] Query parameters:`, req.query);
+    console.log(`[Auth Callback] Using strategy: replitauth:${targetDomain}`);
+    
+    passport.authenticate(`replitauth:${targetDomain}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
-    })(req, res, next);
+    })(req, res, (error: any) => {
+      if (error) {
+        console.error(`[Auth Callback] Authentication error:`, error);
+        console.error(`[Auth Callback] Error details:`, {
+          message: error.message,
+          stack: error.stack,
+          code: error.code
+        });
+        res.status(500).json({ 
+          error: "Authentication failed", 
+          message: error.message,
+          details: "Check server logs for more information"
+        });
+      } else {
+        next();
+      }
+    });
   });
 
   app.get("/api/logout", (req, res) => {
