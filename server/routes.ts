@@ -1228,6 +1228,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fix pending user authentication issue
+  app.post('/api/admin/fix-pending-user', async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      // Security check - only allow for specific pre-approved emails
+      const allowedEmails = ['venkateshbtech31@gmail.com', 'nagupv@gmail.com'];
+      if (!allowedEmails.includes(email)) {
+        return res.status(403).json({ error: 'Unauthorized email for user fix' });
+      }
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      
+      // If user has pending ID and is inactive, remove the pending user
+      if (user.id.startsWith('pending_') && !user.isActive) {
+        const pendingUserId = user.id;
+        
+        // Create audit entry before deletion
+        await storage.createAuditEntry({
+          action: 'pending_user_cleanup',
+          userId: pendingUserId,
+          reason: `Removing pending user ${email} to allow Replit Auth activation`
+        });
+        
+        await storage.deleteUser(pendingUserId);
+        
+        res.json({ 
+          success: true, 
+          message: `Removed pending user ${email}. User can now login via Replit Auth.`,
+          action: 'pending_user_removed'
+        });
+      } else {
+        res.json({ 
+          success: true, 
+          message: `User ${email} is already active or not in pending state`,
+          action: 'no_action_needed'
+        });
+      }
+    } catch (error) {
+      console.error('Error fixing pending user:', error);
+      res.status(500).json({ error: 'Failed to fix pending user' });
+    }
+  });
+
   // List Values routes
   app.get('/api/list-values', isAuthenticated, async (req, res) => {
     try {

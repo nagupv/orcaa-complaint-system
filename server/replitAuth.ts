@@ -61,6 +61,9 @@ async function upsertUser(
   // Check if user already exists to avoid overwriting existing roles
   const existingUser = await storage.getUser(claims["sub"]);
   
+  // Check if user exists by email but with pending ID (created via User Management)
+  const existingUserByEmail = await storage.getUserByEmail(claims["email"]);
+  
   // For new users, determine roles based on email domain or admin configuration
   let defaultRoles = ["field_staff"];
   
@@ -78,14 +81,40 @@ async function upsertUser(
     console.log("Admin email detected, assigning admin privileges:", claims["email"]);
   }
 
-  await storage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
-    roles: existingUser ? existingUser.roles : JSON.stringify(defaultRoles),
-  });
+  // If user exists by email but with pending ID, activate them with real Replit ID
+  if (existingUserByEmail && existingUserByEmail.id.startsWith('pending_')) {
+    console.log("Activating pending user with Replit ID:", claims["email"]);
+    
+    // Delete the pending user record
+    await storage.deleteUser(existingUserByEmail.id);
+    
+    // Create new user with real Replit ID and preserve roles
+    await storage.upsertUser({
+      id: claims["sub"],
+      email: claims["email"],
+      firstName: claims["first_name"],
+      lastName: claims["last_name"],
+      profileImageUrl: claims["profile_image_url"],
+      roles: existingUserByEmail.roles, // Preserve existing roles
+    });
+    
+    // Create audit entry for activation
+    await storage.createAuditEntry({
+      action: 'user_activation',
+      userId: claims["sub"],
+      reason: `User ${claims["email"]} activated via Replit Auth, migrated from pending ID ${existingUserByEmail.id}`
+    });
+  } else {
+    // Normal user creation/update
+    await storage.upsertUser({
+      id: claims["sub"],
+      email: claims["email"],
+      firstName: claims["first_name"],
+      lastName: claims["last_name"],
+      profileImageUrl: claims["profile_image_url"],
+      roles: existingUser ? existingUser.roles : JSON.stringify(defaultRoles),
+    });
+  }
 }
 
 export async function setupAuth(app: Express) {
